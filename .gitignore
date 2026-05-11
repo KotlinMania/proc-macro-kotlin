@@ -1,6 +1,7 @@
 # Kotlin/Gradle build artifacts
 build/
 .gradle/
+.kotlin/
 *.class
 *.jar
 *.war

@@ -97,17 +97,6 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
-                // proc-macro2-kotlin: keep API alignment for wrapper-layer interop.
-                // Downstream consumers depend on proc-macro2-kotlin directly; this
-                // dependency is here so this repo's types can mirror the same shape
-                // and so the Compiler-variant wiring in proc-macro2-kotlin's
-                // wrapper.kt can delegate to types defined here.
-                api("io.github.kotlinmania:proc-macro2-kotlin:0.1.0")
-                // JetBrains multiplatform Kotlin lexer + parser: the deliberate
-                // exception to the no-JVM-deps rule in AGENTS.md "Forbidden". The
-                // exact artifact coordinates are pinned in NEXT_ACTIONS.md item 2;
-                // until then the dependency line below is a placeholder.
-                // implementation("org.jetbrains.kotlin:kotlin-multiplatform-parsing:<TBD>")
             }
         }
 
