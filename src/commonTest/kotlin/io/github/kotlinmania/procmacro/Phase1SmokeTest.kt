@@ -1,0 +1,340 @@
+// port-lint: ignore (smoke tests for phase-1 public types)
+package io.github.kotlinmania.procmacro
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class DelimiterTest {
+    @Test
+    fun variants() {
+        assertEquals(4, Delimiter.entries.size)
+        assertNotEquals(Delimiter.PARENTHESIS, Delimiter.BRACE)
+    }
+}
+
+class SpacingTest {
+    @Test
+    fun variants() {
+        assertEquals(2, Spacing.entries.size)
+        assertNotEquals(Spacing.JOINT, Spacing.ALONE)
+    }
+}
+
+class SpanTest {
+    @Test
+    fun sentinelsAreDistinct() {
+        assertFalse(Span.callSite().eq(Span.mixedSite()))
+        assertFalse(Span.callSite().eq(Span.defSite()))
+        assertFalse(Span.mixedSite().eq(Span.defSite()))
+    }
+
+    @Test
+    fun sentinelByteRangesAreEmpty() {
+        assertEquals(IntRange.EMPTY, Span.callSite().byteRange())
+        assertEquals(IntRange.EMPTY, Span.mixedSite().byteRange())
+        assertEquals(IntRange.EMPTY, Span.defSite().byteRange())
+    }
+
+    @Test
+    fun localFileIsNullByDefault() {
+        assertNull(Span.callSite().localFile())
+    }
+
+    @Test
+    fun resolvedAtIsIdentityInPhase1() {
+        val a = Span.callSite()
+        val b = Span.defSite()
+        // Phase-1 hygiene model is identity; phase 3 may refine.
+        assertTrue(a.eq(a.resolvedAt(b)))
+    }
+}
+
+class IdentTest {
+    @Test
+    fun roundTripsThroughToString() {
+        val ident = Ident.new("hello", Span.callSite())
+        assertEquals("hello", ident.toString())
+    }
+
+    @Test
+    fun rawIdentTakesRhashPrefix() {
+        val raw = Ident.newRaw("fn", Span.callSite())
+        assertEquals("r#fn", raw.toString())
+    }
+
+    @Test
+    fun rejectsEmptyIdent() {
+        assertFailsWith<IllegalArgumentException> { Ident.new("", Span.callSite()) }
+    }
+
+    @Test
+    fun rejectsLeadingDigit() {
+        assertFailsWith<IllegalArgumentException> { Ident.new("1bad", Span.callSite()) }
+    }
+
+    @Test
+    fun rejectsPathKeywordsForRaw() {
+        assertFailsWith<IllegalArgumentException> { Ident.newRaw("self", Span.callSite()) }
+        assertFailsWith<IllegalArgumentException> { Ident.newRaw("super", Span.callSite()) }
+    }
+
+    @Test
+    fun acceptsKeywordForRaw() {
+        // `fn` is a keyword but allowed as a raw identifier.
+        val raw = Ident.newRaw("fn", Span.callSite())
+        assertEquals("r#fn", raw.toString())
+    }
+
+    @Test
+    fun setSpanReplacesSpan() {
+        val ident = Ident.new("foo", Span.callSite())
+        ident.setSpan(Span.mixedSite())
+        assertTrue(ident.span().eq(Span.mixedSite()))
+    }
+}
+
+class PunctTest {
+    @Test
+    fun newRecordsCharSpacingAndSpan() {
+        val punct = Punct.new('+', Spacing.JOINT)
+        assertEquals('+', punct.asChar())
+        assertEquals(Spacing.JOINT, punct.spacing())
+        assertTrue(punct.span().eq(Span.callSite()))
+    }
+
+    @Test
+    fun rejectsIllegalChar() {
+        assertFailsWith<IllegalArgumentException> { Punct.new('A', Spacing.ALONE) }
+    }
+
+    @Test
+    fun toStringIsSingleChar() {
+        assertEquals("+", Punct.new('+', Spacing.ALONE).toString())
+    }
+
+    @Test
+    fun eqAgainstChar() {
+        val punct = Punct.new('+', Spacing.JOINT)
+        assertTrue(punct.eq('+'))
+        assertFalse(punct.eq('-'))
+    }
+}
+
+class LiteralTest {
+    @Test
+    fun stringRendersWithDoubleQuotes() {
+        val literal = Literal.string("hello")
+        assertEquals("\"hello\"", literal.toString())
+    }
+
+    @Test
+    fun stringEscapesBackslashAndQuote() {
+        assertEquals("\"a\\\\b\"", Literal.string("a\\b").toString())
+        assertEquals("\"a\\\"b\"", Literal.string("a\"b").toString())
+        assertEquals("\"a\\nb\"", Literal.string("a\nb").toString())
+    }
+
+    @Test
+    fun characterRendersWithSingleQuotes() {
+        assertEquals("'a'", Literal.character('a').toString())
+        assertEquals("'\\''", Literal.character('\'').toString())
+    }
+
+    @Test
+    fun u8SuffixedAppendsTypeSuffix() {
+        assertEquals("42u8", Literal.u8Suffixed(42u).toString())
+    }
+
+    @Test
+    fun i32UnsuffixedHasNoSuffix() {
+        assertEquals("-7", Literal.i32Unsuffixed(-7).toString())
+    }
+
+    @Test
+    fun f64UnsuffixedAddsDecimalPointWhenAbsent() {
+        // `1.0` should keep its decimal; `1` should grow one.
+        assertEquals("1.0", Literal.f64Unsuffixed(1.0).toString())
+    }
+
+    @Test
+    fun byteStringEscapesNonPrintable() {
+        val bytes = byteArrayOf(0x68, 0x69, 0x00, 0xff.toByte())
+        assertEquals("b\"hi\\0\\xff\"", Literal.byteString(bytes).toString())
+    }
+
+    @Test
+    fun rejectsNonFiniteFloat() {
+        assertFailsWith<IllegalArgumentException> { Literal.f32Suffixed(Float.POSITIVE_INFINITY) }
+        assertFailsWith<IllegalArgumentException> { Literal.f64Unsuffixed(Double.NaN) }
+    }
+}
+
+class GroupTest {
+    @Test
+    fun newCarriesDelimiterAndStream() {
+        val inner = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("x", Span.callSite())))
+        val group = Group.new(Delimiter.PARENTHESIS, inner)
+        assertEquals(Delimiter.PARENTHESIS, group.delimiter())
+        assertEquals("x", group.stream().toString())
+    }
+
+    @Test
+    fun spanDefaultsToCallSite() {
+        val group = Group.new(Delimiter.BRACE, TokenStream.new())
+        assertTrue(group.span().eq(Span.callSite()))
+        assertTrue(group.spanOpen().eq(Span.callSite()))
+        assertTrue(group.spanClose().eq(Span.callSite()))
+    }
+}
+
+class TokenTreeTest {
+    @Test
+    fun spanDelegatesToVariant() {
+        val ident = Ident.new("name", Span.mixedSite())
+        val tree: TokenTree = TokenTree.Ident(ident)
+        assertTrue(tree.span().eq(Span.mixedSite()))
+    }
+
+    @Test
+    fun setSpanMutatesUnderlyingPunct() {
+        val tree: TokenTree = TokenTree.Punct(Punct.new('+', Spacing.ALONE))
+        tree.setSpan(Span.defSite())
+        assertTrue(tree.span().eq(Span.defSite()))
+    }
+
+    @Test
+    fun toStringMatchesVariantToString() {
+        val tree: TokenTree = TokenTree.Literal(Literal.i32Suffixed(7))
+        assertEquals("7i32", tree.toString())
+    }
+}
+
+class TokenStreamTest {
+    @Test
+    fun newIsEmpty() {
+        assertTrue(TokenStream.new().isEmpty())
+    }
+
+    @Test
+    fun fromTokenTreeContainsOne() {
+        val stream = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("a", Span.callSite())))
+        assertFalse(stream.isEmpty())
+        val collected = stream.toList()
+        assertEquals(1, collected.size)
+        assertTrue(collected[0] is TokenTree.Ident)
+    }
+
+    @Test
+    fun fromTokenTreesPreservesOrder() {
+        val trees = listOf<TokenTree>(
+            TokenTree.Ident(Ident.new("a", Span.callSite())),
+            TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
+            TokenTree.Ident(Ident.new("b", Span.callSite())),
+        )
+        val stream = TokenStream.fromTokenTrees(trees)
+        assertEquals(trees, stream.toList())
+    }
+
+    @Test
+    fun toStringSeparatesWithSpaces() {
+        val stream = TokenStream.fromTokenTrees(
+            listOf<TokenTree>(
+                TokenTree.Ident(Ident.new("a", Span.callSite())),
+                TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
+                TokenTree.Ident(Ident.new("b", Span.callSite())),
+            ),
+        )
+        assertEquals("a + b", stream.toString())
+    }
+
+    @Test
+    fun jointPunctSuppressesSeparator() {
+        val stream = TokenStream.fromTokenTrees(
+            listOf<TokenTree>(
+                TokenTree.Punct(Punct.new('+', Spacing.JOINT)),
+                TokenTree.Punct(Punct.new('=', Spacing.ALONE)),
+            ),
+        )
+        assertEquals("+=", stream.toString())
+    }
+
+    @Test
+    fun groupRenderingUsesDelimiters() {
+        val inner = TokenStream.fromTokenTrees(
+            listOf<TokenTree>(
+                TokenTree.Ident(Ident.new("x", Span.callSite())),
+                TokenTree.Punct(Punct.new(',', Spacing.ALONE)),
+                TokenTree.Ident(Ident.new("y", Span.callSite())),
+            ),
+        )
+        val stream = TokenStream.fromTokenTree(
+            TokenTree.Group(Group.new(Delimiter.PARENTHESIS, inner)),
+        )
+        assertEquals("(x , y)", stream.toString())
+    }
+
+    @Test
+    fun fromStringPhase1Stubs() {
+        val result = TokenStream.fromString("anything")
+        assertTrue(result.isFailure)
+        val ex = result.exceptionOrNull()
+        assertTrue(ex is LexErrorThrown)
+    }
+
+    @Test
+    fun extendTokenTreesAppends() {
+        val stream = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("a", Span.callSite())))
+        stream.extendTokenTrees(listOf<TokenTree>(TokenTree.Punct(Punct.new('+', Spacing.ALONE))))
+        assertEquals(2, stream.toList().size)
+    }
+
+    @Test
+    fun extendTokenStreamsConcatenates() {
+        val a = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("a", Span.callSite())))
+        val b = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("b", Span.callSite())))
+        a.extendTokenStreams(listOf(b))
+        assertEquals(2, a.toList().size)
+    }
+}
+
+class IsAvailableTest {
+    @Test
+    fun phase1AlwaysAvailable() {
+        assertTrue(isAvailable())
+    }
+}
+
+class LexErrorTest {
+    @Test
+    fun carriesMessage() {
+        val err = LexError("nope")
+        assertEquals("nope", err.toString())
+    }
+}
+
+class ConversionErrorKindTest {
+    @Test
+    fun variantsAreDistinct() {
+        val a: ConversionErrorKind = ConversionErrorKind.InvalidLiteralKind
+        val b: ConversionErrorKind =
+            ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("boom"))
+        assertNotEquals(a, b)
+    }
+
+    @Test
+    fun fatalEscapeErrorReportsItself() {
+        val e: EscapeError = EscapeError.Fatal("bad escape")
+        assertTrue(e.isFatal())
+    }
+
+    @Test
+    fun recoverableEscapeErrorReportsItself() {
+        val e: EscapeError = EscapeError.Recoverable("warning")
+        assertFalse(e.isFatal())
+    }
+}
