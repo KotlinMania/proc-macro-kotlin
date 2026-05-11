@@ -1,2 +1,4 @@
 # proc-macro-kotlin
-A KotlinLexer-backed library for parsing Kotlin source into a proc_macro2-shaped abstraction
+proc-macro2-kotlin models Rust-shaped tokens for Kotlin ports of Rust macro ecosystems.
+Kotlin compiler plugin APIs (FIR/IR/kapt/KSP) are symbol/IR-based, not token-stream based, so there is no plugin-boundary Compiler variant to target.
+Kotlin source tokenization (for example via KotlinLexer) is a separate concern for Kotlin-source parsing libraries, not for proc-macro2-kotlin.
