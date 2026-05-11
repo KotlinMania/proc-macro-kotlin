@@ -1,7 +1,7 @@
 # Agent guide - proc-macro-kotlin
 
 This file is the quick-reference operating contract for proc-macro-kotlin. The longer
-project story lives in `CLAUDE.md`, `README.md`, and any repo-local notes. Read
+project story lives in `CLAUDE.md`, `README.md`, and `NEXT_ACTIONS.md`. Read
 those before editing. This guide captures the workspace-wide porting discipline
 that must not drift: Kotlin stays Kotlin, source comments stay Kotlin-facing,
 and required port inventory is done with `ast_distance` when the repo ships it.
@@ -12,37 +12,42 @@ proc-macro-kotlin is a Kotlin Multiplatform port of Rust's compiler-internal
 [`proc_macro`](https://doc.rust-lang.org/proc_macro/) crate — the in-tree crate
 that `rustc` makes available to procedural macros and that
 [`proc_macro2`](https://crates.io/crates/proc-macro2) dispatches to via its
-`Compiler` variant. Upstream Rust source for the porting target lives at
-[`rust-lang/rust:library/proc_macro/src/`](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src),
-fetched into `tmp/proc-macro/` by `tools/fetch-rust-source.sh`. The Rust crate
-is the API oracle. Never edit `tmp/` or any fetched upstream source.
+`Compiler` variant. The public Kotlin API mirrors `proc_macro`'s shape so
+that proc-macro2-kotlin (and through it the Kotlin ports of `syn`, `quote`,
+`serde_derive`, `async-trait`, `starlark_derive`, `logos-codegen`, etc.) can
+consume this library as the realized Compiler variant.
 
-The design contract is **upstream Rust API, Kotlin-tokenizer backend.** The
-public types (`TokenStream`, `Span`, `Group`, `Delimiter`, `Ident`, `Punct`,
-`Spacing`, `Literal`, `TokenTree`, `LexError`, `token_stream::IntoIter`) keep
-their `proc_macro`-shaped surface so downstream consumers (Kotlin ports of
-`syn`, `quote`, `serde_derive`, `async-trait`, `starlark_derive`,
-`logos-codegen`) see the same vocabulary they would see against rustc-bridged
-`proc_macro`. The implementations underneath bind to JetBrains' multiplatform
-Kotlin lexer + parser (`org.jetbrains.kotlin.kmp.lexer.KotlinLexer`,
-`KtTokens`, `KotlinParser`).
+The work happens in two phases, in order:
 
-The `bridge` submodule of upstream `proc_macro` — the FFI-style channel
-between rustc and a proc-macro process — does not port. It has no Kotlin
-analog. Every other public type does.
+1. **Port the Rust code so the shape is like the Rust code.** Standard
+   kotlinmania Rust→Kotlin parity port of
+   [`rust-lang/rust:library/proc_macro/src/`](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src),
+   following every workspace porting rule below — translator's mindset,
+   one Rust file to one Kotlin file, port-lint headers, comments-are-content,
+   and so on. The team places the Rust source manually under `tmp/proc-macro/`
+   (gitignored) for reference. The `bridge` submodule does not port; it
+   is the rustc-side FFI channel and has no Kotlin analog.
+2. **Add the Kotlin pieces to make a real tokenizer.** Vendor the
+   JetBrains multiplatform Kotlin lexer + parser from
+   [`JetBrains/intellij-community:platform/syntax/`](https://github.com/JetBrains/intellij-community/tree/master/platform/syntax)
+   and
+   [`JetBrains/kotlin:compiler/multiplatform-parsing/`](https://github.com/JetBrains/kotlin/tree/master/compiler/multiplatform-parsing)
+   into this repo's tracked tree, apply mechanical adjustments (drop
+   `@JvmStatic`, repackage if needed, note upstream sha), and wire the
+   `proc_macro`-shaped types from phase 1 to delegate into the vendored
+   lexer for actual tokenization. Both upstream Kotlin sources are
+   Apache 2.0, matching this repo.
 
-The porting order is **Rust API first, Kotlin backend welded in second.**
-Early commits land the upstream-shaped types with the most faithful Kotlin
-translation possible. Subsequent commits replace each implementation's lexer
-backend with `KotlinLexer` / `KtTokens` calls. Keep the wiring layered so the
-backend swap is a localized change per type, not a rewrite.
+Phase 1 is faithful Rust→Kotlin transliteration. Phase 2 is faithful Kotlin
+vendoring with documented mechanical adjustments. The translator-discipline
+rules below apply to phase 1; the vendor-discipline rules later in this file
+apply to phase 2.
 
 No JVM-only dependencies, no `java.*` / `javax.*`, no shortcuts through
 established JVM libraries, and no replacing a Cargo dependency with an
-unrelated Kotlin library when a `*-kotlin` sibling port exists or should exist.
-The intentional exception is the JetBrains `org.jetbrains.kotlin.kmp.*`
-multiplatform-parsing artifact — that dependency is the whole point of this
-repo, not a shortcut.
+unrelated Kotlin library when a `*-kotlin` sibling port exists or should
+exist. The intentional exception is the JetBrains multiplatform syntax
+library we vendor in phase 2.
 
 ## Project phase
 
@@ -382,6 +387,64 @@ upstream behavior is truly public runtime behavior.
 - Commit at file or coherent phase boundaries.
 - Commit messages are clear and human: no AI branding, no "Generated with"
   footers, no robot attribution, no `Co-Authored-By` lines unless the human asks.
+
+## Phase 2 — vendoring JetBrains Kotlin lexer + parser
+
+This phase is not Rust→Kotlin translation; it is Kotlin→Kotlin vendoring.
+Different discipline applies.
+
+Upstream sources to vendor from:
+
+- [`JetBrains/intellij-community:platform/syntax/`](https://github.com/JetBrains/intellij-community/tree/master/platform/syntax)
+  — the IntelliJ Platform multiplatform syntax engine. Apache 2.0. Already
+  Kotlin Multiplatform with `src/` (commonMain) plus `srcJvm/`, `srcJs/`,
+  `srcWasmJs/`, `srcNativeMain/` per-target source sets. The submodules
+  used downstream are at least `syntax-api` and `syntax-util`; pull
+  others (`syntax-extensions`, `syntax-tree`) as transitive needs surface.
+- [`JetBrains/kotlin:compiler/multiplatform-parsing/`](https://github.com/JetBrains/kotlin/tree/master/compiler/multiplatform-parsing)
+  — the Kotlin language's lexer + parser, built on top of the above.
+  Apache 2.0. Includes the JFlex-generated `KotlinFlexLexer.kt` (~1700
+  lines) and `KDocFlexLexer.kt`, plus `KotlinLexer`, `KtTokens`,
+  `KotlinParser`, `AbstractParser`, `KotlinParsing`, `KtNodeTypes`, and
+  the `parser/utils/` helpers.
+
+Vendoring recipe:
+
+1. **Identify the upstream file, repo, path, and commit sha.** Record all
+   four in the commit message.
+2. **Copy the file in verbatim.** Preserve the upstream's package path
+   (`com.intellij.platform.syntax.*` stays as-is; `org.jetbrains.kotlin.kmp.*`
+   stays as-is) so future upstream diffs apply cleanly. The Kotlin sources
+   live under `src/commonMain/kotlin/com/intellij/platform/syntax/...` and
+   `src/commonMain/kotlin/org/jetbrains/kotlin/kmp/...` for that reason.
+3. **Apply mechanical adjustments only:**
+   - Drop `@JvmStatic` annotations and `import kotlin.jvm.JvmStatic`
+     (forbidden in common KMP code per the Forbidden list above).
+   - Drop `import java.*` / `import javax.*` (forbidden). If the file
+     depends on something JVM-only, move it to a platform-specific
+     source set rather than rewriting it in commonMain.
+   - Replace transitive deps that don't ship for our KMP target set
+     with KMP-friendly equivalents only when strictly necessary.
+4. **Add a file-level provenance comment at the top, before the package
+   declaration:**
+   ```kotlin
+   // Vendored from <repo> @ <sha>
+   //   <path-relative-to-repo>
+   // Apache 2.0
+   ```
+   This is the phase-2 analog of the `port-lint: source` header used in
+   phase 1. `ast_distance` doesn't gate phase-2 files; the provenance
+   comment is for human review and future-upstream-diff tooling.
+5. **Do not "improve" the upstream code while vendoring.** Bring it in
+   modulo the mechanical adjustments. Optimizations and refactors come
+   later, as named follow-on commits.
+6. **Vendoring brings in transitive deps too.** If a vendored file
+   imports `com.intellij.platform.syntax.util.lexer.FlexAdapter`, vendor
+   `FlexAdapter` in the same pass. No placeholders.
+7. **Don't mix phase-1 and phase-2 commits.** A commit is either a
+   Rust→Kotlin port (`port-lint: source` header, kotlinmania porting
+   discipline) or a Kotlin vendor (`Vendored from` header, vendor
+   discipline). One commit shouldn't carry both.
 
 ## When unsure
 
