@@ -15,7 +15,8 @@ build/
 *.iml
 out/
 
-# Upstream Rust source — fetched on demand by tools/fetch-rust-source.sh
+# Upstream Rust source — placed manually by the team for reference while
+# porting. Never tracked. Source: rust-lang/rust:library/proc_macro/src/.
 tmp/
 !tmp/.gitkeep
 

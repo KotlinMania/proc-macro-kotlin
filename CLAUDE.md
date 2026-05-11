@@ -3,38 +3,37 @@
 ## Project Overview
 
 This is **proc-macro-kotlin**, a Kotlin Multiplatform port of Rust's
-compiler-internal [`proc_macro`](https://doc.rust-lang.org/proc_macro/) crate
-— the in-tree crate `rustc` makes available to procedural macros and that
-[`proc_macro2`](https://crates.io/crates/proc-macro2) dispatches to via its
-`Compiler` variant.
+compiler-internal [`proc_macro`](https://doc.rust-lang.org/proc_macro/)
+crate — the in-tree crate `rustc` makes available to procedural macros and
+that [`proc_macro2`](https://crates.io/crates/proc-macro2) dispatches to
+via its `Compiler` variant. The public API mirrors `proc_macro`'s shape
+so proc-macro2-kotlin can use this library as the realized Compiler
+variant.
 
-The design contract is **upstream Rust API, Kotlin-tokenizer backend.** The
-public types (`TokenStream`, `Span`, `Group`, `Delimiter`, `Ident`, `Punct`,
-`Spacing`, `Literal`, `TokenTree`, `LexError`, `token_stream::IntoIter`) keep
-their `proc_macro`-shaped surface. The implementations underneath bind to
-JetBrains' multiplatform Kotlin lexer + parser
-(`org.jetbrains.kotlin.kmp.lexer.KotlinLexer`, `KtTokens`, `KotlinParser`,
-under `compiler/multiplatform-parsing/` in the JetBrains Kotlin sources).
-That produces tokens whose spans point into real Kotlin source — the Kotlin
-analog of `rustc`'s in-tree `proc_macro::Span`.
+The work happens in two phases, in order:
 
-The upstream Rust source is the read-only translation oracle. Clone it into
-`tmp/proc-macro/` (gitignored) via `tools/fetch-rust-source.sh`. **Never edit
-`tmp/`.** Upstream lives at
-[`rust-lang/rust:library/proc_macro/src/`](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src).
-The `bridge` submodule of upstream `proc_macro` does not port — it is the
-FFI-style channel between rustc and a proc-macro process, with no Kotlin
-analog. Every other public type does port.
+1. **Port the Rust code so the shape is like the Rust code.** Faithful
+   Rust→Kotlin parity port of
+   [`rust-lang/rust:library/proc_macro/src/`](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src),
+   following the workspace porting rules in `AGENTS.md` (translator's
+   mindset, one Rust file → one Kotlin file, port-lint headers,
+   comments-are-content, no stubs, no `@Suppress`, etc.). The `bridge`
+   submodule does not port; rustc-internal FFI has no Kotlin analog.
+2. **Add the Kotlin pieces to make a real tokenizer.** Vendor JetBrains'
+   multiplatform Kotlin lexer + parser from
+   [`JetBrains/intellij-community:platform/syntax/`](https://github.com/JetBrains/intellij-community/tree/master/platform/syntax)
+   and
+   [`JetBrains/kotlin:compiler/multiplatform-parsing/`](https://github.com/JetBrains/kotlin/tree/master/compiler/multiplatform-parsing),
+   apply mechanical adjustments, and wire the `proc_macro`-shaped types
+   from phase 1 to call the vendored lexer for actual tokenization. Both
+   upstreams are Apache 2.0, matching this repo. Vendor discipline lives
+   in `AGENTS.md` "Phase 2 — vendoring JetBrains Kotlin lexer + parser".
 
-The porting order is **Rust API first, Kotlin backend welded in second.**
-Early commits land the upstream-shaped types with the most faithful Kotlin
-translation possible. Subsequent commits replace each implementation's lexer
-backend with `KotlinLexer` / `KtTokens` calls. Keep wiring layered so the
-backend swap is a localized change per type, not a rewrite.
-
-Both upstreams are Apache 2.0 (rustc/`library/proc_macro/` is dual MIT /
-Apache 2.0; the JetBrains Kotlin compiler is Apache 2.0). This repo is
-Apache 2.0.
+The upstream Rust source is the phase-1 read-only translation oracle.
+The team brings it in manually under `tmp/proc-macro/` (gitignored).
+**Never edit `tmp/`.** If upstream looks wrong, the bug is in the port or
+in your understanding of Rust, not in `tmp/`. The Rust source is never
+tracked.
 
 ## Translator's mindset
 
