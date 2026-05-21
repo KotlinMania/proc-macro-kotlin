@@ -6,7 +6,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class DelimiterTest {
@@ -513,5 +515,173 @@ class DiagnosticTest {
         // Phase-1 emit() renders to stdout; the only guarantee callers can
         // rely on at the unit-test level is that it does not raise.
         Diagnostic.new(Level.ERROR, "ok").error("nested").emit()
+    }
+}
+
+class ToTokensTest {
+    private fun streamOf(adapter: ToTokens): TokenStream {
+        val s = TokenStream.new()
+        adapter.toTokens(s)
+        return s
+    }
+
+    @Test
+    fun tokenTreeAdapterWritesSingleTree() {
+        val tree: TokenTree = TokenTree.Ident(Ident.new("hello", Span.callSite()))
+        assertEquals("hello", streamOf(tree.asToTokens()).toString())
+    }
+
+    @Test
+    fun tokenStreamAdapterPreservesContent() {
+        val source = TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Ident(Ident.new("a", Span.callSite())),
+                TokenTree.Punct(Punct.new(',', Spacing.ALONE)),
+                TokenTree.Ident(Ident.new("b", Span.callSite())),
+            ),
+        )
+        assertEquals(source.toString(), streamOf(source.asToTokens()).toString())
+    }
+
+    @Test
+    fun tokenStreamIntoTokenStreamReturnsSameInstance() {
+        // Upstream `impl ToTokens for TokenStream` overrides `into_token_stream`
+        // to return `self`; the Kotlin port returns the same TokenStream
+        // reference rather than a fresh copy.
+        val source = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Ident(Ident.new("x", Span.callSite()))),
+        )
+        assertSame(source, source.asToTokens().intoTokenStream())
+    }
+
+    @Test
+    fun literalAdapterEmitsLiteralText() {
+        val lit = Literal.string("hi")
+        assertEquals("\"hi\"", streamOf(lit.asToTokens()).toString())
+    }
+
+    @Test
+    fun identAdapterEmitsIdentifier() {
+        val ident = Ident.new("alpha", Span.callSite())
+        assertEquals("alpha", streamOf(ident.asToTokens()).toString())
+    }
+
+    @Test
+    fun punctAdapterEmitsPunctChar() {
+        val punct = Punct.new(',', Spacing.ALONE)
+        assertEquals(",", streamOf(punct.asToTokens()).toString())
+    }
+
+    @Test
+    fun groupAdapterEmitsDelimitedStream() {
+        val inner = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Ident(Ident.new("inner", Span.callSite()))),
+        )
+        val group = Group.new(Delimiter.PARENTHESIS, inner)
+        assertEquals("(inner)", streamOf(group.asToTokens()).toString())
+    }
+
+    @Test
+    fun nullableAdapterEmitsNothingForNull() {
+        val none: ToTokens? = null
+        assertEquals("", streamOf(none.orEmpty()).toString())
+    }
+
+    @Test
+    fun nullableAdapterForwardsForNonNull() {
+        val some: ToTokens? = Ident.new("y", Span.callSite()).asToTokens()
+        assertEquals("y", streamOf(some.orEmpty()).toString())
+    }
+
+    @Test
+    fun ubytePrimitiveEmitsU8Suffixed() {
+        assertEquals("42u8", streamOf((42u).toUByte().asToTokens()).toString())
+    }
+
+    @Test
+    fun ushortPrimitiveEmitsU16Suffixed() {
+        assertEquals("7u16", streamOf((7u).toUShort().asToTokens()).toString())
+    }
+
+    @Test
+    fun uintPrimitiveEmitsU32Suffixed() {
+        assertEquals("9u32", streamOf(9u.asToTokens()).toString())
+    }
+
+    @Test
+    fun ulongPrimitiveEmitsU64Suffixed() {
+        assertEquals("11u64", streamOf(11uL.asToTokens()).toString())
+    }
+
+    @Test
+    fun bytePrimitiveEmitsI8Suffixed() {
+        assertEquals("-3i8", streamOf((-3).toByte().asToTokens()).toString())
+    }
+
+    @Test
+    fun shortPrimitiveEmitsI16Suffixed() {
+        assertEquals("-5i16", streamOf((-5).toShort().asToTokens()).toString())
+    }
+
+    @Test
+    fun intPrimitiveEmitsI32Suffixed() {
+        assertEquals("-7i32", streamOf((-7).asToTokens()).toString())
+    }
+
+    @Test
+    fun longPrimitiveEmitsI64Suffixed() {
+        assertEquals("-9i64", streamOf((-9L).asToTokens()).toString())
+    }
+
+    @Test
+    fun floatPrimitiveEmitsF32Suffixed() {
+        assertEquals("1.5f32", streamOf(1.5f.asToTokens()).toString())
+    }
+
+    @Test
+    fun doublePrimitiveEmitsF64Suffixed() {
+        assertEquals("2.5f64", streamOf(2.5.asToTokens()).toString())
+    }
+
+    @Test
+    fun booleanEmitsKeywordIdent() {
+        assertEquals("true", streamOf(true.asToTokens()).toString())
+        assertEquals("false", streamOf(false.asToTokens()).toString())
+    }
+
+    @Test
+    fun charEmitsCharacterLiteral() {
+        assertEquals("'a'", streamOf('a'.asToTokens()).toString())
+    }
+
+    @Test
+    fun stringEmitsStringLiteral() {
+        assertEquals("\"hi\"", streamOf("hi".asToTokens()).toString())
+    }
+
+    @Test
+    fun byteArrayCStringEmitsCStringLiteral() {
+        val bytes = "hi".encodeToByteArray()
+        assertEquals("c\"hi\"", streamOf(bytes.asToTokensCString()).toString())
+    }
+
+    @Test
+    fun toTokenStreamDefaultBuildsFreshStream() {
+        val ident = Ident.new("z", Span.callSite())
+        val first = ident.asToTokens().toTokenStream()
+        val second = ident.asToTokens().toTokenStream()
+        assertEquals("z", first.toString())
+        assertEquals("z", second.toString())
+        // Default impl returns a freshly-constructed TokenStream each call.
+        assertNotSame(first, second)
+    }
+
+    @Test
+    fun intoTokenStreamDefaultMatchesToTokenStream() {
+        val lit = Literal.i32Suffixed(1)
+        assertEquals(
+            lit.asToTokens().toTokenStream().toString(),
+            lit.asToTokens().intoTokenStream().toString(),
+        )
     }
 }
