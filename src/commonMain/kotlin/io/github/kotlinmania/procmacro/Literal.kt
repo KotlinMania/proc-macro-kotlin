@@ -1,6 +1,9 @@
 // port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
 
+import io.github.kotlinmania.procmacro.rustcore.unescapeBytes
+import io.github.kotlinmania.procmacro.rustcore.unescapeChars
+
 /**
  * A literal string (`"hello"`), byte string (`b"hello"`), C string
  * (`c"hello"`), character (`'a'`), byte character (`b'a'`), an integer or
@@ -225,6 +228,127 @@ public class Literal internal constructor(
      * source offsets.
      */
     public fun subspan(range: IntRange): Span? = null
+
+    /**
+     * Returns the unescaped character value if this is a byte character
+     * literal. Mirrors upstream `Literal::byte_character_value`.
+     */
+    public fun byteCharacterValue(): Result<UByte> {
+        if (data.kind != LitKind.BYTE) {
+            return Result.failure(ConversionErrorKind.InvalidLiteralKind)
+        }
+        val bytes = unescapeBytes(data.symbol)
+            ?: return Result.failure(
+                ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("invalid escape in byte literal")),
+            )
+        if (bytes.size != 1) {
+            return Result.failure(
+                ConversionErrorKind.FailedToUnescape(
+                    EscapeError.Fatal("byte literal must contain exactly one byte"),
+                ),
+            )
+        }
+        return Result.success(bytes[0].toUByte())
+    }
+
+    /**
+     * Returns the unescaped character value if this is a character
+     * literal. Mirrors upstream `Literal::character_value`.
+     */
+    public fun characterValue(): Result<Char> {
+        if (data.kind != LitKind.CHAR) {
+            return Result.failure(ConversionErrorKind.InvalidLiteralKind)
+        }
+        val chars = unescapeChars(data.symbol)
+            ?: return Result.failure(
+                ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("invalid escape in char literal")),
+            )
+        if (chars.length != 1) {
+            return Result.failure(
+                ConversionErrorKind.FailedToUnescape(
+                    EscapeError.Fatal("char literal must contain exactly one character"),
+                ),
+            )
+        }
+        return Result.success(chars[0])
+    }
+
+    /**
+     * Returns the unescaped string value if this is a string literal
+     * (regular or raw). Mirrors upstream `Literal::str_value`.
+     */
+    public fun strValue(): Result<String> {
+        val kind = data.kind
+        return when {
+            kind == LitKind.STR -> {
+                if ('\\' !in data.symbol) {
+                    Result.success(data.symbol)
+                } else {
+                    val out = unescapeChars(data.symbol)
+                    if (out == null) {
+                        Result.failure(
+                            ConversionErrorKind.FailedToUnescape(
+                                EscapeError.Fatal("invalid escape in string literal"),
+                            ),
+                        )
+                    } else {
+                        Result.success(out)
+                    }
+                }
+            }
+            kind is LitKind.STR_RAW -> Result.success(data.symbol)
+            else -> Result.failure(ConversionErrorKind.InvalidLiteralKind)
+        }
+    }
+
+    /**
+     * Returns the unescaped C string bytes (with the terminating NUL)
+     * if this is a C string literal (regular or raw). Mirrors upstream
+     * `Literal::cstr_value`.
+     */
+    public fun cstrValue(): Result<ByteArray> {
+        val kind = data.kind
+        return when {
+            kind == LitKind.C_STR -> {
+                val bytes = unescapeBytes(data.symbol)
+                if (bytes == null) {
+                    Result.failure(
+                        ConversionErrorKind.FailedToUnescape(
+                            EscapeError.Fatal("invalid escape in c-string literal"),
+                        ),
+                    )
+                } else {
+                    Result.success(bytes + 0)
+                }
+            }
+            kind is LitKind.C_STR_RAW -> Result.success(data.symbol.encodeToByteArray() + 0)
+            else -> Result.failure(ConversionErrorKind.InvalidLiteralKind)
+        }
+    }
+
+    /**
+     * Returns the unescaped byte string bytes if this is a byte string
+     * literal (regular or raw). Mirrors upstream `Literal::byte_str_value`.
+     */
+    public fun byteStrValue(): Result<ByteArray> {
+        val kind = data.kind
+        return when {
+            kind == LitKind.BYTE_STR -> {
+                val bytes = unescapeBytes(data.symbol)
+                if (bytes == null) {
+                    Result.failure(
+                        ConversionErrorKind.FailedToUnescape(
+                            EscapeError.Fatal("invalid escape in byte-string literal"),
+                        ),
+                    )
+                } else {
+                    Result.success(bytes)
+                }
+            }
+            kind is LitKind.BYTE_STR_RAW -> Result.success(data.symbol.encodeToByteArray())
+            else -> Result.failure(ConversionErrorKind.InvalidLiteralKind)
+        }
+    }
 
     /**
      * Prints the literal as a string that should be losslessly

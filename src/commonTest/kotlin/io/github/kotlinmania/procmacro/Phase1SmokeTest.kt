@@ -227,6 +227,99 @@ class LiteralTest {
         assertFailsWith<IllegalArgumentException> { Literal.f32Suffixed(Float.POSITIVE_INFINITY) }
         assertFailsWith<IllegalArgumentException> { Literal.f64Unsuffixed(Double.NaN) }
     }
+
+    @Test
+    fun byteCharacterValueRoundTrips() {
+        val v: UByte = 0x41u
+        val recovered = Literal.byteCharacter(v.toByte()).byteCharacterValue().getOrThrow()
+        assertEquals(v, recovered)
+    }
+
+    @Test
+    fun byteCharacterValueRecoversNullByte() {
+        val recovered = Literal.byteCharacter(0x00).byteCharacterValue().getOrThrow()
+        assertEquals(0u.toUByte(), recovered)
+    }
+
+    @Test
+    fun byteCharacterValueRecoversHighByte() {
+        val recovered = Literal.byteCharacter(0xff.toByte()).byteCharacterValue().getOrThrow()
+        assertEquals(0xffu.toUByte(), recovered)
+    }
+
+    @Test
+    fun byteCharacterValueRejectsWrongKind() {
+        val err = Literal.string("hi").byteCharacterValue().exceptionOrNull()
+        assertTrue(err is ConversionErrorKind.InvalidLiteralKind)
+    }
+
+    @Test
+    fun characterValueRoundTrips() {
+        val recovered = Literal.character('q').characterValue().getOrThrow()
+        assertEquals('q', recovered)
+    }
+
+    @Test
+    fun characterValueRecoversEscapedQuote() {
+        val recovered = Literal.character('\'').characterValue().getOrThrow()
+        assertEquals('\'', recovered)
+    }
+
+    @Test
+    fun characterValueRejectsWrongKind() {
+        val err = Literal.string("c").characterValue().exceptionOrNull()
+        assertTrue(err is ConversionErrorKind.InvalidLiteralKind)
+    }
+
+    @Test
+    fun strValueRoundTripsPlainString() {
+        val recovered = Literal.string("hello").strValue().getOrThrow()
+        assertEquals("hello", recovered)
+    }
+
+    @Test
+    fun strValueRecoversEscapedSequences() {
+        val recovered = Literal.string("a\\b\nc").strValue().getOrThrow()
+        assertEquals("a\\b\nc", recovered)
+    }
+
+    @Test
+    fun strValueRejectsWrongKind() {
+        val err = Literal.character('x').strValue().exceptionOrNull()
+        assertTrue(err is ConversionErrorKind.InvalidLiteralKind)
+    }
+
+    @Test
+    fun cstrValueRoundTripsAppendingNul() {
+        val recovered = Literal.cString("hi".encodeToByteArray()).cstrValue().getOrThrow()
+        assertEquals(listOf<Byte>('h'.code.toByte(), 'i'.code.toByte(), 0), recovered.toList())
+    }
+
+    @Test
+    fun cstrValueRejectsWrongKind() {
+        val err = Literal.string("x").cstrValue().exceptionOrNull()
+        assertTrue(err is ConversionErrorKind.InvalidLiteralKind)
+    }
+
+    @Test
+    fun byteStrValueRoundTripsPlainBytes() {
+        val src = byteArrayOf(1, 2, 3)
+        val recovered = Literal.byteString(src).byteStrValue().getOrThrow()
+        assertEquals(src.toList(), recovered.toList())
+    }
+
+    @Test
+    fun byteStrValueRoundTripsEscapedBytes() {
+        val src = byteArrayOf(0x00, 0x09, 0x0a, 0xff.toByte())
+        val recovered = Literal.byteString(src).byteStrValue().getOrThrow()
+        assertEquals(src.toList(), recovered.toList())
+    }
+
+    @Test
+    fun byteStrValueRejectsWrongKind() {
+        val err = Literal.character('x').byteStrValue().exceptionOrNull()
+        assertTrue(err is ConversionErrorKind.InvalidLiteralKind)
+    }
 }
 
 class GroupTest {

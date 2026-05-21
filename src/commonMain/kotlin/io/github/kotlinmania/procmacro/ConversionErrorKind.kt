@@ -3,16 +3,27 @@ package io.github.kotlinmania.procmacro
 
 /**
  * Errors returned when trying to retrieve a literal unescaped value.
+ *
+ * Inherits from [Throwable] so that the [kotlin.Result] returned by the
+ * `Literal::*_value` methods can carry an instance directly. Upstream
+ * Rust returns `Result<T, ConversionErrorKind>`; Kotlin's `Result<T>`
+ * fixes the error type at [Throwable], so the conversion-error sealed
+ * hierarchy slots in there directly rather than via a wrapper.
  */
-public sealed class ConversionErrorKind {
+public sealed class ConversionErrorKind : Throwable() {
     /**
-     * The literal failed to be escaped. See [EscapeError] for more
+     * The literal failed to be unescaped. See [EscapeError] for more
      * information.
      */
-    public data class FailedToUnescape(public val error: EscapeError) : ConversionErrorKind()
+    public class FailedToUnescape(public val error: EscapeError) : ConversionErrorKind() {
+        override fun equals(other: Any?): Boolean =
+            other is FailedToUnescape && other.error == error
+        override fun hashCode(): Int = error.hashCode()
+        override fun toString(): String = "FailedToUnescape($error)"
+    }
 
     /** Trying to convert a literal with the wrong type. */
-    public data object InvalidLiteralKind : ConversionErrorKind()
+    public object InvalidLiteralKind : ConversionErrorKind()
 }
 
 /**
