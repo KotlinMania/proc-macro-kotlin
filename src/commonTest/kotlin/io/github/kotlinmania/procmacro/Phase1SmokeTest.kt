@@ -168,6 +168,59 @@ class LiteralTest {
     }
 
     @Test
+    fun stringPassesSpaceThrough() {
+        // Upstream `string()` uses escape_nonascii=false, escape_double_quote=true,
+        // escape_single_quote=false. Space (0x20) is printable ASCII and must
+        // pass through unchanged — only the null byte renders as `\0`.
+        assertEquals("\"a b c\"", Literal.string("a b c").toString())
+    }
+
+    @Test
+    fun stringPassesNonAsciiThrough() {
+        // escape_nonascii=false means UTF-8 code points like `é` (U+00E9)
+        // render verbatim rather than as `\xNN` byte escapes.
+        assertEquals("\"café\"", Literal.string("café").toString())
+    }
+
+    @Test
+    fun stringDoesNotEscapeSingleQuote() {
+        // String literals leave `'` unescaped per upstream EscapeOptions.
+        assertEquals("\"it's\"", Literal.string("it's").toString())
+    }
+
+    @Test
+    fun characterDoesNotEscapeDoubleQuote() {
+        // Character literals leave `"` unescaped per upstream EscapeOptions.
+        assertEquals("'\"'", Literal.character('"').toString())
+    }
+
+    @Test
+    fun byteCharacterEscapesNonAscii() {
+        // byte_character uses escape_nonascii=true, so 0xff renders as \xff.
+        assertEquals("b'\\xff'", Literal.byteCharacter(0xff.toByte()).toString())
+        // 0x00 always renders as \0.
+        assertEquals("b'\\0'", Literal.byteCharacter(0x00).toString())
+        // Printable ASCII passes through.
+        assertEquals("b'a'", Literal.byteCharacter('a'.code.toByte()).toString())
+    }
+
+    @Test
+    fun byteStringNonAsciiUsesHexEscapes() {
+        // byte_string uses escape_nonascii=true: the high byte 0xc3 is not
+        // re-interpreted as the lead byte of a UTF-8 sequence.
+        val bytes = byteArrayOf(0xc3.toByte(), 0xa9.toByte())
+        assertEquals("b\"\\xc3\\xa9\"", Literal.byteString(bytes).toString())
+    }
+
+    @Test
+    fun cStringPreservesUtf8() {
+        // c_string uses escape_nonascii=false, so well-formed UTF-8 round-trips
+        // as Unicode code points rather than per-byte hex escapes.
+        val bytes = "café".encodeToByteArray()
+        assertEquals("c\"café\"", Literal.cString(bytes).toString())
+    }
+
+    @Test
     fun rejectsNonFiniteFloat() {
         assertFailsWith<IllegalArgumentException> { Literal.f32Suffixed(Float.POSITIVE_INFINITY) }
         assertFailsWith<IllegalArgumentException> { Literal.f64Unsuffixed(Double.NaN) }

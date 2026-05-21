@@ -134,24 +134,59 @@ public class Literal internal constructor(
         // ----- string / char / byte factories -----
 
         /** String literal. */
-        public fun string(string: String): Literal =
-            Literal(literalAt(LitKind.STR, escapeForStr(string), suffix = null))
+        public fun string(string: String): Literal {
+            val escape = EscapeOptions(
+                escapeSingleQuote = false,
+                escapeDoubleQuote = true,
+                escapeNonAscii = false,
+            )
+            val repr = escapeBytes(string.encodeToByteArray(), escape)
+            return Literal(literalAt(LitKind.STR, repr, suffix = null))
+        }
 
         /** Character literal. */
-        public fun character(ch: Char): Literal =
-            Literal(literalAt(LitKind.CHAR, escapeForChar(ch.toString()), suffix = null))
+        public fun character(ch: Char): Literal {
+            val escape = EscapeOptions(
+                escapeSingleQuote = true,
+                escapeDoubleQuote = false,
+                escapeNonAscii = false,
+            )
+            val repr = escapeBytes(ch.toString().encodeToByteArray(), escape)
+            return Literal(literalAt(LitKind.CHAR, repr, suffix = null))
+        }
 
         /** Byte character literal. */
-        public fun byteCharacter(byte: Byte): Literal =
-            Literal(literalAt(LitKind.BYTE, escapeForByteChar(byte), suffix = null))
+        public fun byteCharacter(byte: Byte): Literal {
+            val escape = EscapeOptions(
+                escapeSingleQuote = true,
+                escapeDoubleQuote = false,
+                escapeNonAscii = true,
+            )
+            val repr = escapeBytes(byteArrayOf(byte), escape)
+            return Literal(literalAt(LitKind.BYTE, repr, suffix = null))
+        }
 
         /** Byte string literal. */
-        public fun byteString(bytes: ByteArray): Literal =
-            Literal(literalAt(LitKind.BYTE_STR, escapeForByteStr(bytes), suffix = null))
+        public fun byteString(bytes: ByteArray): Literal {
+            val escape = EscapeOptions(
+                escapeSingleQuote = false,
+                escapeDoubleQuote = true,
+                escapeNonAscii = true,
+            )
+            val repr = escapeBytes(bytes, escape)
+            return Literal(literalAt(LitKind.BYTE_STR, repr, suffix = null))
+        }
 
         /** C string literal. */
-        public fun cString(string: ByteArray): Literal =
-            Literal(literalAt(LitKind.C_STR, escapeForStr(string.decodeToString()), suffix = null))
+        public fun cString(string: ByteArray): Literal {
+            val escape = EscapeOptions(
+                escapeSingleQuote = false,
+                escapeDoubleQuote = true,
+                escapeNonAscii = false,
+            )
+            val repr = escapeBytes(string, escape)
+            return Literal(literalAt(LitKind.C_STR, repr, suffix = null))
+        }
 
         private fun integer(value: String, suffix: String?): Literal =
             Literal(literalAt(LitKind.INTEGER, value, suffix))
@@ -252,90 +287,4 @@ internal sealed class LitKind {
     internal data object INTEGER : LitKind()
     internal data object FLOAT : LitKind()
     internal data object ERR_WITH_GUAR : LitKind()
-}
-
-// ----- escaping helpers (port-lint: source src/escape.rs in spirit) -----
-
-/**
- * Escape a string for embedding inside a `"..."` literal token. Phase-1
- * implements only the minimum subset the [Literal.string] factory needs
- * to produce a lossless round-trippable representation: backslash,
- * double-quote, and the standard ASCII control escapes.
- *
- * The full upstream `escape.rs` adds options for byte vs unicode escapes
- * and for non-ASCII handling; that lands when [Literal.byteString] and
- * [Literal.cString] need it.
- */
-internal fun escapeForStr(string: String): String = buildString(string.length) {
-    for (ch in string) {
-        when (ch) {
-            '\\' -> append("\\\\")
-            '"' -> append("\\\"")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            ' ' -> append("\\0")
-            else -> if (ch.code in 0x20..0x7e || ch.code >= 0x80) {
-                append(ch)
-            } else {
-                append("\\x")
-                append(ch.code.toString(16).padStart(2, '0'))
-            }
-        }
-    }
-}
-
-internal fun escapeForChar(string: String): String = buildString(string.length) {
-    for (ch in string) {
-        when (ch) {
-            '\\' -> append("\\\\")
-            '\'' -> append("\\'")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            ' ' -> append("\\0")
-            else -> if (ch.code in 0x20..0x7e || ch.code >= 0x80) {
-                append(ch)
-            } else {
-                append("\\x")
-                append(ch.code.toString(16).padStart(2, '0'))
-            }
-        }
-    }
-}
-
-internal fun escapeForByteChar(byte: Byte): String = buildString(4) {
-    val u = byte.toInt() and 0xff
-    when {
-        u.toChar() == '\\' -> append("\\\\")
-        u.toChar() == '\'' -> append("\\'")
-        u == 0x0a -> append("\\n")
-        u == 0x0d -> append("\\r")
-        u == 0x09 -> append("\\t")
-        u == 0x00 -> append("\\0")
-        u in 0x20..0x7e -> append(u.toChar())
-        else -> {
-            append("\\x")
-            append(u.toString(16).padStart(2, '0'))
-        }
-    }
-}
-
-internal fun escapeForByteStr(bytes: ByteArray): String = buildString(bytes.size) {
-    for (b in bytes) {
-        val u = b.toInt() and 0xff
-        when {
-            u.toChar() == '\\' -> append("\\\\")
-            u.toChar() == '"' -> append("\\\"")
-            u == 0x0a -> append("\\n")
-            u == 0x0d -> append("\\r")
-            u == 0x09 -> append("\\t")
-            u == 0x00 -> append("\\0")
-            u in 0x20..0x7e -> append(u.toChar())
-            else -> {
-                append("\\x")
-                append(u.toString(16).padStart(2, '0'))
-            }
-        }
-    }
 }
