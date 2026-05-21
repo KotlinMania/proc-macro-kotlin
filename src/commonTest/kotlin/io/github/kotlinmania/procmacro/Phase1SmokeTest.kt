@@ -391,3 +391,127 @@ class ConversionErrorKindTest {
         assertFalse(e.isFatal())
     }
 }
+
+class LevelTest {
+    @Test
+    fun fourVariants() {
+        assertEquals(4, Level.entries.size)
+        assertNotEquals(Level.ERROR, Level.WARNING)
+        assertNotEquals(Level.NOTE, Level.HELP)
+    }
+}
+
+class MultiSpanTest {
+    @Test
+    fun singleSpanWrapsAsOneElementList() {
+        val span = Span.callSite()
+        assertEquals(listOf(span), span.toMultiSpan().intoSpans())
+    }
+
+    @Test
+    fun listWrapsAsSameElements() {
+        val spans = listOf(Span.callSite(), Span.mixedSite(), Span.defSite())
+        assertEquals(spans, spans.toMultiSpan().intoSpans())
+    }
+
+    @Test
+    fun listWrapTakesDefensiveCopy() {
+        val source = mutableListOf(Span.callSite())
+        val multi = source.toMultiSpan()
+        source.add(Span.mixedSite())
+        // intoSpans() returns the snapshot taken at materialization time.
+        assertEquals(1, multi.intoSpans().size)
+    }
+}
+
+class DiagnosticTest {
+    @Test
+    fun newCarriesLevelAndMessage() {
+        val diag = Diagnostic.new(Level.ERROR, "boom")
+        assertEquals(Level.ERROR, diag.level())
+        assertEquals("boom", diag.message())
+        assertTrue(diag.spans().isEmpty())
+        assertFalse(diag.children().hasNext())
+    }
+
+    @Test
+    fun spannedRecordsSpans() {
+        val span = Span.callSite()
+        val diag = Diagnostic.spanned(span.toMultiSpan(), Level.WARNING, "watch out")
+        assertEquals(Level.WARNING, diag.level())
+        assertEquals("watch out", diag.message())
+        assertEquals(listOf(span), diag.spans())
+    }
+
+    @Test
+    fun setLevelAndMessageMutateInPlace() {
+        val diag = Diagnostic.new(Level.NOTE, "hi")
+        diag.setLevel(Level.HELP)
+        diag.setMessage("try this")
+        assertEquals(Level.HELP, diag.level())
+        assertEquals("try this", diag.message())
+    }
+
+    @Test
+    fun setSpansReplacesViaMultiSpan() {
+        val diag = Diagnostic.new(Level.ERROR, "bad")
+        val replacement = listOf(Span.callSite(), Span.mixedSite())
+        diag.setSpans(replacement.toMultiSpan())
+        assertEquals(replacement, diag.spans())
+    }
+
+    @Test
+    fun chainableChildMethodsAddInOrder() {
+        val parent = Diagnostic.new(Level.ERROR, "root")
+            .error("err child")
+            .warning("warn child")
+            .note("note child")
+            .help("help child")
+        val kids = parent.children().asSequence().toList()
+        assertEquals(4, kids.size)
+        assertEquals(Level.ERROR, kids[0].level())
+        assertEquals("err child", kids[0].message())
+        assertEquals(Level.WARNING, kids[1].level())
+        assertEquals(Level.NOTE, kids[2].level())
+        assertEquals(Level.HELP, kids[3].level())
+    }
+
+    @Test
+    fun spannedChildMethodsCarrySpansAndLevel() {
+        val span = Span.callSite()
+        val parent = Diagnostic.new(Level.ERROR, "root")
+            .spanError(span.toMultiSpan(), "err here")
+            .spanWarning(span.toMultiSpan(), "warn here")
+            .spanNote(span.toMultiSpan(), "note here")
+            .spanHelp(span.toMultiSpan(), "help here")
+        val kids = parent.children().asSequence().toList()
+        assertEquals(4, kids.size)
+        for (kid in kids) {
+            assertEquals(listOf(span), kid.spans())
+        }
+        assertEquals(Level.ERROR, kids[0].level())
+        assertEquals(Level.WARNING, kids[1].level())
+        assertEquals(Level.NOTE, kids[2].level())
+        assertEquals(Level.HELP, kids[3].level())
+    }
+
+    @Test
+    fun childrenIteratorIsFresh() {
+        val parent = Diagnostic.new(Level.ERROR, "root").note("child")
+        val a = parent.children()
+        val b = parent.children()
+        assertTrue(a.hasNext())
+        assertTrue(b.hasNext())
+        a.next()
+        assertFalse(a.hasNext())
+        // The second iterator is independent: it still has the child.
+        assertTrue(b.hasNext())
+    }
+
+    @Test
+    fun emitDoesNotThrow() {
+        // Phase-1 emit() renders to stdout; the only guarantee callers can
+        // rely on at the unit-test level is that it does not raise.
+        Diagnostic.new(Level.ERROR, "ok").error("nested").emit()
+    }
+}
