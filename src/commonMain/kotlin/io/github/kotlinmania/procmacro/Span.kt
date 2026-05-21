@@ -8,6 +8,20 @@ public class Span internal constructor(
     internal val data: SpanData,
 ) {
     public companion object {
+        /**
+         * Recover a [Span] previously serialized by [saveSpan].
+         *
+         * Upstream this is the inverse of `Span::save_span`: an opaque
+         * `usize` ID round-trips to the original span across the
+         * `bridge::client` IPC boundary. The bridge submodule is documented
+         * as non-portable; phase 1 keeps an in-process registry so that
+         * `quote_span` round-trips spans within a single JVM/Kotlin runtime
+         * invocation. Cross-process span recovery is a phase-3 concern
+         * once a Kotlin span server is selected.
+         */
+        public fun recoverProcMacroSpan(id: Int): Span =
+            SpanRegistry.recover(id)
+
         /** A span that resolves at the macro definition site. */
         public fun defSite(): Span = Span(SpanData.DefSite)
 
@@ -126,6 +140,15 @@ public class Span internal constructor(
      */
     public fun locatedAt(other: Span): Span = other.resolvedAt(this)
 
+    /**
+     * Serialize this [Span] to an opaque identifier recoverable by
+     * [Span.recoverProcMacroSpan]. Upstream this is the
+     * `bridge::client`-side counterpart of `recover_proc_macro_span`.
+     * See [Span.recoverProcMacroSpan] for the phase-1 in-process
+     * registry caveat.
+     */
+    public fun saveSpan(): Int = SpanRegistry.save(this)
+
     /** Compares two spans to see if they're equal. */
     public fun eq(other: Span): Boolean = data == other.data
 
@@ -170,6 +193,29 @@ internal sealed class SpanData {
         override fun byteRange(): IntRange = range
         override fun toString(): String = "Span($range)"
     }
+}
+
+/**
+ * In-process backing store for [Span.saveSpan] / [Span.recoverProcMacroSpan].
+ *
+ * Upstream Rust uses `bridge::client` to round-trip span identifiers
+ * across the proc-macro/rustc IPC boundary. The bridge submodule does
+ * not port; this registry is the phase-1 stand-in that lets `quote_span`
+ * preserve span identity within a single Kotlin runtime invocation.
+ * Cross-process recovery is a phase-3 concern once a Kotlin span server
+ * is selected.
+ */
+internal object SpanRegistry {
+    private val saved: MutableList<Span> = mutableListOf()
+
+    fun save(span: Span): Int {
+        saved.add(span)
+        return saved.size - 1
+    }
+
+    fun recover(id: Int): Span =
+        saved.getOrNull(id)
+            ?: throw IllegalArgumentException("SpanRegistry: no span saved with id=$id")
 }
 
 /**

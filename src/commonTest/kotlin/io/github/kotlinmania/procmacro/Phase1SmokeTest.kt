@@ -778,3 +778,228 @@ class ToTokensTest {
         )
     }
 }
+
+class RepetitionIteratorCheckTest {
+    @Test
+    fun markersAreDistinct() {
+        assertNotSame(HasIterator as RepetitionIteratorCheck, ThereIsNoIteratorInRepetition)
+    }
+
+    @Test
+    fun orTruthTable() {
+        // Mirrors the upstream four-way BitOr impls.
+        assertSame(ThereIsNoIteratorInRepetition, ThereIsNoIteratorInRepetition or ThereIsNoIteratorInRepetition)
+        assertSame(HasIterator as RepetitionIteratorCheck, HasIterator or ThereIsNoIteratorInRepetition)
+        assertSame(HasIterator as RepetitionIteratorCheck, ThereIsNoIteratorInRepetition or HasIterator)
+        assertSame(HasIterator as RepetitionIteratorCheck, HasIterator or HasIterator)
+    }
+}
+
+class RepInterpTest {
+    @Test
+    fun holdsValueAndYieldsItOnNextShadow() {
+        val r = RepInterp(42)
+        assertEquals(42, r.value)
+        assertEquals(42, r.nextShadow())
+    }
+
+    @Test
+    fun iteratorAdapterForwards() {
+        val r = RepInterp(listOf("a", "b").iterator())
+        val pulled = r.iteratorAdapter().asSequence().toList()
+        assertEquals(listOf("a", "b"), pulled)
+    }
+
+    @Test
+    fun quoteIntoIterOverListWrapper() {
+        val (it, marker) = RepInterp(listOf(1, 2, 3)).quoteIntoIter()
+        assertSame(HasIterator, marker)
+        assertEquals(listOf(1, 2, 3), it.asSequence().toList())
+    }
+}
+
+class QuoteExtTest {
+    @Test
+    fun iteratorQuoteIntoIterReturnsHasIter() {
+        val (out, marker) = listOf("x").iterator().quoteIntoIter()
+        assertSame(HasIterator, marker)
+        assertTrue(out.hasNext())
+        assertEquals("x", out.next())
+    }
+
+    @Test
+    fun listQuoteIntoIterReturnsHasIter() {
+        val (out, marker) = listOf(1, 2).quoteIntoIter()
+        assertSame(HasIterator, marker)
+        assertEquals(listOf(1, 2), out.asSequence().toList())
+    }
+
+    @Test
+    fun arrayQuoteIntoIterReturnsHasIter() {
+        val (out, marker) = arrayOf("p", "q").quoteIntoIter()
+        assertSame(HasIterator, marker)
+        assertEquals(listOf("p", "q"), out.asSequence().toList())
+    }
+
+    @Test
+    fun setQuoteIntoIterReturnsHasIter() {
+        // LinkedHashSet preserves insertion order in commonMain stdlib.
+        val src: Set<String> = linkedSetOf("a", "b")
+        val (out, marker) = src.quoteIntoIter()
+        assertSame(HasIterator, marker)
+        assertEquals(listOf("a", "b"), out.asSequence().toList())
+    }
+}
+
+class QuoteSpanRegistryTest {
+    @Test
+    fun saveSpanIdRoundTrips() {
+        val original = Span.mixedSite()
+        val id = original.saveSpan()
+        val recovered = Span.recoverProcMacroSpan(id)
+        assertTrue(original.eq(recovered))
+    }
+
+    @Test
+    fun missingIdThrows() {
+        assertFailsWith<IllegalArgumentException> {
+            Span.recoverProcMacroSpan(Int.MAX_VALUE)
+        }
+    }
+}
+
+class QuoteSpanTest {
+    @Test
+    fun quoteSpanEmbedsRecoverCall() {
+        val procCrate = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Ident(Ident.new("crate", Span.defSite()))),
+        )
+        val rendered = quoteSpan(procCrate, Span.callSite()).toString()
+        assertTrue(rendered.contains("Span"), "expected Span in: $rendered")
+        assertTrue(rendered.contains("recover_proc_macro_span"), "expected recover call in: $rendered")
+    }
+}
+
+class QuoteTest {
+    @Test
+    fun emptyInputProducesTokenStreamNewCall() {
+        val out = quote(TokenStream.new()).toString()
+        assertTrue(out.contains("TokenStream"), "missing TokenStream in: $out")
+        assertTrue(out.contains("new"), "missing new in: $out")
+    }
+
+    @Test
+    fun identQuoteIncludesIdentCtorAndOriginalText() {
+        val input = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Ident(Ident.new("hello", Span.callSite()))),
+        )
+        val out = quote(input).toString()
+        assertTrue(out.contains("\"hello\""), "expected literal hello in: $out")
+        assertTrue(out.contains("Ident"), "expected Ident ctor reference in: $out")
+    }
+
+    @Test
+    fun punctQuoteEmbedsPunctCtor() {
+        val input = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Punct(Punct.new(',', Spacing.ALONE))),
+        )
+        val out = quote(input).toString()
+        assertTrue(out.contains("Punct"), "expected Punct ctor in: $out")
+        assertTrue(out.contains("Alone"), "expected Spacing::Alone in: $out")
+        assertTrue(out.contains("','"), "expected ',' char literal in: $out")
+    }
+
+    @Test
+    fun groupQuoteEmitsDelimiterAndRecursesInto() {
+        val inner = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Ident(Ident.new("inside", Span.callSite()))),
+        )
+        val input = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Group(Group.new(Delimiter.BRACKET, inner))),
+        )
+        val out = quote(input).toString()
+        assertTrue(out.contains("Bracket"), "expected Delimiter::Bracket in: $out")
+        assertTrue(out.contains("\"inside\""), "expected nested inside literal in: $out")
+    }
+
+    @Test
+    fun literalQuoteEmbedsLiteralText() {
+        val input = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Literal(Literal.string("payload"))),
+        )
+        val out = quote(input).toString()
+        assertTrue(out.contains("payload"), "expected payload text in: $out")
+        assertTrue(out.contains("parse"), "expected parse call in: $out")
+    }
+
+    @Test
+    fun trailingDollarRejected() {
+        val input = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Punct(Punct.new('$', Spacing.ALONE))),
+        )
+        assertFailsWith<IllegalArgumentException> { quote(input) }
+    }
+
+    @Test
+    fun dollarFollowedByGroupExpandsAsRepetition() {
+        // The repetition body must declare a meta-var with `$ident` so
+        // the expansion produces the per-meta-var `quote_into_iter` setup.
+        val rep = TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                TokenTree.Ident(Ident.new("v", Span.callSite())),
+            ),
+        )
+        val input = TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                TokenTree.Group(Group.new(Delimiter.PARENTHESIS, rep)),
+                TokenTree.Punct(Punct.new('*', Spacing.ALONE)),
+            ),
+        )
+        val out = quote(input).toString()
+        assertTrue(out.contains("while"), "expected while in repetition: $out")
+        assertTrue(out.contains("quote_into_iter"), "expected quote_into_iter call: $out")
+    }
+
+    @Test
+    fun dollarFollowedByGroupWithoutStarRejected() {
+        val rep = TokenStream.fromTokenTrees(
+            listOf(TokenTree.Ident(Ident.new("v", Span.callSite()))),
+        )
+        val input = TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                TokenTree.Group(Group.new(Delimiter.PARENTHESIS, rep)),
+                TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
+            ),
+        )
+        assertFailsWith<IllegalArgumentException> { quote(input) }
+    }
+
+    @Test
+    fun dollarFollowedByIdentEmitsInterpolation() {
+        val input = TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                TokenTree.Ident(Ident.new("var", Span.callSite())),
+            ),
+        )
+        val out = quote(input).toString()
+        assertTrue(out.contains("ToTokens"), "expected ToTokens dispatch: $out")
+        assertTrue(out.contains("var"), "expected interpolated var ident: $out")
+    }
+
+    @Test
+    fun dollarDollarPassesThroughAsLiteralDollar() {
+        val input = TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+            ),
+        )
+        // No throw: the second dollar resets afterDollar and the loop
+        // moves on without emitting the escape.
+        quote(input)
+    }
+}
