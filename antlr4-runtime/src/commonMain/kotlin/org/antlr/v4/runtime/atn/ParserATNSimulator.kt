@@ -331,8 +331,8 @@ open class ParserATNSimulator(
         outerContext: ParserRuleContext?,
     ): Int {
         var outerContext: ParserRuleContext? = outerContext
-        if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug ||
-            org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.trace_atn_sim
+        if (debug ||
+            trace_atn_sim
         ) {
             println(
                 "adaptivePredict decision " + decision +

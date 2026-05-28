@@ -17,21 +17,22 @@ open class DFASerializer(
 
     private val vocabulary: Vocabulary
 
-    @Deprecated
     @Deprecated("Use {@link #DFASerializer(DFA, Vocabulary)} instead.")
-    constructor(dfa: DFA?, tokenNames: Array<String?>?) : this(dfa!!, VocabularyImpl.fromTokenNames(tokenNames))
+    @Suppress("UNCHECKED_CAST")
+    constructor(dfa: DFA?, tokenNames: Array<out String?>?) : this(dfa!!, VocabularyImpl.fromTokenNames(tokenNames as Array<String>?))
 
     init {
         this.dfa = dfa
         this.vocabulary = vocabulary
     }
 
-    fun toString(): String? {
+    override fun toString(): String? {
         if (dfa.s0 == null) return null
         val buf: StringBuilder = StringBuilder()
+        val states = dfa.getStates()
         for (s in states) {
             var n = 0
-            if (s.edges != null) n = s.edges.size
+            if (s.edges != null) n = s.edges!!.size
             for (i in 0..<n) {
                 val t: DFAState? = s.edges!![i]
                 if (t != null && t.stateNumber != Int.MAX_VALUE) {
@@ -53,7 +54,7 @@ open class DFASerializer(
         return output
     }
 
-    protected fun getEdgeLabel(i: Int): String = vocabulary.getDisplayName(i - 1)
+    protected open fun getEdgeLabel(i: Int): String = vocabulary.getDisplayName(i - 1)
 
     protected fun getStateString(s: DFAState): String? {
         val n: Int = s.stateNumber

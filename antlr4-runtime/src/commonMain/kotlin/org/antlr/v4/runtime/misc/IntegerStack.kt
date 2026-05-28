@@ -14,7 +14,7 @@ class IntStack : IntList {
 
     constructor(capacity: Int) : super(capacity)
 
-    constructor(list: IntStack?) : super(list)
+    constructor(list: IntStack?) : super(list!!)
 
     fun push(value: Int) {
         add(value)

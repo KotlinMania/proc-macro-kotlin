@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.VocabularyImpl
 import org.antlr.v4.runtime.atn.ATNConfigSet
 import org.antlr.v4.runtime.atn.DecisionState
 import org.antlr.v4.runtime.atn.StarLoopEntryState
+import kotlin.synchronized
 
 class DFA(
     atnStartState: DecisionState?,
@@ -29,7 +30,7 @@ class DFA(
     constructor(atnStartState: DecisionState) : this(atnStartState, 0)
 
     init {
-        this.atnStartState = atnStartState
+        this.atnStartState = atnStartState!!
         this.decision = decision
 
         var precedenceDfa = false
@@ -51,10 +52,10 @@ class DFA(
 
     fun getPrecedenceStartState(precedence: Int): DFAState? {
         check(isPrecedenceDfa()) { "Only precedence DFAs may contain a precedence start state." }
-        if (precedence < 0 || precedence >= s0!!.edges.size) {
+        if (precedence < 0 || precedence >= s0!!.edges!!.size) {
             return null
         }
-        return s0!!.edges[precedence]
+        return s0!!.edges!![precedence]
     }
 
     fun setPrecedenceStartState(
@@ -64,10 +65,10 @@ class DFA(
         check(isPrecedenceDfa()) { "Only precedence DFAs may contain a precedence start state." }
         if (precedence < 0) return
         synchronized(s0!!) {
-            if (precedence >= s0!!.edges.size) {
-                s0!!.edges = s0!!.edges.copyOf(precedence + 1)
+            if (precedence >= s0!!.edges!!.size) {
+                s0!!.edges = s0!!.edges!!.copyOf(precedence + 1)
             }
-            s0!!.edges[precedence] = startState
+            s0!!.edges!![precedence] = startState
         }
     }
 
@@ -89,16 +90,16 @@ class DFA(
     @Deprecated("Use toString(Vocabulary) instead.")
     fun toString(tokenNames: Array<String?>?): String {
         if (s0 == null) return ""
-        return DFASerializer(this, tokenNames).toString()
+        return DFASerializer(this, tokenNames).toString() ?: ""
     }
 
     fun toString(vocabulary: Vocabulary): String {
         if (s0 == null) return ""
-        return DFASerializer(this, vocabulary).toString()
+        return DFASerializer(this, vocabulary).toString() ?: ""
     }
 
     fun toLexerString(): String {
         if (s0 == null) return ""
-        return LexerDFASerializer(this).toString()
+        return LexerDFASerializer(this).toString() ?: ""
     }
 }
