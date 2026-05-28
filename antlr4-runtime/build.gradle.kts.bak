@@ -1,0 +1,27 @@
+plugins {
+    kotlin("multiplatform")
+}
+
+group = "io.github.kotlinmania"
+version = "0.1.1"
+
+kotlin {
+    jvm()
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                api(kotlin("stdlib"))
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+    }
+}
