@@ -535,3 +535,126 @@ batch-translated in IntelliJ — they use only `java.util.*`.
 - `java_cup.runtime.Symbol` → Kotlin equivalent
 - `@JvmStatic` / `companion object` restructuring
 PLAN_EOF
+
+---
+
+## JFlex ecosystem discovery — the Kotlin emitter chain
+
+The Kotlin compiler's own `multiplatform-parsing/build.gradle.kts` reveals
+the exact toolchain JetBrains uses to generate `KotlinFlexLexer.kt`:
+
+```
+Kotlin.flex ──→ jflex.Main --output-mode kotlin
+              --skel idea-flex-kotlin.skeleton
+              ──→ KotlinFlexLexer.kt
+```
+
+**JFlex already has a production Kotlin target.** The `--output-mode kotlin`
+flag and the Kotlin-specific emitters are what JetBrains itself uses to
+produce the lexer that ships in the Kotlin compiler. Our `tmp/jflex/`
+contains this codebase, already partially ported to Kotlin:
+
+### JFlex core: already in Kotlin (12,991 lines)
+
+| File | Lines | Role |
+|---|---|---|
+| `generator/KotlinEmitter.kt` | 1,469 | **The Kotlin output emitter** — generates `.kt` lexer files |
+| `generator/Emitter.kt` | 1,477 | Base emitter (Java target) |
+| `core/NFA.kt` | 929 | NFA construction from regex |
+| `dfa/DFA.kt` | 901 | DFA generation and minimization |
+| `core/RegExp.kt` | 752 | Regular expression parser |
+| `core/KotlinAbstractLexScan.kt` | 442 | Kotlin-mode `.flex` scanner |
+| `core/AbstractLexScan.kt` | 435 | Base `.flex` scanner |
+| `logging/Out.kt` | 426 | Logging |
+| `state/StateSet.kt` | 418 | State set management |
+| + 46 more Kotlin files | ~7,842 | Supporting infrastructure |
+
+### JFlex core: remaining Java (2,145 lines non-data, 611K Unicode data)
+
+Only two non-Unicode Java files remain: `Main.java` (408 lines) and
+`CMapBlock.java` (45 lines). The Unicode data tables (19 files, 611K
+lines) are auto-generated lookup tables — they can stay as-is or be
+converted mechanically; they carry no logic.
+
+### CUP2 LALR(1)/LR(1) parser generator: fully in Kotlin
+
+`tmp/jflex/third_party/edu/tum/cup2/` is a complete LALR(1)/LR(1)
+parser generator, already fully ported to Kotlin. It provides:
+
+- `LR0Generator`, `LR1Generator`, `LALR1Generator`, `LALR1SCCGenerator`,
+  `LALR1ParallelGenerator`, `LLkGenerator` — the full generator hierarchy
+- `Automaton`, `AutomatonFactory`, `LR0AutomatonFactory`,
+  `LR1AutomatonFactory`, `LALR1AutomatonFactory` — automaton construction
+- `Grammar`, `Production`, `NonTerminal`, `Terminal`, `Symbol` — grammar model
+- `LRParser`, `LLkParser` — runtime parsers
+- `LRActionTable`, `LRGoToTable`, `LRParsingTable` — parse tables
+
+This is the LALR(1) generator the workspace needs — it complements
+`lalrpop-kotlin` (which is LR(1) via PEG-inspired table generation).
+
+### Google third_party: Bazel stubs only
+
+`tmp/jflex/third_party/com/google/` contains only Bazel `BUILD.bazel`
+files for Guava, FindBugs, Flogger, Truth, and AutoValue — no source
+code. These are Maven dependency declarations in Bazel format. They are
+not vendored Google code and need no Kotlin translation.
+
+### Kotlin compiler source: confirming the KMP architecture
+
+The Kotlin compiler at `kotlin.coroutines-cpp/tmp/kotlin/` confirms:
+
+1. **`compiler/multiplatform-parsing/`** (30 files) IS the KMP
+   lexer/parser — this is the same code we have in `tmp/kmp-parser/`.
+   JetBrains uses JFlex with `--output-mode kotlin` + a custom
+   `idea-flex-kotlin.skeleton` to generate the `.kt` lexer files.
+
+2. **`compiler/psi/psi-api/`** (235 files, 153 Java) is the JVM-only
+   PSI layer — token interfaces (`KtToken.java`, `KtTokens.java`),
+   AST node types, visitors, stubs. This is IntelliJ-specific and
+   not needed for KMP. The KMP equivalents live in our vendored
+   `com.intellij.platform.syntax.*` infrastructure.
+
+3. **`compiler/psi/parser/`** has only `buildLexer.xml` — the Ant
+   build script that shows the JFlex invocation for the JVM lexer
+   (uses `idea-flex.skeleton`, not `idea-flex-kotlin.skeleton`).
+
+**The JFlex Kotlin emitter chain means we can generate new Kotlin
+lexers, not just consume pre-generated ones.** If we need a lexer
+for a new token vocabulary, we write a `.flex` spec and run JFlex
+with `--output-mode kotlin` — the same toolchain JetBrains uses.
+
+---
+
+## Updated parallel work tracks
+
+### Track 1: Phase 3 — publish + wire (unblocks serde_derive)
+
+1. ~~Publish `proc-macro-kotlin v0.1.0`~~ ✓ Done (v0.1.1 now)
+2. Wire into `proc-macro2-kotlin` (Detection, Wrapper, TokenStream dispatch)
+3. Publish `proc-macro2-kotlin v0.2.0`
+4. Verify serde-kotlin can depend on the new versions
+
+### Track 2: ANTLR4 KMP adaptation (23,577 lines Kotlin, 2,927 lines Java)
+
+The runtime is already Kotlin. KMP adaptation replaces JVM deps:
+
+| Java class | KMP replacement | kotlinmania package |
+|---|---|---|
+| `ArrayList`, `HashMap`, `HashSet` | Kotlin stdlib | Direct |
+| `IdentityHashMap` | `Equivalent`-based `UnorderedMap` | `starlarkmap-kotlin` |
+| `BitSet` | `klang` bit primitives | `klang` |
+| `java.io.*`, `java.nio.*` | `km-io` | `km-io` v0.1.5 |
+
+The 33 `.java` files in `tree/` (2,927 lines) batch-convert in IntelliJ.
+
+### Track 3: JFlex-in-Kotlin (native Kotlin lexer generator)
+
+Only `Main.java` (408 lines) and `CMapBlock.java` (45 lines) remain
+in Java. Port those, KMP-adapt the Unicode data tables, and we have a
+self-hosting Kotlin lexer generator — the same tool that JetBrains uses
+to produce `KotlinFlexLexer.kt`.
+
+### Track 4: CUP2 LALR(1) generator (already Kotlin)
+
+Fully ported. Needs KMP adaptation (remove JVM `Reflection`, `XMLWriter`)
+and a Gradle build. Complements `lalrpop-kotlin` for LR parsing.
