@@ -1,6 +1,61 @@
 # Project Plan — proc-macro-kotlin
 
-Stage: **phase 2c complete — Rust API ported, JetBrains infrastructure vendored, KotlinLexer wired into TokenStream.fromString().
+Stage: **Phase 2c complete. Phase 3 (publish + wire into proc-macro2-kotlin) is the next action.**
+
+---
+
+## The critical path: what blocks serde_derive
+
+`serde` is rank #1 in the workspace dependency graph (101 direct, 187 transitive dependents). Its core is 82% ported. But `serde_derive` — the `#[derive(Serialize, Deserialize)]` code generator — is the crate that actually makes serde useful, and it is a **proc-macro** that cannot be transliterated like a library crate.
+
+**The blocking chain:**
+
+```
+proc-macro-kotlin published (v0.1.0)
+  └─→ proc-macro2-kotlin Compiler variant wired (v0.2.0)
+       └─→ serde_derive can be ported as straight transliteration
+            └─→ 101 downstream crates unblocked
+```
+
+**What serde_derive actually imports** (from `tmp/serde/serde_derive/src/lib.rs`):
+
+```rust
+use proc_macro::TokenStream;        // ← needs proc-macro-kotlin
+use proc_macro2::{Ident, Span};      // ✓ already in proc-macro2-kotlin
+use quote::{ToTokens, TokenStreamExt as _};  // ✓ already in quote-kotlin v0.1.1
+use syn::parse_macro_input;         // ✓ already in syn-kotlin v0.1.7
+use syn::DeriveInput;               // ✓ already in syn-kotlin
+```
+
+Every downstream crate in serde_derive's body (`de.rs`, `ser.rs`, `bound.rs`, `internals/*.rs`) uses `proc_macro2::TokenStream`, `quote::quote`, `quote::quote_spanned`, and `syn::*` — all already published on Maven Central. The only missing surface is `proc_macro::TokenStream` at the entry point, which is what this repo provides.
+
+**serde_derive port status:**
+
+| Rust file | Lines | Kotlin port | Lines | Status |
+|---|---|---|---|---|
+| `internals/attr.rs` | 1,818 | `Attr.kt` | 1,370 | Done |
+| `internals/check.rs` | 477 | `Check.kt` | 533 | Done |
+| `internals/ast.rs` | — | `Ast.kt` | 276 | Done |
+| `internals/case.rs` | 200 | `Case.kt` | 225 | Done |
+| `pretend.rs` | 188 | `Pretend.kt` | 197 | Done |
+| `internals/name.rs` | 113 | `Name.kt` | 117 | Done |
+| `fragment.rs` | — | `Fragment.kt` | 91 | Done |
+| `internals/ctxt.rs` | 67 | `Ctxt.kt` | 83 | Done |
+| `deprecated.rs` | — | `Deprecated.kt` | 61 | Done |
+| `internals/symbol.rs` | 71 | `Symbol.kt` | 57 | Done |
+| `this.rs` | 32 | `This.kt` | 40 | Done |
+| `dummy.rs` | — | `Dummy.kt` | 40 | Done |
+| `internals/respan.rs` | 16 | `Respan.kt` | 34 | Done |
+| `internals/mod.rs` | 28 | `Mod.kt` | 15 | Done |
+| **`lib.rs`** | **127** | — | — | **Not started — needs `proc_macro::TokenStream`** |
+| **`de.rs`** | **976** | — | — | **Not started — heavy quote! codegen** |
+| **`ser.rs`** | **1,369** | — | — | **Not started — heavy quote! codegen** |
+| **`bound.rs`** | **425** | — | — | **Not started** |
+| **`internals/receiver.rs`** | **293** | — | — | **Not started** |
+
+Ported: 3,139 lines (internals + scaffolding). Remaining: 3,190 lines (code generators + entry point). The internals are done; the code generators are what need the proc-macro pipeline.
+
+---
 
 ## What's done
 
@@ -12,14 +67,14 @@ All 10 core types ported from `tmp/proc-macro/` with `port-lint: source` headers
 |---|---|---|
 | `Delimiter` | 37 | Complete |
 | `Spacing` | 39 | Complete |
-| `Span` | 237 | Complete (span data accessors backed by synthetic source map) |
 | `LexError` | 14 | Complete |
 | `Ident` | 125 | Complete (XID_Start / XID_Continue validation) |
 | `Punct` | 82 | Complete |
 | `Literal` | 414 | Complete (all suffixed/unsuffixed factories) |
 | `Group` | 104 | Complete |
 | `TokenTree` | 78 | Complete (four-variant sealed class) |
-| `TokenStream` | 205 | Complete (Fallback-mode `fromString` via Rust-source tokenizer) |
+| `Span` | 237 | Complete (span data accessors backed by synthetic source map) |
+| `TokenStream` | 205 | Complete (KotlinLexer-backed `fromString`) |
 | `IntoIter` | 16 | Complete |
 
 Supporting files: `Quote.kt` (1,086 lines — the `quote!` quasiquoter),
@@ -39,20 +94,10 @@ and the full builder/production infrastructure.
 
 ### Phase 2b — JetBrains KMP lexer vendored (complete)
 
-9 files, ~2,386 lines vendored from the JetBrains Kotlin compiler's
-`multiplatform-parsing` module:
-
-| File | Lines | Role |
-|---|---|---|
-| `KotlinLexer.kt` | 11 | `FlexAdapter` wrapper around `KotlinFlexLexer` |
-| `KotlinFlexLexer.kt` | 1,689 | JFlex-generated Kotlin-language tokenizer |
-| `KtTokens.kt` | 465 | Full token vocabulary (keywords, operators, literals) |
-| `KDocTokens.kt` | 41 | KDoc comment token types |
-| `KDocKnownTag.kt` | 47 | Known KDoc tag names |
-| `SyntaxElementTypesWithIds.kt` | 37 | ID allocation base class |
-| `Stack.kt` | 29 | Simple stack utility |
-| `StringUtil.kt` | 42 | String utilities |
-| `ApiStatus.kt` | 20 | Stub annotations (`@Experimental`, etc.) |
+9 files, ~2,386 lines from the JetBrains Kotlin compiler's
+`multiplatform-parsing` module. `KotlinLexer.kt` wraps `KotlinFlexLexer.kt`
+(1,689 lines, JFlex-generated, pure Kotlin Multiplatform). `KtTokens.kt`
+(465 lines) defines the full token vocabulary.
 
 ### Phase 2c — KotlinLexer wired into TokenStream (complete)
 
@@ -61,590 +106,419 @@ and the full builder/production infrastructure.
 
 - Whitespace and comments are filtered
 - String template token runs collapse into atomic `Literal`s
-- Multi-char operators (`->`, `==`, `::`, etc.) decompose into `Punct`
-  chains with correct `JOINT`/`ALONE` spacing
-- Delimiter pairs (`()`, `{}`, `[]`) nest into `Group` with `TokenStream`
-- Kotlin keywords map to `Ident` (proc_macro treats keywords as idents)
-- `Literal` gains `fromKotlinString/Char/Integer/Float` factory methods
+- Multi-char operators decompose into `Punct` chains with correct spacing
+- Delimiter pairs nest into `Group` with `TokenStream`
+- Kotlin keywords map to `Ident`
+- `Literal` has `fromKotlinString/Char/Integer/Float` factory methods
 
-`TokenStream.fromString()` now calls `KtTokenAdapter.tokenize(lexer, src)`
-instead of throwing. All macosArm64Test targets pass.
-
-### What has NOT landed yet
-
-- **No `KotlinParser`.** No Kotlin-syntax parser exists here yet.
-- **No Compiler-variant wiring into `proc-macro2-kotlin`.** `TokenStream`
-  currently only operates in Fallback mode (Rust-source tokenization via
-  `proc-macro2-kotlin`'s standalone lexer). The Compiler path that delegates
-  to a Kotlin-source tokenizer is unwired.
+19 integration tests passing (macosArm64Test).
 
 ---
 
-## Reference sources
+## Next action: Phase 3 — Publish and wire into proc-macro2-kotlin
 
-### 0. JetBrains JFlex fork with Kotlin output mode (code generator)
+This is the action that unblocks serde_derive. It's a two-repo coordinated release.
 
-Path: `tmp/jflex/` (JetBrains/intellij-deps-jflex, branch `intellij/1.10.15`)
+### Step 3.1 — Publish proc-macro-kotlin v0.1.0
 
-JetBrains forked JFlex and added `--output-mode kotlin` support. When this
-flag is passed, JFlex generates `.kt` output instead of `.java`. The fork
-includes:
+- Bump `version` in `build.gradle.kts` to `0.1.0`
+- Update README install snippets
+- `gh release create v0.1.0` to fire the `release[released]` publish workflow
+- Verify artifact appears on Maven Central
 
-| File | Lines | Description |
-|---|---|---|
-| `KotlinEmitter.java` | 1,455 | Kotlin code generator — mirrors `Emitter.java` but emits Kotlin syntax |
-| `KotlinCountEmitter.java` | 180 | Table compression emitter for Kotlin output |
-| `KotlinHiCountEmitter.java` | 64 | High-count table emitter variant |
-| `KotlinHiLowEmitter.java` | 94 | Hi/low table emitter variant |
-| `KotlinPackEmitter.java` | 192 | Packed table emitter variant |
-| `KotlinAbstractLexScan.java` | 481 | Kotlin-variant lexer scanner — uses `kotlinx.io` instead of `java.io` |
-| `OutputMode.java` | 6 | `enum OutputMode { JAVA, KOTLIN }` |
+### Step 3.2 — Add proc-macro-kotlin as a dependency of proc-macro2-kotlin
 
-Total Kotlin-specific additions: **2,472 lines** of Java.
-Total core JFlex (excluding Unicode data tables and GUI): **14,484 lines** of Java.
-
-The skeleton template that controls the generated `.kt` output shape is at
-`tmp/jflex-skeleton/idea-flex-kotlin.skeleton` (302 lines), vendored from
-`JetBrains/intellij-community:tools/lexer/idea-flex-kotlin.skeleton`.
-
-**Batch-translate path.** The JFlex core is ~14.5K lines of Java. JetBrains'
-IntelliJ IDEA can batch-convert Java → Kotlin with high fidelity. The
-Kotlin-specific files (`KotlinEmitter`, `KotlinCountEmitter`, etc.) are
-the most interesting targets — they're the code that already knows how to
-emit valid Kotlin. Once translated to Kotlin, JFlex becomes a native
-Kotlin code generator that can produce `.kt` lexers from `.flex` specs
-without any JVM dependency at all. This would be a standalone tool, not
-a library dependency — it runs at build time, not at runtime.
-
-The Unicode data tables (`jflex/core/unicode/data/Unicode_*.java`, ~580K
-lines total) are auto-generated lookup tables. They can be either
-excluded from the batch-translate and regenerated, or translated as bulk
-data.
-
-**Why this matters beyond proc-macro-kotlin.** A Kotlin-native JFlex
-means any kotlinmania repo that needs a lexer can write a `.flex` spec
-and get a correct, multiplatform Kotlin lexer generated automatically —
-not just the Kotlin language tokenizer, but any language. The `lalrpop-kotlin`
-parser generator + Kotlin-native JFlex lexer generator gives the workspace
-a complete Kotlin-native toolchain for building parsers.
-
-Two independent specifications define what a correct Kotlin tokenizer must
-produce. We keep both under `tmp/` for reference during porting.
-
-### 1. JetBrains KMP-parsing source (compiler tree)
-
-Path: `kotlin.coroutines-cpp/tmp/kotlin/compiler/multiplatform-parsing/`
-
-This is JetBrains' own multiplatform Kotlin lexer + parser, extracted from
-the Kotlin compiler repository. It consists of:
-
-| File | Lines | Description |
-|---|---|---|
-| `Kotlin.flex` | 391 | JFlex lexer specification — the source of truth for the compiler's tokenizer |
-| `KotlinFlexLexer.kt` | 1,723 | JFlex-generated output — pure Kotlin, no `java.*` imports, `CharSequence` buffer |
-| `KtTokens.kt` | 410 | Token vocabulary — `SyntaxElementType` constants with integer IDs |
-| `KotlinLexer.kt` | 11 | Thin wrapper: `class KotlinLexer : FlexAdapter(KotlinFlexLexer())` |
-| `KDocTokens.kt` | 38 | KDoc token types |
-| `KDocLexer.kt` | 39 | KDoc lexer wrapper |
-| `KDocKnownTag.kt` | 45 | Known KDoc tag definitions |
-| `KotlinParser.kt` | 42 | Parser entry point (delegates to `KotlinParsing`) |
-| `KtNodeTypes.kt` | 321 | AST node type definitions |
-| `KotlinParsing.kt` | 2,909 | Main parser logic |
-| `KotlinExpressionParsing.kt` | 1,874 | Expression parsing |
-| `AbstractKotlinParsing.kt` | 349 | Shared parser utilities |
-| `AbstractParser.kt` | 28 | Parser base class |
-| `BinaryOperationPrecedence.kt` | 66 | Operator precedence table |
-| `SemanticWhitespaceAwareSyntaxBuilders.kt` | 229 | Whitespace-aware builder |
-| `KotlinWhitespaceAndCommentsBinders.kt` | 131 | Comment/whitespace attachment |
-| `TokenStreamPatterns.kt` | 100 | Token stream patterns |
-| `Stack.kt` | 26 | Utility stack |
-| `StringUtil.kt` | 39 | String utilities |
-| `SyntaxElementTypesWithIds.kt` | 34 | ID-bearing element type base |
-
-**Critical finding:** `KotlinFlexLexer.kt` is already pure Kotlin
-multiplatform code. JFlex generated it from `Kotlin.flex`, but the
-output uses `CharSequence` as the buffer type (not `java.nio.CharBuffer`),
-has zero `java.*` imports, and the only `java.lang.Character` reference
-is a comment — the actual `codePointAt` implementation is a Kotlin
-extension function using `Char.isHighSurrogate()` / `Char.isLowSurrogate()`
-/ `Char.toCodePoint()`, all of which are available in Kotlin common.
-
-### 2. Kotlin spec ANTLR4 grammars (language specification)
-
-Path: `tmp/kotlin-spec/`
-
-The official Kotlin language specification's grammar, maintained at
-`Kotlin/kotlin-spec` on GitHub. These `.g4` files define the same
-language from a specification standpoint.
-
-| File | Lines | Description |
-|---|---|---|
-| `KotlinLexer.g4` | 529 | ANTLR4 lexical grammar: token definitions, mode stack, operator decomposition |
-| `KotlinParser.g4` | 928 | ANTLR4 syntax grammar |
-| `UnicodeClasses.g4` | 1,648 | Unicode character classes for identifier rules |
-| `KotlinLexer.tokens` | 3,420 | Token vocabulary index |
-| `UnicodeClasses.tokens` | 133 | Unicode class token index |
-
-### How the two relate
-
-The JFlex `.flex` and the ANTLR4 `.g4` define the same token set with
-different naming conventions and different approaches to
-whitespace-sensitivity:
-
-| Aspect | JFlex (`.flex`) | ANTLR4 (`.g4`) |
-|---|---|---|
-| Keyword naming | `PACKAGE_KEYWORD`, `FUN_MODIFIER` | `PACKAGE`, `FUN` |
-| Delimiter naming | `LPAR`/`RPAR`, `LBRACE`/`RBRACE` | `LPAREN`/`RPAREN`, `LCURL`/`RCURL` |
-| Whitespace-sensitive `?` | Single `QUEST` token | `QUEST_WS` / `QUEST_NO_WS` |
-| Whitespace-sensitive `@` | Single `AT` token | `AT_NO_WS` / `AT_POST_WS` / `AT_PRE_WS` / `AT_BOTH_WS` |
-| Whitespace-sensitive `!` | `EXCL`, no ws distinction | `EXCL_WS` / `EXCL_NO_WS` |
-| Newline handling | Folded into `WHITE_SPACE` / `DANGLING_NEWLINE` | `NL` as a distinct token |
-| `null`/`true`/`false` | `NULL_KEYWORD`, `TRUE_KEYWORD`, `FALSE_KEYWORD` | `NullLiteral`, `BooleanLiteral` |
-| Integer literals | Single `INTEGER_LITERAL` | `IntegerLiteral`, `LongLiteral`, `HexLiteral`, `BinLiteral`, `UnsignedLiteral` |
-| String interpolation | `INTERPOLATION_PREFIX`, `OPEN_QUOTE`, `CLOSING_QUOTE`, `REGULAR_STRING_PART`, `ESCAPE_SEQUENCE`, `SHORT_TEMPLATE_ENTRY_START`, `LONG_TEMPLATE_ENTRY_START`/`END` | `QUOTE_OPEN`, `TRIPLE_QUOTE_OPEN`, string modes in grammar |
-| `Inside` mode | Handled by parser, not lexer | `Inside_*` token aliases for parenthesized context |
-| `super@`, `this@` etc. | `SUPER_KEYWORD` + `AT` | `SUPER_AT`, `THIS_AT` variants |
-| Field identifiers | `FIELD_IDENTIFIER` (`$ident`) | No separate token |
-| `$` in identifiers | Accepted by `IDENTIFIER` pattern | Excluded from `Identifier` |
-
-Both specifications are 1:1 mappable to the same `proc_macro`-shaped
-output. The JFlex version is the implementation we can directly vendor;
-the ANTLR4 version is the specification we cross-check against.
-
----
-
-## The path forward
-
-### Revised approach: vendor the JetBrains KMP lexer, don't hand-write from scratch
-
-The original plan was to hand-write a `KotlinLexer` from the ANTLR4 `.g4`
-specification. This is still a valid fallback, but the discovery that
-JetBrains' own `KotlinFlexLexer.kt` is already pure Kotlin multiplatform
-code (zero `java.*` imports, `CharSequence` buffer, Kotlin stdlib
-surrogates only) changes the calculus. We can vendor the existing
-generated lexer directly instead of reimplementing it.
-
-Advantages:
-- The lexer is already correct — it's what the Kotlin compiler uses.
-- The `KtTokens` token vocabulary is already aligned with the
-  `com.intellij.platform.syntax` infrastructure we've vendored.
-- `FlexAdapter` + `FlexLexer` interfaces are already in our vendored
-  tree and are the exact interfaces `KotlinFlexLexer` implements.
-- No risk of divergence between our hand-written lexer and the spec.
-
-The ANTLR4 `.g4` files remain valuable as a cross-reference for the
-token vocabulary and for understanding the mode-switching rules at a
-specification level.
-
-### Phase 2b — Vendor the JetBrains KMP lexer
-
-Vendoring order, leaves first (each step compiles before the next):
-
-1. **`org.jetbrains.kotlin.kmp.utils`** — `Stack.kt` (26 lines),
-   `StringUtil.kt` (39 lines), `SyntaxElementTypesWithIds.kt` (34 lines).
-   These are small utility files that `KtTokens` depends on.
-
-2. **`org.jetbrains.kotlin.kmp.lexer.KtTokens`** — `KtTokens.kt`
-   (410 lines). The token vocabulary. Depends on `SyntaxElementTypesWithIds`
-   from step 1 and `KDocTokens` from step 3.
-
-3. **`org.jetbrains.kotlin.kmp.lexer.KDocTokens`** — `KDocTokens.kt`
-   (38 lines), `KDocKnownTag.kt` (45 lines). Small, no external deps
-   beyond `SyntaxElementType`.
-
-4. **`org.jetbrains.kotlin.kmp.lexer.KotlinFlexLexer`** —
-   `KotlinFlexLexer.kt` (1,723 lines). The generated JFlex output.
-   Pure Kotlin. Depends on `FlexLexer` (already vendored), `KtTokens`,
-   `SyntaxTokenTypes`. The `codePointAt` extension function at the
-   bottom of the file is pure Kotlin using `Char.isHighSurrogate()`
-   etc. — no JVM dependency.
-
-5. **`org.jetbrains.kotlin.kmp.lexer.KotlinLexer`** — `KotlinLexer.kt`
-   (11 lines). The thin `FlexAdapter` wrapper.
-   `class KotlinLexer : FlexAdapter(KotlinFlexLexer())`. Depends on
-   `FlexAdapter` (already vendored) and `KotlinFlexLexer`.
-
-6. **`org.jetbrains.kotlin.kmp.lexer.KDocFlexLexer` + `KDocLexer`** —
-   `KDocFlexLexer.kt` + `KDocLexer.kt`. Optional, for KDoc support.
-
-At this point `KotlinLexer` is usable. `KotlinLexer().start(source)`
-produces `KtTokens.*`-typed `SyntaxElementType` tokens with real byte
-offsets. The `FlexAdapter` base class provides `getTokenStart()`,
-`getTokenEnd()`, `advance()`, `getState()`.
-
-Each vendored file gets the standard provenance comment:
 ```kotlin
-// Vendored from JetBrains/kotlin @ <sha> compiler/multiplatform-parsing/common/src/...
+commonMain.dependencies {
+    implementation("io.github.kotlinmania:proc-macro-kotlin:0.1.0")
+}
 ```
 
-### Phase 2c — Adapter: `KtTokens` → `proc_macro` `TokenTree`
+### Step 3.3 — Wire Detection.insideProcMacro() to return true
 
-A thin adapter layer converts `KotlinLexer` output into `proc_macro`-shaped
-`TokenStream`:
+`Detection.kt` currently always returns `false` (Fallback mode). The Kotlin
+lexer is pure Kotlin Multiplatform — it's always available on every target.
+Change `initialize()` to store `works = 2` (Compiler mode), and remove the
+dead-code path that pretends the Compiler half doesn't exist.
 
-| `KtTokens` token | `proc_macro` shape |
-|---|---|
-| `IDENTIFIER` | `TokenTree.Ident` |
-| `INTEGER_LITERAL`, `FLOAT_LITERAL`, `CHARACTER_LITERAL` | `TokenTree.Literal` |
-| `NULL_KEYWORD`, `TRUE_KEYWORD`, `FALSE_KEYWORD` | `TokenTree.Ident` (keywords are idents in `proc_macro`) |
-| Hard keywords (`PACKAGE_KEYWORD`, `IF_KEYWORD`, etc.) | `TokenTree.Ident` (same — `proc_macro` doesn't distinguish keywords from idents) |
-| Soft keywords / modifiers | `TokenTree.Ident` |
-| `DOT`, `COMMA`, `COLON`, `SEMICOLON`, `HASH` | `TokenTree.Punct` (single char, `Spacing.Alone`) |
-| `ARROW` (`->`), `RANGE` (`..`), `COLONCOLON` (`::`), `CONJ` (`&&`), `DISJ` (`||`), `DOUBLE_ARROW` (`=>`), etc. | `TokenTree.Punct` chains (`Spacing.Joint` then `Spacing.Alone`) |
-| `LPAR`...`RPAR` | `TokenTree.Group(Delimiter.Parenthesis, ...)` |
-| `LBRACE`...`RBRACE` | `TokenTree.Group(Delimiter.Brace, ...)` |
-| `LBRACKET`...`RBRACKET` | `TokenTree.Group(Delimiter.Bracket, ...)` |
-| `WHITE_SPACE`, `EOL_COMMENT`, `BLOCK_COMMENT`, `DOC_COMMENT` | Filtered (not in output `TokenStream`) |
-| `OPEN_QUOTE`, `CLOSING_QUOTE`, `REGULAR_STRING_PART`, `ESCAPE_SEQUENCE`, `SHORT_TEMPLATE_ENTRY_START`, `LONG_TEMPLATE_ENTRY_START`/`END`, `INTERPOLATION_PREFIX` | String template representation decision (see open questions) |
+### Step 3.4 — Restore the two-variant wrapper layer
 
-The adapter wraps `KotlinLexer` in a function:
-```kotlin
-fun TokenStream.Companion.fromKotlinSource(source: String): TokenStream
-```
-that runs the lexer, filters whitespace/comments, matches delimiters
-for `Group` nesting, and produces a `TokenStream`.
+`Wrapper.kt` is currently a stub (with a `port-lint: ignore` that must be
+stripped per AGENTS.md — no such directive exists). Restore it as a real
+dispatch layer:
 
-### Phase 2d — Group nesting (delimiter matching)
+- `WrapperTokenStream` delegates to `FallbackTokenStream` when
+  `insideProcMacro() == false`, delegates to `proc_macro.TokenStream`
+  when `insideProcMacro() == true`
+- Same pattern for `WrapperSpan`, `WrapperGroup`, `WrapperIdent`,
+  `WrapperLiteral`, `WrapperLexError`
+- Since `insideProcMacro()` is always `true` now, the Compiler path is
+  the hot path. Fallback remains available via `forceFallback()`
 
-`TokenStream.fromString` in upstream `proc_macro` produces *nested*
-`Group` tokens — the delimiter matching happens at lex time. Our adapter
-needs a delimiter-stack to pair `LPAR`/`RPAR`, `LBRACE`/`RBRACE`,
-`LBRACKET`/`RBRACKET` and produce `Group` wrappers. This does not
-require a full parser — just a bracket-matching pass over the flat
-token stream.
+### Step 3.5 — Publish proc-macro2-kotlin v0.2.0
 
-### Phase 2e — Full Kotlin parser (optional, separate from lexer)
+- Bump version to `0.2.0`
+- Update `libs.versions.toml` references in downstream repos
+- `gh release create v0.2.0`
 
-A full Kotlin parser (expression structure, statement structure) is a
-separate future task. Two possible paths:
-
-1. **Vendor JetBrains' `KotlinParser`** — the `KotlinParsing.kt`
-   (2,909 lines) + `KotlinExpressionParsing.kt` (1,874 lines) +
-   supporting files (~4,000 additional lines) from the same KMP-parsing
-   source. These files are pure Kotlin and use the `SyntaxTreeBuilder`
-   API we've already vendored. This gives us a production-quality Kotlin
-   parser with zero custom code.
-2. **Write a `lalrpop` grammar for Kotlin** derived from `KotlinParser.g4`
-   and generate LR(1) parse tables via `lalrpop-kotlin`. This adds a
-   `KotlinWrite` emitter to `lalrpop-kotlin` (the Kotlin emitter the
-   README already calls out as the natural next step) and produces
-   parse tables that any kotlinmania consumer can use.
-
-Either path depends on the lexer existing first. The lexer is the
-prerequisite for everything downstream. The parser is optional for
-`proc-macro-kotlin`'s immediate purpose (tokenizing Kotlin source
-into `proc_macro`-shaped tokens), but necessary for full syntax
-validation and for the `lalrpop-kotlin` Kotlin-emitter use case.
-
-### Phase 3 — Wire phases 1 + 2 into a real Compiler variant
-
-Now the `proc_macro`-shaped types stop operating in Fallback mode:
-
-A. `TokenStream.fromString(source)` detects whether the input is Rust
-   or Kotlin source (or is told explicitly). Kotlin-source input routes
-   through `KotlinLexer` → adapter → `TokenStream`. Rust-source
-   input keeps the existing Fallback path.
-B. `Span` byte ranges sourced from real `KotlinLexer` offsets, not from
-   the process-wide synthetic source map.
-C. `Group` produced by the delimiter-matching pass, so `fromString`
-   yields nested `Group` tokens instead of flat `Punct` sequences.
-D. Round-trip validation:
-   `TokenStream.toString().let { TokenStream.fromString(it) } == TokenStream`.
-
-#### Open questions for phase 3
+### Open questions for Phase 3
 
 - **Kotlin string templates.** `OPEN_QUOTE` / `CLOSING_QUOTE` /
-   interpolation entries have no `proc_macro` analog. Options:
+  interpolation entries have no `proc_macro` analog. Options:
   a. Synthetic `Group` with a custom `Delimiter` variant.
   b. Sequence of `Punct` + `Literal` tokens matching how a Rust
      `format_args!` expansion would look.
   c. A dedicated `TokenTree` variant (breaks the four-variant sealed
      class contract — only if a and b are unworkable).
 - **Kotlin multi-char operators.** `?.`, `!!`, `?:`, `..`, `::`, `=>`,
-   `&&`, `||` — decompose into single-character `Punct` with
-   `Spacing.Joint` chains, matching how `proc_macro` represents
-   multi-char operators. This is faithful to the upstream model.
-  Note: the JFlex lexer already splits some of these. `QUEST` is a
-  single token in `KtTokens`; the adapter must decide whether `?`
-  preceding `.` becomes `Punct('?')` + `Punct('.')` or `Punct('?')`
-  with lookahead. The `proc_macro` convention is single chars only.
-- **Whitespace-sensitive tokens.** The ANTLR4 spec defines `QUEST_WS`
-  vs `QUEST_NO_WS`, `EXCL_WS` vs `EXCL_NO_WS`, `AT_*_WS` variants.
-  The JFlex lexer collapses these into single tokens (`QUEST`, `EXCL`,
-  `AT`). For `proc_macro` output, the whitespace-sensitivity doesn't
-  matter — `Punct` tokens don't carry whitespace context. The adapter
-  can safely ignore the distinction.
+  `&&`, `||` — decompose into single-character `Punct` with
+  `Spacing.Joint` chains. This is already handled in `KtTokenAdapter`.
 - **`Span.resolvedAt()` / `Span.locatedAt()`.** Rust hygiene resolution
-   has no Kotlin analog. Stub to identity for now; model resolution
-   context independently if real hygiene becomes necessary.
+  has no Kotlin analog. Stub to identity; model resolution context
+  independently if real hygiene becomes necessary.
 
-### Phase 4 — Wire into `proc-macro2-kotlin`
+---
 
-Cross-repo task. Restore the two-variant wrapper layer that
-`proc-macro2-kotlin`'s `port/refaithful-divergent-translations` branch
-collapsed, with the `Compiler` arms delegating to this repo's types.
-`Detection.kt`'s `insideProcMacro()` gets a non-trivial meaning: "the
-Kotlin lexer is available on this target."
+## Phase 4 — Kotlin parser
 
-Publish `proc-macro-kotlin 0.1.0` and `proc-macro2-kotlin 0.2.0`
-together.
+With the lexer + `KtTokenAdapter` + `TokenStream` working, a parser is
+the natural next piece. Three paths are available, in order of maturity:
 
-### Phase 5 — Kotlin-native JFlex (future, separate repo)
+### Path A: JetBrains KMP recursive-descent parser (fastest to land)
+
+The full parser is already vendored in `tmp/kmp-parser/` (10,509 lines
+across 28 files) and also available in the Kotlin compiler source at
+`kotlin.coroutines-cpp/tmp/kotlin/compiler/multiplatform-parsing/`.
+Key files: `KotlinParsing.kt` (2,909 lines),
+`KotlinExpressionParsing.kt` (1,874 lines).
+
+The compiler's `SemanticWhitespaceAwareSyntaxBuilderImpl` handles
+complex token joining at the parser level: `QUEST`+`DOT` →
+`SAFE_ACCESS`, `QUEST`+`COLON` → `ELVIS`, `EXCL`+`EXCL` → `EXCLEXCL`.
+Our `KtTokenAdapter` decomposes these at the adapter level instead,
+which is simpler for our use case.
+
+The compiler also has a `LightTree2Fir` converter pipeline:
+`source code → KotlinLightParser.buildLightTree() →
+FlyweightCapableTreeStructure → LightTreeRawFirDeclarationBuilder → FIR`.
+This shows the full production path from tokens to compiler IR.
+
+This is the fastest path to a working Kotlin parser because it's
+already Kotlin Multiplatform code — same shape as the lexer we already
+vendored. Wire it behind a `proc_macro`-shaped surface and it produces
+AST nodes over real Kotlin source.
+
+### Path B: ANTLR4 with Kotlin runtime (grammar-driven)
+
+**Major discovery:** The ANTLR4 `dev` branch has already converted the
+entire runtime to Kotlin. The `atn/` package (69 files, 10,557 lines)
+is entirely `.kt` — no Java at all. The full runtime is 141 Kotlin files
+totaling 23,577 lines, with only 33 remaining `.java` files (2,927 lines)
+in the `tree/` subpackage (parse tree visitor/walker infrastructure).
+
+The `kotlin-spec` grammars in `tmp/kotlin-spec/` provide
+`KotlinLexer.g4` and `KotlinParser.g4` — authoritative ANTLR4 grammar
+specs for the Kotlin language, maintained by JetBrains.
+
+**ANTLR4 runtime status (from `dev` branch):**
+
+| Package | Kotlin files | Lines | Java deps | KMP adaptation |
+|---|---|---|---|---|
+| `atn/` | 69 | 10,557 | `java.util`, `java.security` (1 usage) | Easy — swap `java.util` for Kotlin stdlib |
+| `dfa/` | 3 | ~480 | `java.util` only | Easy |
+| `misc/` | 18 | ~3,177 | `java.util`, `java.io` | Easy — `java.io` isolated to `InterpreterDataReader` |
+| Top-level runtime | 45 | ~9,556 | `java.io`, `java.nio`, `java.util` | Medium — I/O isolated to `CharStreams`, `ANTLRInputStream` |
+| `tree/` | 0 (Java) | 2,927 | `java.util` only | Easy — batch-translate last 33 Java files |
+| `tree/pattern/` | 0 (Java) | 1,342 | `java.util` only | Easy |
+| `tree/xpath/` | 0 (Java) | 653 | `java.util` only | Easy |
+
+**KMP adaptation work for `atn/` (the highest-value package):**
+
+The `java.util` imports in `atn/` are nearly all direct Kotlin stdlib
+swaps. The two non-trivial ones are `IdentityHashMap` (2-3 files) and
+`BitSet` (2-3 files), both of which can be implemented in pure Kotlin.
+
+The only `java.security` usage is `AccessController.doPrivileged` in
+`ParserATNSimulator.kt` — a minor optimization guard that can be removed
+without changing behavior.
+
+The only `java.io` usage in `atn/` is `InvalidClassException` in
+`ATNConfig.kt` — swap for a custom exception class.
+
+**`km-io` replaces `java.io` and `java.nio` for KMP I/O.**
+
+The kotlinmania workspace already has `km-io` (v0.1.5, Maven Central), a
+fork of `kotlinx-io`/Okio that provides `Source`, `Sink`, `Buffer`,
+`FileSystem`, `Path`, and `ByteString` across **every** KMP target:
+
+JVM, JS, wasmJs, wasmWasi, Android, iOS (x64/arm64/sim), tvOS
+(x64/arm64/sim), watchOS (arm32/arm64/x64/sim/device), Android Native
+(arm32/arm64/x64/x86), Linux (x64/arm64), macOS (x64/arm64),
+Windows (mingwX64).
+
+For the ANTLR4 runtime's I/O layer (`CharStreams`, `ANTLRInputStream`,
+`ANTLRFileStream`), `km-io`'s `Source`/`RawSource` replaces
+`java.io.InputStream`/`Reader`, and `km-io`'s `Buffer` replaces
+`java.nio.CharBuffer`/`ByteBuffer`. No new I/O abstractions needed.
+
+**`libc-kotlin` and `klang` cover C-level primitives.**
+
+`libc-kotlin` (1,944 lines, POSIX bindings) and `klang` (21,942 lines,
+pure Kotlin C-semantics library) provide `BitSet`-level bit manipulation,
+`GlobalHeap` memory model, and `CString`/`CLib` primitives that cover the
+low-level patterns sometimes found in parser runtimes. If `BitSet` or
+`IdentityHashMap` needs a KMP-native implementation, `klang`'s bitwise
+infrastructure (`BitPrimitives`, `BitTwiddle`) provides the foundation.
+
+### Path C: lalrpop-kotlin + logos-kotlin (fully Kotlin-native)
+
+The kotlinmania workspace has its own LR(1) parser generator
+(`lalrpop-kotlin`, 173 Kotlin files, v0.1.7) and a working hand-written
+lexer pattern from `starlark-syntax-kotlin` (50 Kotlin files, v0.1.1).
+`logos-kotlin` (15 Kotlin files) provides a DFA-based lexer generator.
+
+The fully Kotlin-native path:
+
+1. Write a Kotlin token vocabulary as a `Logos`-style enum, generate
+   a DFA at build time via `logos-kotlin`
+2. Translate `KotlinParser.g4` into a `.lalrpop` grammar
+3. Generate LR(1) parse tables via `lalrpop-kotlin`
+4. No JVM, no C, no ANTLR4, no JFlex in the build pipeline
+
+This is the Phase 5 endpoint — the most principled path but the most
+work. `lalrpop-kotlin` and `logos-kotlin` are not yet published to
+Maven Central.
+
+### Decision tree
+
+```
+Need a parser now?
+  ├─ Yes → Path A (JetBrains KMP parser, already Kotlin MP code)
+  └─ Need grammar-driven correctness guarantees?
+       ├─ Yes → Path B (ANTLR4, KMP-adapt the already-Kotlin runtime)
+       └─ Need fully Kotlin-native toolchain?
+            └─ Yes → Path C (lalrpop + logos, most work, most principled)
+```
+
+---
+
+## Phase 5 — Kotlin-native JFlex (separate repo)
 
 Batch-translate the JetBrains JFlex fork from Java to Kotlin and publish
-it as a standalone build-time tool. This is not a library dependency of
-`proc-macro-kotlin` — it's a separate project that produces the same
-`.kt` lexer output that JetBrains' JVM-based JFlex produces, but runs
-natively as a Kotlin application.
+it as a standalone build-time tool. Not a library dependency of this
+repo — a separate project that produces the same `.kt` lexer output
+that JetBrains' JVM-based JFlex produces, but runs natively as a
+Kotlin application.
 
-Scope:
+### Scope
+
 1. **Translate the core generator** (~14.5K Java lines, excluding Unicode
-   data tables and GUI). IntelliJ IDEA's Java → Kotlin converter handles
-   the bulk. Manual cleanup for: `java.io.Reader` → `kotlinx.io`,
+   data tables and GUI). IntelliJ IDEA batch-convert handles the bulk.
+   Manual cleanup: `java.io.Reader` → `km-io` `Source`,
    `java_cup.runtime.Symbol` → Kotlin equivalent, `System.exit` →
-   exception-based flow, `java.util.*` collections → Kotlin stdlib.
-2. **Translate the Kotlin-specific files** (2,472 Java lines). These
-   are the highest-value targets — they already emit valid Kotlin syntax.
+   exception-based flow, `java.util.*` → Kotlin stdlib.
+2. **Translate the Kotlin-specific files** (2,472 Java lines).
+   These are the highest-value targets — they already emit valid
+   Kotlin syntax.
 3. **Port the skeleton template.** `idea-flex-kotlin.skeleton` (302
-   lines) is already nearly Kotlin — it's a template with JFlex
-   placeholders. The batch-translate handles the remaining `@JvmStatic`
-   annotations and `companion object` structure.
+   lines) is already nearly Kotlin.
 4. **Regenerate Unicode data tables** using the `ucd_generator` that
-   ships with JFlex, targeting Kotlin output. Or exclude the tables
-   and generate them as a build step.
+   ships with JFlex, targeting Kotlin output.
 5. **Test against existing `.flex` specs.** Run the Kotlin-native JFlex
-   on `Kotlin.flex` and `KDoc.flex` and diff the output against the
-   existing `KotlinFlexLexer.kt` / `KDocFlexLexer.kt`. Byte-identical
-   output is the success criterion.
+   on `Kotlin.flex` and diff the output against the existing
+   `KotlinFlexLexer.kt`. Byte-identical output is the success criterion.
 6. **Publish as a separate `jflex-kotlin` repo** under kotlinmania.
-   This is a build tool, not a library — it runs in Gradle build scripts
-   or as a CLI command, not at application runtime.
 
-Why this is valuable beyond this repo:
-- Any kotlinmania project that needs a lexer (including future language
-  ports) can write a `.flex` spec and get a correct Kotlin lexer.
-- Combined with `lalrpop-kotlin` (LR(1) parser generator), the workspace
-  has a complete Kotlin-native toolchain: `.flex` → JFlex → Kotlin lexer,
+### Why this matters beyond this repo
+
+- Any kotlinmania project that needs a lexer can write a `.flex` spec
+  and get a correct Kotlin lexer without a JVM dependency.
+- Combined with `lalrpop-kotlin`, the workspace has a complete
+  Kotlin-native toolchain: `.flex` → JFlex → Kotlin lexer,
   `.lalrpop` → lalrpop → LR(1) parser tables.
 - No JVM dependency in the build pipeline for any kotlinmania repo.
 
 ---
 
-## Why this matters for serde-kotlin (and everything downstream)
+## Patterns from the Kotlin compiler source
 
-The entire kotlinmania workspace has a dependency chain bottleneck at
-`serde_derive`. Serde is the #1 porting priority (101 direct dependents,
-187 transitive), and `serde_core` is 82% ported — but `serde_derive`
-(the `#[derive(Serialize, Deserialize)]` code generator) has zero Kotlin
-source because it is a Rust **proc-macro** that emits Rust token streams.
-You cannot "just transliterate" a proc-macro the way you transliterate a
-library crate.
+The Kotlin compiler source at
+`kotlin.coroutines-cpp/tmp/kotlin/compiler/` reveals several patterns
+relevant to this project:
 
-The proc-macro-kotlin pipeline makes `serde_derive` a straight
-transliteration job:
+### Complex token joining (SemanticWhitespaceAwareSyntaxBuilderImpl)
 
-```
-Rust source ──→ proc-macro2-kotlin (Fallback, Rust-shaped tokens)
-                    │
-                    ├──→ syn-kotlin (Rust AST)
-                    │        │
-                    │        └──→ serde_derive-kotlin (derive logic)
-                    │                 │
-                    │                 └──→ quote-kotlin (TokenStream emission)
-                    │                      │
-                    │                      └──→ proc-macro-kotlin (Compiler variant)
-                    │                           │
-                    │                           └──→ KotlinLexer validates output as Kotlin
-                    │
-                    └──→ proc-macro2-kotlin dispatches:
-                         Fallback → Rust-source tokenization
-                         Compiler → Kotlin-source tokenization (this repo)
-```
+The KMP parser uses a `SemanticWhitespaceAwareSyntaxBuilderImpl` that
+wraps `SyntaxTreeBuilder` and intercepts `tokenType`, `advanceLexer()`,
+`tokenText`, and `lookAhead()` to transparently join compound tokens:
 
-Every downstream kotlinmania crate that uses `#[derive(Serialize,
-Deserialize)]` — and there are over 100 of them — depends on this
-pipeline existing. The Kotlin lexer is the single prerequisite that
-unlocks it.
-
-### The ecosystem that already exists
-
-| Crate | Repo | Published | kt lines | Role in pipeline |
-|---|---|---|---|---|
-| `proc-macro2` | `proc-macro2-kotlin` | v0.1.1 | 4,003 | Public API + Fallback lexer |
-| `syn` | `syn-kotlin` | v0.1.7 | 7,688 | Rust AST |
-| `quote` | `quote-kotlin` | v0.1.1 | 330 | TokenStream emission |
-| `proc_macro` | `proc-macro-kotlin` | not yet | 14,248 | Compiler-variant backend |
-| `lalrpop` | `lalrpop-kotlin` | v0.1.6 | 71,406 | LR(1) parser generator |
-| `starlark-syntax` | `starlark-syntax-kotlin` | v0.1.1 | 22,718 | Hand-written lexer reference |
-
-The stack is one vendor pass (KMP lexer ~2,400 lines) + one adapter
-layer + one wrapper-branch PR away from being a working end-to-end
-pipeline. Every piece publishes except this repo.
-
-## Architecture survey — Kotlinmania lexer/parser ecosystem
-
-### Published libraries (Maven Central)
-
-| Repo | Upstream | Role | Kt Lines |
-|---|---|---|---|
-| `proc-macro2-kotlin` | `dtolnay/proc-macro2` | Public API + Fallback (Rust-source) lexer | 4,003 |
-| `syn-kotlin` | `dtolnay/syn` | Rust AST parser | 7,701 |
-| `quote-kotlin` | `dtolnay/quote` | TokenStream emission | 330 |
-| `tree-sitter-language-kotlin` | `tree-sitter` | FFI bindings to tree-sitter C runtime | 139 |
-
-### In-progress ports (not yet published)
-
-| Repo | Upstream | Role | Kt Lines |
-|---|---|---|---|
-| `proc-macro-kotlin` | `rust-lang/rust` (proc_macro) | Compiler-variant Kotlin-source lexer | 17,043 |
-| `lalrpop-kotlin` | `lalrpop/lalrpop` | LR(1) parser generator | 68,954 |
-| `lalrpop-util-kotlin` | `lalrpop/lalrpop` | LALRPOP derive macros | 1,922 |
-| `logos-kotlin` | `maciejhirsz/logos` | DFA-based lexer generator (proc-macro style) | 1,247 |
-| `regex-syntax-kotlin` | `rust-lang/regex` | Regex AST + parser | 55,404 |
-| `starlark-syntax-kotlin` | `facebook/starlark-rust` | Hand-written Starlark lexer + parser | 22,718 |
-| `shlex-kotlin` | `comex/rust-shlex` | Shell-style quoting lexer | 1,152 |
-| `tree-sitter-kotlin` | `tree-sitter/tree-sitter` | Full tree-sitter runtime (FFI to C) | 9,037 |
-| `syntect-kotlin` | `trishume/syntect` | Syntax highlighting (uses tree-sitter/PLIST) | varies |
-
-### What each lexer/parser provides
-
-**`logos-kotlin`** — DFA-based lexer generator. You define token enums,
-Logos compiles them into a state machine at build time (via proc-macro
-in Rust; in Kotlin this would be an annotation processor or code-gen
-step). Produces a `Lexer<TToken>` that iterates `Result<TToken>`.
-No parser component.
-
-**`lalrpop-kotlin`** — LR(1)/LALR parser generator. Takes a `.lalrpop`
-grammar spec and produces parse tables + a Kotlin runtime that drives
-them. Has a `kotlintarget` code generator that emits Kotlin parser
-code. 68K lines ported, no release yet. Needs a lexer (e.g., logos or
-JFlex) to feed it tokens.
-
-**`starlark-syntax-kotlin`** — Hand-written recursive-descent lexer +
-parser for the Starlark language. Demonstrates a pure-Kotlin lexer
-architecture: character-by-character scanning with `CursorChars` /
-`CursorBytes` abstractions, no code generation. Good reference for
-writing a Kotlin-language lexer from scratch.
-
-**`shlex-kotlin`** — Small shell-quoting lexer. Shows another
-pure-Kotlin hand-written lexer pattern.
-
-**`tree-sitter-kotlin`** — FFI bindings to the C tree-sitter runtime.
-Does not include a Kotlin grammar; that would be a separate
-`tree-sitter-grammar-kotlin`. The C runtime is compiled via
-`cinterop`. Heavy native dependency; useful for editors but
-overkill for proc-macro tokenization.
-
-**`regex-syntax-kotlin`** — Regex AST and parser. The `ast` module
-and `Parser` are complete enough to parse any regex into an AST.
-Potentially useful as a dependency for `logos-kotlin` if we want
-regex-based token definitions.
-
-### How they fit together for proc-macro-kotlin
-
-The current approach (vendored JetBrains `KotlinLexer`) is the fastest
-path to a working Kotlin-source tokenizer because:
-1. It already exists, compiles, and produces correct tokens.
-2. It is pure Kotlin (the JFlex-generated `KotlinFlexLexer.kt` is
-   Kotlin source, not Java).
-3. It handles all Kotlin syntax edge cases (string templates,
-   raw strings, nested comments, operator precedence).
-
-The alternative paths and their trade-offs:
-
-**Option A: logos-kotlin as lexer generator.** Write a `Logos`-style
-token enum for Kotlin-language tokens, generate a DFA at build time.
-Pros: no vendored runtime, pure Kotlin code-gen, potentially faster
-than JFlex. Cons: logos-kotlin is not yet published and its code-gen
-via annotation processor is not wired; also we'd need to define the
-full Kotlin token vocabulary by hand (the `.flex` spec already does
-this). Good future path but not the fastest today.
-
-**Option B: lalrpop-kotlin + logos-kotlin.** Use logos for lexing,
-lalrpop for parsing. This gives a complete Kotlin-native toolchain.
-Pros: both are already partially ported. Cons: neither is published;
-lalrpop's Kotlin code generator needs testing; we'd need a Kotlin
-grammar in `.lalrpop` format. This is the PROJECT_PLAN Phase 5
-endpoint.
-
-**Option C: tree-sitter-kotlin.** Use tree-sitter's C runtime with a
-Kotlin grammar. Pros: incremental parsing, error recovery, full AST.
-Cons: heavy native FFI dependency, C compilation required, grammar
-maintenance. Overkill for tokenization.
-
-**Option D: ANTLR4.** Use the `KotlinLexer.g4` / `KotlinParser.g4`
-grammars from `kotlin-spec` with a Kotlin ANTLR4 runtime. Pros:
-grammars already exist, well-tested. Cons: ANTLR4 runtime is
-~26,700 lines of Java (no Kotlin target); would need batch-translation
-or JVM interop. The ATN simulation engine (`ParserATNSimulator`,
-2,189 lines) is the core of the runtime. The `java.io` / `java.nio`
-dependencies are concentrated in `CharStreams.java` and
-`ANTLRInputStream.java` — the actual lexer/parser machinery uses only
-`java.util` collections, which translate cleanly to Kotlin stdlib.
-
-### JetBrains KMP parser (vendored in `tmp/kmp-parser/`)
-
-The full JetBrains KMP recursive-descent parser is 10,509 lines across
-28 files, now vendored in `tmp/kmp-parser/` for reference. Key files:
-
-| File | Lines | Role |
+| Raw tokens | Joined token | Joining rule |
 |---|---|---|
-| `Kotlin.flex` | 391 | JFlex spec that generates `KotlinFlexLexer.kt` |
-| `KDoc.flex` | varies | JFlex spec for KDoc comments |
-| `KotlinParser.kt` | 42 | Entry point: delegates to `KotlinParsing` |
-| `KotlinParsing.kt` | 2,909 | Full recursive-descent parser |
-| `KotlinExpressionParsing.kt` | 1,874 | Expression precedence parsing |
-| `KtNodeTypes.kt` | 321 | AST node type definitions |
-| `SemanticWhitespaceAwareSyntaxBuilders.kt` | 229 | Complex token joining + newline tracking |
-| `TokenStreamPatterns.kt` | 100 | Token sequence pattern helpers |
-| `KotlinWhitespaceAndCommentsBinders.kt` | 131 | Whitespace/comment AST attachment |
+| `QUEST` + `DOT` | `SAFE_ACCESS` (`?.`) | `?` followed by `.` |
+| `QUEST` + `COLON` | `ELVIS` (`?:`) | `?` followed by `:` |
+| `EXCL` + `EXCL` | `EXCLEXCL` (`!!`) | `!` followed by `!` |
 
-The parser uses `SemanticWhitespaceAwareSyntaxBuilderImpl` which
-handles "complex token joining" — the lexer emits `QUEST` + `DOT` as
-two tokens, and the parser's builder joins them into `SAFE_ACCESS`
-(`?.`) on the fly. Our `KtTokenAdapter` does this joining at the
-adapter level instead, decomposing `SAFE_ACCESS` back into
-`Punct('?')` + `Punct('.')`. Both approaches are correct; the adapter
-approach is simpler for our use case.
+When joining is enabled and a complex token is detected,
+`advanceLexer()` creates a `mark()`, advances twice, and calls
+`mark.collapse(tokenType)` to merge the two tokens into one.
 
-### ANTLR4 runtime (vendored in `tmp/antlr4/`)
+Our `KtTokenAdapter` takes the opposite approach: it receives the
+already-joined token and decomposes it back into `Punct` chains.
+Both approaches are correct; the decomposition approach is simpler
+for our use case since `proc_macro` tokens are always single characters.
 
-The ANTLR4 Java runtime is 26,695 lines across 6 packages. Java
-dependency surface:
+### Light tree → FIR pipeline
 
-| Package | Lines | Java deps | Translation difficulty |
-|---|---|---|---|
-| `runtime/` (top) | 9,556 | `java.io`, `java.nio`, `java.util` | Medium — `java.io` isolated to `CharStreams` |
-| `atn/` | 10,553 | `java.util` only | Easy — pure algorithm code |
-| `misc/` | 3,177 | `java.util`, `java.io` | Easy — mostly utilities |
-| `tree/` | 932 | `java.util` only | Easy |
-| `tree/pattern/` | 1,342 | `java.util` only | Easy |
-| `tree/xpath/` | 653 | `java.util` only | Easy |
-| `dfa/` | 482 | `java.util` only | Easy |
+The compiler's `LightTree2Fir` class shows the production pipeline:
 
-The ATN (Augmented Transition Network) engine in `atn/` is the heart
-of ANTLR4 — it's a pure algorithm implementation with only
-`java.util` dependencies. `ParserATNSimulator.java` (2,189 lines) is
-the adaptive prediction engine. This code could be batch-translated
-to Kotlin with minimal manual cleanup, giving us a Kotlin-native
-ANTLR4 runtime.
+1. `KtSourceFile` + source code → `KotlinLightParser.buildLightTree()`
+2. `FlyweightCapableTreeStructure<LighterASTNode>` (the light tree)
+3. `LightTreeRawFirDeclarationBuilder.convertFile()` → FIR
 
-The `kotlin-spec` grammars in `tmp/kotlin-spec/` provide
-`KotlinLexer.g4` and `KotlinParser.g4` — ready-to-use ANTLR4 grammar
-specs for the Kotlin language.
+The light tree is a flyweight AST — no PSI, no JVM dependencies in the
+KMP version. `LightTreeRawFirDeclarationBuilder` (2,929 lines) and
+`LightTreeRawFirExpressionBuilder` (1,719 lines) walk the light tree
+and emit FIR nodes. This pattern is directly applicable to our
+proc-macro pipeline: `KotlinLexer` → light tree → proc_macro types.
 
-### Decision: current path is optimal
+### Two parser implementations in the compiler
 
-The vendored JetBrains `KotlinLexer` (Phase 2b/2c) is the right choice
-for now. It gets `TokenStream.fromString()` working immediately with
-zero external dependencies. The longer-term toolchain evolution is:
+The Kotlin compiler has two distinct parser implementations:
 
-1. **Now:** JetBrains `KotlinLexer` → `KtTokenAdapter` → `TokenStream`
-2. **Near-term:** Kotlin-native JFlex (`jflex-kotlin`) can regenerate
-   the same `KotlinFlexLexer.kt` without the JVM JFlex dependency
-3. **Future:** `logos-kotlin` + `lalrpop-kotlin` provide a fully
-   Kotlin-native lexer+parser toolchain with no code-gen dependency on
-   Java or C whatsoever
-4. **If ANTLR4 is needed:** Batch-translate the `atn/` runtime
-   (10,553 lines, pure `java.util`) and use the `kotlin-spec` grammars
-   directly
+1. **KMP parser** (`multiplatform-parsing/common/`) — Pure Kotlin
+   Multiplatform, uses `SyntaxTreeBuilder` from `com.intellij.platform.syntax`.
+   This is what we've vendored and what works without JVM dependencies.
+
+2. **PSI parser** (`psi/parser/`) — JVM-based, uses `PsiBuilder` from
+   IntelliJ Platform. Mixed Java + Kotlin. Uses the JVM `KotlinLexer`
+   (`org.jetbrains.kotlin.lexer.KotlinLexer`, a different class from
+   the KMP one). This path has more features (PSI tree, IntelliJ
+   integration) but requires the JVM.
+
+For `proc-macro-kotlin`, the KMP parser is the right choice. It's pure
+Kotlin Multiplatform, produces the same tokens, and has no JVM
+dependencies.
+
+---
+
+## The kotlinmania infrastructure ecosystem
+
+These repos exist under `/Volumes/stuff/Projects/kotlinmania/` and provide
+the KMP building blocks for the proc-macro pipeline and the ANTLR4
+KMP adaptation.
+
+### Proc-macro pipeline
+
+| Repo | Published | Role |
+|---|---|---|
+| `proc-macro2-kotlin` | v0.1.1 (Maven Central) | Public API + Fallback lexer |
+| `syn-kotlin` | v0.1.7 (Maven Central) | Rust AST |
+| `quote-kotlin` | v0.1.1 (Maven Central) | TokenStream emission |
+| `proc-macro-kotlin` | **not yet** | Compiler-variant backend (this repo) |
+
+### Lexer/parser toolchain
+
+| Repo | Published | Role |
+|---|---|---|
+| `lalrpop-kotlin` | v0.1.7 (local) | LR(1) parser generator |
+| `logos-kotlin` | v0.1.0 (local) | DFA-based lexer generator |
+| `starlark-syntax-kotlin` | v0.1.1 (Maven Central) | Hand-written lexer reference |
+| `tree-sitter-kotlin` | local | tree-sitter C FFI grammar |
+
+### KMP I/O and systems infrastructure
+
+| Repo | Published | Role |
+|---|---|---|
+| `km-io` | v0.1.5 (Maven Central) | KMP I/O: `Source`, `Sink`, `Buffer`, `FileSystem`, `Path` — replaces `java.io`/`java.nio` |
+| `libc-kotlin` | not yet | POSIX bindings — covers `unistd`, `pthread`, `types` |
+| `klang` | local | Pure Kotlin C-semantics: `GlobalHeap`, `KMalloc`, `CString`, `BitPrimitives` |
+
+`km-io` ships **every** KMP target: JVM, JS, wasmJs, wasmWasi, Android,
+iOS, tvOS, watchOS, Android Native, Linux, macOS, Windows. It is the
+`java.io`/`java.nio` replacement for any KMP adaptation of JVM code.
+
+`klang` provides bit-level primitives (`BitPrimitives`, `BitTwiddle`,
+`PackOps`) that can implement `BitSet` and `IdentityHashMap` in pure
+Kotlin if needed for the ANTLR4 KMP adaptation.
+
+### Vendored reference sources (all in `tmp/`, gitignored)
+
+| Path | Language | Lines | Source | Purpose |
+|---|---|---|---|---|
+| `tmp/antlr4/` | Kotlin + Java (tree/) | 23,577 kt + 2,927 java | [antlr/antlr4](https://github.com/antlr/antlr4) `dev` branch | ANTLR4 runtime — **already Kotlin!** KMP-adapt for Kotlin-native parser |
+| `tmp/jflex/` | Java | 14,484 | JetBrains/intellij-deps-jflex | JFlex code generator — batch-translate for Kotlin-native JFlex |
+| `tmp/jflex-skeleton/` | Kotlin-ish | 302 | JetBrains/intellij-community | `idea-flex-kotlin.skeleton` template |
+| `tmp/kotlin-spec/` | ANTLR4 grammar | — | [Kotlin/kotlin-spec](https://github.com/Kotlin/kotlin-spec/tree/release/grammar/src/main/antlr) | `KotlinLexer.g4`, `KotlinParser.g4`, `UnicodeClasses.g4` |
+| `tmp/kmp-parser/` | Kotlin | 10,509 | JetBrains KMP parser | Full recursive-descent parser for reference |
+| `tmp/proc-macro/` | Rust | — | [rust-lang/rust](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src) | Upstream Rust proc_macro source |
+
+**The ANTLR4 discovery changes the calculus.** The runtime is already
+Kotlin — we don't need a Java→Kotlin batch translation step. We need a
+KMP adaptation step: swap `java.util.*` for Kotlin stdlib, replace
+`java.io`/`java.nio` with `km-io`, and remove `AccessController`.
+The `atn/` package (10,557 lines) is the highest-value target and the
+cleanest to adapt.
+
+---
+
+## Parallel work tracks
+
+Two people can work in parallel without blocking each other:
+
+### Track 1: Phase 3 — publish + wire
+
+1. Publish `proc-macro-kotlin v0.1.0`
+2. Wire into `proc-macro2-kotlin` (Detection, Wrapper, TokenStream dispatch)
+3. Publish `proc-macro2-kotlin v0.2.0`
+4. Verify serde-kotlin can depend on the new versions
+
+### Track 2: KMP adaptation + Java → Kotlin batch translations
+
+**ANTLR4 `atn/` KMP adaptation (highest parser value, 10,557 lines Kotlin):**
+Already Kotlin — just need to swap JVM deps for Kotlin Multiplatform equivalents:
+
+| Java class | Kotlin replacement | kotlinmania alternative |
+|---|---|---|
+| `ArrayList` | `mutableListOf()` / `ArrayList()` | Direct stdlib swap |
+| `HashMap` | `mutableMapOf()` / `HashMap()` | Direct stdlib swap |
+| `HashSet` | `mutableSetOf()` / `HashSet()` | Direct stdlib swap |
+| `LinkedHashMap` | `linkedMapOf()` | Direct stdlib swap |
+| `IdentityHashMap` | Custom impl via `identityHashCode` | `klang` bitwise infra |
+| `BitSet` | Custom impl or expect/actual | `klang` `BitPrimitives` |
+| `Arrays` | Kotlin stdlib `sort`, etc. | Direct stdlib swap |
+| `Collections` | Kotlin stdlib equivalents | Direct stdlib swap |
+| `AtomicInteger` | `kotlin.concurrent.atomics.AtomicInt` | Direct stdlib swap |
+| `AccessController` | Remove (security optimization) | No replacement needed |
+| `InvalidClassException` | Custom exception class | Custom |
+| `Locale` | `kotlin.text` lowercase/uppercase | Direct stdlib swap |
+| `Objects.hash` | `kotlin.hashCode()` combiner | Direct stdlib swap |
+
+I/O adaptation for the top-level runtime (`CharStreams`, `ANTLRInputStream`,
+`ANTLRFileStream`, `CodePointCharStream`, `UnbufferedCharStream`):
+`java.io.InputStream` → `km-io` `RawSource`, `java.io.Reader` → `km-io`
+`Source`, `java.nio.CharBuffer` → `km-io` `Buffer`, `java.nio.ByteBuffer`
+→ `km-io` `Buffer`.
+
+The 33 remaining `.java` files in `tree/` (2,927 lines) can also be
+batch-translated in IntelliJ — they use only `java.util.*`.
+
+**JFlex Kotlin-specific emitters (highest value, 2,466 lines Java):**
+- `KotlinEmitter.java` (1,455 lines)
+- `KotlinAbstractLexScan.java` (481 lines)
+- `KotlinCountEmitter.java` (180 lines)
+- `KotlinPackEmitter.java` (192 lines)
+- `KotlinHiLowEmitter.java` (94 lines)
+- `KotlinHiCountEmitter.java` (64 lines)
+
+**JFlex base emitters (2,280 lines Java):**
+- `Emitter.java` (1,466), `IEmitter.java` (62), `LexGenerator.java` (158),
+  `Emitters.java` (83), `CountEmitter.java` (163), `PackEmitter.java` (204),
+  `HiCountEmitter.java` (63), `HiLowEmitter.java` (81)
+
+**Manual cleanup after JFlex batch translation:**
+- `java.io.Reader` → `km-io` `Source`
+- `System.exit` → exception-based flow
+- `java.util.*` → Kotlin stdlib
+- `java_cup.runtime.Symbol` → Kotlin equivalent
+- `@JvmStatic` / `companion object` restructuring
+PLAN_EOF
