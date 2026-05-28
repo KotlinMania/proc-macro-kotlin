@@ -432,6 +432,9 @@ KMP adaptation.
 | `km-io` | v0.1.5 (Maven Central) | KMP I/O: `Source`, `Sink`, `Buffer`, `FileSystem`, `Path` — replaces `java.io`/`java.nio` |
 | `libc-kotlin` | not yet | POSIX bindings — covers `unistd`, `pthread`, `types` |
 | `klang` | local | Pure Kotlin C-semantics: `GlobalHeap`, `KMalloc`, `CString`, `BitPrimitives` |
+| `starlarkmap-kotlin` | v0.1.2 | Hash collections: `Equivalent`, `FxHasher64`, `UnorderedMap`, `OrderedMap`, `SmallMap`, `VecMap` |
+| `indexmap-kotlin` | not yet | `IndexMap`/`IndexSet` — insertion-order-preserving hash map |
+| `btree-kotlin` | not yet | `BTreeMap`/`BTreeSet` — ported from Rust std collections |
 
 `km-io` ships **every** KMP target: JVM, JS, wasmJs, wasmWasi, Android,
 iOS, tvOS, watchOS, Android Native, Linux, macOS, Windows. It is the
@@ -440,6 +443,16 @@ iOS, tvOS, watchOS, Android Native, Linux, macOS, Windows. It is the
 `klang` provides bit-level primitives (`BitPrimitives`, `BitTwiddle`,
 `PackOps`) that can implement `BitSet` and `IdentityHashMap` in pure
 Kotlin if needed for the ANTLR4 KMP adaptation.
+
+`starlarkmap-kotlin` is the key missing piece for the ANTLR4 KMP
+adaptation. It provides `Equivalent` (the `equivalent` crate trait
+that `hashbrown` depends on), `FxHasher64` (the `fxhash`/`rustc-hash`
+hasher), and `UnorderedMap`/`UnorderedSet` (`hashbrown`-shaped maps).
+ANTLR4's `IdentityHashMap` usage maps directly to an `Equivalent`-based
+lookup — define an `Equivalent` that compares by object identity
+(`===`) and use `UnorderedMap`. The `BitSet` replacement can use `klang`'s
+bit primitives or `starlarkmap`'s `SmallSet`/`OrderedSet` as compact
+bit-backed structures.
 
 ### Vendored reference sources (all in `tmp/`, gitignored)
 
@@ -483,8 +496,8 @@ Already Kotlin — just need to swap JVM deps for Kotlin Multiplatform equivalen
 | `HashMap` | `mutableMapOf()` / `HashMap()` | Direct stdlib swap |
 | `HashSet` | `mutableSetOf()` / `HashSet()` | Direct stdlib swap |
 | `LinkedHashMap` | `linkedMapOf()` | Direct stdlib swap |
-| `IdentityHashMap` | Custom impl via `identityHashCode` | `klang` bitwise infra |
-| `BitSet` | Custom impl or expect/actual | `klang` `BitPrimitives` |
+| `IdentityHashMap` | `Equivalent`-based `UnorderedMap` | `starlarkmap-kotlin` `Equivalent` + `UnorderedMap` |
+| `BitSet` | Custom impl or `klang` `BitPrimitives` | `klang` + `starlarkmap` `SmallSet` |
 | `Arrays` | Kotlin stdlib `sort`, etc. | Direct stdlib swap |
 | `Collections` | Kotlin stdlib equivalents | Direct stdlib swap |
 | `AtomicInteger` | `kotlin.concurrent.atomics.AtomicInt` | Direct stdlib swap |
