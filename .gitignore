@@ -70,3 +70,4 @@ tmp/kotlin-spec/
 tmp/antlr4/
 tmp/jflex/
 tmp/jflex-skeleton/
+tmp/kmp-parser/
