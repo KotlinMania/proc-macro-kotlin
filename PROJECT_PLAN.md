@@ -480,3 +480,171 @@ unlocks it.
 The stack is one vendor pass (KMP lexer ~2,400 lines) + one adapter
 layer + one wrapper-branch PR away from being a working end-to-end
 pipeline. Every piece publishes except this repo.
+
+## Architecture survey — Kotlinmania lexer/parser ecosystem
+
+### Published libraries (Maven Central)
+
+| Repo | Upstream | Role | Kt Lines |
+|---|---|---|---|
+| `proc-macro2-kotlin` | `dtolnay/proc-macro2` | Public API + Fallback (Rust-source) lexer | 4,003 |
+| `syn-kotlin` | `dtolnay/syn` | Rust AST parser | 7,701 |
+| `quote-kotlin` | `dtolnay/quote` | TokenStream emission | 330 |
+| `tree-sitter-language-kotlin` | `tree-sitter` | FFI bindings to tree-sitter C runtime | 139 |
+
+### In-progress ports (not yet published)
+
+| Repo | Upstream | Role | Kt Lines |
+|---|---|---|---|
+| `proc-macro-kotlin` | `rust-lang/rust` (proc_macro) | Compiler-variant Kotlin-source lexer | 17,043 |
+| `lalrpop-kotlin` | `lalrpop/lalrpop` | LR(1) parser generator | 68,954 |
+| `lalrpop-util-kotlin` | `lalrpop/lalrpop` | LALRPOP derive macros | 1,922 |
+| `logos-kotlin` | `maciejhirsz/logos` | DFA-based lexer generator (proc-macro style) | 1,247 |
+| `regex-syntax-kotlin` | `rust-lang/regex` | Regex AST + parser | 55,404 |
+| `starlark-syntax-kotlin` | `facebook/starlark-rust` | Hand-written Starlark lexer + parser | 22,718 |
+| `shlex-kotlin` | `comex/rust-shlex` | Shell-style quoting lexer | 1,152 |
+| `tree-sitter-kotlin` | `tree-sitter/tree-sitter` | Full tree-sitter runtime (FFI to C) | 9,037 |
+| `syntect-kotlin` | `trishume/syntect` | Syntax highlighting (uses tree-sitter/PLIST) | varies |
+
+### What each lexer/parser provides
+
+**`logos-kotlin`** — DFA-based lexer generator. You define token enums,
+Logos compiles them into a state machine at build time (via proc-macro
+in Rust; in Kotlin this would be an annotation processor or code-gen
+step). Produces a `Lexer<TToken>` that iterates `Result<TToken>`.
+No parser component.
+
+**`lalrpop-kotlin`** — LR(1)/LALR parser generator. Takes a `.lalrpop`
+grammar spec and produces parse tables + a Kotlin runtime that drives
+them. Has a `kotlintarget` code generator that emits Kotlin parser
+code. 68K lines ported, no release yet. Needs a lexer (e.g., logos or
+JFlex) to feed it tokens.
+
+**`starlark-syntax-kotlin`** — Hand-written recursive-descent lexer +
+parser for the Starlark language. Demonstrates a pure-Kotlin lexer
+architecture: character-by-character scanning with `CursorChars` /
+`CursorBytes` abstractions, no code generation. Good reference for
+writing a Kotlin-language lexer from scratch.
+
+**`shlex-kotlin`** — Small shell-quoting lexer. Shows another
+pure-Kotlin hand-written lexer pattern.
+
+**`tree-sitter-kotlin`** — FFI bindings to the C tree-sitter runtime.
+Does not include a Kotlin grammar; that would be a separate
+`tree-sitter-grammar-kotlin`. The C runtime is compiled via
+`cinterop`. Heavy native dependency; useful for editors but
+overkill for proc-macro tokenization.
+
+**`regex-syntax-kotlin`** — Regex AST and parser. The `ast` module
+and `Parser` are complete enough to parse any regex into an AST.
+Potentially useful as a dependency for `logos-kotlin` if we want
+regex-based token definitions.
+
+### How they fit together for proc-macro-kotlin
+
+The current approach (vendored JetBrains `KotlinLexer`) is the fastest
+path to a working Kotlin-source tokenizer because:
+1. It already exists, compiles, and produces correct tokens.
+2. It is pure Kotlin (the JFlex-generated `KotlinFlexLexer.kt` is
+   Kotlin source, not Java).
+3. It handles all Kotlin syntax edge cases (string templates,
+   raw strings, nested comments, operator precedence).
+
+The alternative paths and their trade-offs:
+
+**Option A: logos-kotlin as lexer generator.** Write a `Logos`-style
+token enum for Kotlin-language tokens, generate a DFA at build time.
+Pros: no vendored runtime, pure Kotlin code-gen, potentially faster
+than JFlex. Cons: logos-kotlin is not yet published and its code-gen
+via annotation processor is not wired; also we'd need to define the
+full Kotlin token vocabulary by hand (the `.flex` spec already does
+this). Good future path but not the fastest today.
+
+**Option B: lalrpop-kotlin + logos-kotlin.** Use logos for lexing,
+lalrpop for parsing. This gives a complete Kotlin-native toolchain.
+Pros: both are already partially ported. Cons: neither is published;
+lalrpop's Kotlin code generator needs testing; we'd need a Kotlin
+grammar in `.lalrpop` format. This is the PROJECT_PLAN Phase 5
+endpoint.
+
+**Option C: tree-sitter-kotlin.** Use tree-sitter's C runtime with a
+Kotlin grammar. Pros: incremental parsing, error recovery, full AST.
+Cons: heavy native FFI dependency, C compilation required, grammar
+maintenance. Overkill for tokenization.
+
+**Option D: ANTLR4.** Use the `KotlinLexer.g4` / `KotlinParser.g4`
+grammars from `kotlin-spec` with a Kotlin ANTLR4 runtime. Pros:
+grammars already exist, well-tested. Cons: ANTLR4 runtime is
+~26,700 lines of Java (no Kotlin target); would need batch-translation
+or JVM interop. The ATN simulation engine (`ParserATNSimulator`,
+2,189 lines) is the core of the runtime. The `java.io` / `java.nio`
+dependencies are concentrated in `CharStreams.java` and
+`ANTLRInputStream.java` — the actual lexer/parser machinery uses only
+`java.util` collections, which translate cleanly to Kotlin stdlib.
+
+### JetBrains KMP parser (vendored in `tmp/kmp-parser/`)
+
+The full JetBrains KMP recursive-descent parser is 10,509 lines across
+28 files, now vendored in `tmp/kmp-parser/` for reference. Key files:
+
+| File | Lines | Role |
+|---|---|---|
+| `Kotlin.flex` | 391 | JFlex spec that generates `KotlinFlexLexer.kt` |
+| `KDoc.flex` | varies | JFlex spec for KDoc comments |
+| `KotlinParser.kt` | 42 | Entry point: delegates to `KotlinParsing` |
+| `KotlinParsing.kt` | 2,909 | Full recursive-descent parser |
+| `KotlinExpressionParsing.kt` | 1,874 | Expression precedence parsing |
+| `KtNodeTypes.kt` | 321 | AST node type definitions |
+| `SemanticWhitespaceAwareSyntaxBuilders.kt` | 229 | Complex token joining + newline tracking |
+| `TokenStreamPatterns.kt` | 100 | Token sequence pattern helpers |
+| `KotlinWhitespaceAndCommentsBinders.kt` | 131 | Whitespace/comment AST attachment |
+
+The parser uses `SemanticWhitespaceAwareSyntaxBuilderImpl` which
+handles "complex token joining" — the lexer emits `QUEST` + `DOT` as
+two tokens, and the parser's builder joins them into `SAFE_ACCESS`
+(`?.`) on the fly. Our `KtTokenAdapter` does this joining at the
+adapter level instead, decomposing `SAFE_ACCESS` back into
+`Punct('?')` + `Punct('.')`. Both approaches are correct; the adapter
+approach is simpler for our use case.
+
+### ANTLR4 runtime (vendored in `tmp/antlr4/`)
+
+The ANTLR4 Java runtime is 26,695 lines across 6 packages. Java
+dependency surface:
+
+| Package | Lines | Java deps | Translation difficulty |
+|---|---|---|---|
+| `runtime/` (top) | 9,556 | `java.io`, `java.nio`, `java.util` | Medium — `java.io` isolated to `CharStreams` |
+| `atn/` | 10,553 | `java.util` only | Easy — pure algorithm code |
+| `misc/` | 3,177 | `java.util`, `java.io` | Easy — mostly utilities |
+| `tree/` | 932 | `java.util` only | Easy |
+| `tree/pattern/` | 1,342 | `java.util` only | Easy |
+| `tree/xpath/` | 653 | `java.util` only | Easy |
+| `dfa/` | 482 | `java.util` only | Easy |
+
+The ATN (Augmented Transition Network) engine in `atn/` is the heart
+of ANTLR4 — it's a pure algorithm implementation with only
+`java.util` dependencies. `ParserATNSimulator.java` (2,189 lines) is
+the adaptive prediction engine. This code could be batch-translated
+to Kotlin with minimal manual cleanup, giving us a Kotlin-native
+ANTLR4 runtime.
+
+The `kotlin-spec` grammars in `tmp/kotlin-spec/` provide
+`KotlinLexer.g4` and `KotlinParser.g4` — ready-to-use ANTLR4 grammar
+specs for the Kotlin language.
+
+### Decision: current path is optimal
+
+The vendored JetBrains `KotlinLexer` (Phase 2b/2c) is the right choice
+for now. It gets `TokenStream.fromString()` working immediately with
+zero external dependencies. The longer-term toolchain evolution is:
+
+1. **Now:** JetBrains `KotlinLexer` → `KtTokenAdapter` → `TokenStream`
+2. **Near-term:** Kotlin-native JFlex (`jflex-kotlin`) can regenerate
+   the same `KotlinFlexLexer.kt` without the JVM JFlex dependency
+3. **Future:** `logos-kotlin` + `lalrpop-kotlin` provide a fully
+   Kotlin-native lexer+parser toolchain with no code-gen dependency on
+   Java or C whatsoever
+4. **If ANTLR4 is needed:** Batch-translate the `atn/` runtime
+   (10,553 lines, pure `java.util`) and use the `kotlin-spec` grammars
+   directly

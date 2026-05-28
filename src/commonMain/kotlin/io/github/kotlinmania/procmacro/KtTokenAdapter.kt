@@ -253,6 +253,12 @@ internal object KtTokenAdapter {
             }
         }
 
+        // Compound tokens: NOT_IN (!in), NOT_IS (!is), AS_SAFE (as?)
+        // These are atomic lexer tokens but decompose into Punct + Ident
+        // or Ident + Punct in proc_macro token trees.
+        val compound = compoundTokenDecomposition(ft.type, text)
+        if (compound != null) return compound
+
         return null
     }
 
@@ -313,6 +319,34 @@ internal object KtTokenAdapter {
         KtTokens.DOUBLE_SEMICOLON -> ";;"
         KtTokens.SAFE_ACCESS -> "?."
         KtTokens.ELVIS -> "?:"
+        KtTokens.RESERVED -> "..."
+        else -> null
+    }
+
+    /**
+     * Decomposes compound lexer tokens that blend punctuation and
+     * identifier parts into proc_macro token sequences.
+     *
+     * - `NOT_IN` (`!in`) → `Punct('!', ALONE)` + `Ident("in")`
+     * - `NOT_IS` (`!is`) → `Punct('!', ALONE)` + `Ident("is")`
+     * - `AS_SAFE` (`as?`) → `Ident("as")` + `Punct('?', ALONE)`
+     */
+    private fun compoundTokenDecomposition(
+        type: SyntaxElementType,
+        text: String,
+    ): List<TokenTree>? = when (type) {
+        KtTokens.NOT_IN -> listOf(
+            TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
+            TokenTree.Ident(Ident.new("in", Span.callSite())),
+        )
+        KtTokens.NOT_IS -> listOf(
+            TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
+            TokenTree.Ident(Ident.new("is", Span.callSite())),
+        )
+        KtTokens.AS_SAFE -> listOf(
+            TokenTree.Ident(Ident.new("as", Span.callSite())),
+            TokenTree.Punct(Punct.new('?', Spacing.ALONE)),
+        )
         else -> null
     }
 }
