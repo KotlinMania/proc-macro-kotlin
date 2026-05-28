@@ -61,7 +61,7 @@ class BitSet {
 
     fun cardinality(): Int {
         var count = 0
-        for (word in words) count += word.countOneBits().toInt()
+        for (word in words) count += word.countOneBits()
         return count
     }
 

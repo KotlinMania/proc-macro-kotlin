@@ -62,7 +62,7 @@ class IntervalSet : IntSet {
                 }
                 return
             }
-            if (addition.startsBeforeDisjoint(r) as Boolean) {
+            if (addition.startsBeforeDisjoint(r)) {
                 iter.previous()
                 iter.add(addition)
                 return
@@ -91,16 +91,16 @@ class IntervalSet : IntSet {
     }
 
     fun complement(minElement: Int, maxElement: Int): IntervalSet? =
-        this.complement(IntervalSet.of(minElement, maxElement))
+        this.complement(of(minElement, maxElement))
 
-    override fun complement(vocabulary: IntSet?): IntervalSet? {
-        if (vocabulary == null || vocabulary.isNil) {
+    override fun complement(elements: IntSet?): IntervalSet? {
+        if (elements == null || elements.isNil) {
             return null
         }
-        val vocabularyIS: IntervalSet = if (vocabulary is IntervalSet) {
-            vocabulary
+        val vocabularyIS: IntervalSet = if (elements is IntervalSet) {
+            elements
         } else {
-            IntervalSet().also { it.addAll(vocabulary) }
+            IntervalSet().also { it.addAll(elements) }
         }
         return vocabularyIS.subtract(this)
     }
@@ -110,26 +110,26 @@ class IntervalSet : IntSet {
             return IntervalSet(this)
         }
         if (a is IntervalSet) {
-            return IntervalSet.subtract(this, a)
+            return subtract(this, a)
         }
-        val other: IntervalSet = IntervalSet()
+        val other = IntervalSet()
         other.addAll(a)
-        return IntervalSet.subtract(this, other)
+        return subtract(this, other)
     }
 
     override fun or(a: IntSet?): IntervalSet {
-        val o: IntervalSet = IntervalSet()
+        val o = IntervalSet()
         o.addAll(this)
         o.addAll(a)
         return o
     }
 
-    override fun and(other: IntSet?): IntervalSet? {
-        if (other == null) {
+    override fun and(a: IntSet?): IntervalSet? {
+        if (a == null) {
             return null
         }
         val myIntervals: MutableList<Interval> = this.intervals
-        val theirIntervals: MutableList<Interval> = (other as IntervalSet).intervals
+        val theirIntervals: MutableList<Interval> = (a as IntervalSet).intervals
         var intersection: IntervalSet? = null
         val mySize: Int = myIntervals.size
         val theirSize: Int = theirIntervals.size
@@ -231,7 +231,7 @@ class IntervalSet : IntSet {
 
     override fun toString(): String? = toString(false)
 
-    fun toString(elemAreChar: Boolean): String? {
+    fun toString(elemAreChar: Boolean): String {
         val buf: StringBuilder = StringBuilder()
         if (this.intervals.isEmpty()) {
             return "{}"
