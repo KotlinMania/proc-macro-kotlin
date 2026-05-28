@@ -771,3 +771,42 @@ them with near-zero manual cleanup. The `xpath/XPathLexer.java` is an
 ANTLR-generated lexer; once the runtime is KMP, it can be regenerated
 in Kotlin using the ANTLR4 tool with the same approach used for the
 Kotlin spec grammars.
+
+---
+
+## ANTLR4 `tree/` package: fully converted to Kotlin
+
+The 33 Java files in `runtime/Java/src/org/antlr/v4/runtime/tree/`
+have been batch-converted to Kotlin. The ANTLR4 runtime is now
+**174 `.kt` files, 0 `.java` files** (26,326 lines total).
+
+The only remaining Java file in the entire ANTLR4 checkout is
+`tool/src/org/antlr/v4/unicode/UnicodeDataTemplateController.java`
+(435 lines) — a build-time code generator, not runtime code.
+
+### Remaining `java.*` imports in the converted `tree/` files
+
+Only 19 `java.*` imports across the 33 new `.kt` files:
+
+| Java import | Uses | KMP replacement |
+|---|---|---|
+| `java.util.ArrayList` | 8 | Direct stdlib swap |
+| `java.util.Collections` | 3 | Direct stdlib swap |
+| `java.util.Arrays` | 2 | Direct stdlib swap |
+| `java.util.LinkedHashSet` | 1 | Direct stdlib swap |
+| `java.util.Deque` | 1 | `ArrayDeque` |
+| `java.util.ArrayDeque` | 1 | Direct |
+| `java.util.IdentityHashMap` | 1 | `starlarkmap-kotlin` `Equivalent`-based `UnorderedMap` |
+| `java.io.StringReader` | 1 | `km-io` or drop (XPath-specific) |
+| `java.io.IOException` | 1 | `IOException` |
+
+These are all straightforward KMP swaps — no bytecode dependencies, no
+native method calls, no class loading tricks.
+
+### Updated ANTLR4 status
+
+| Component | Files | Lines | Status |
+|---|---|---|---|
+| Runtime (all `.kt`) | 174 | 26,326 | Fully Kotlin, needs KMP dep swap |
+| Tool (1 `.java` + 231 `.kt`) | 232 | 24,025 + 435 java | 1 build-time Java file, rest Kotlin |
+| Test suite | ~80 `.kt` | — | Kotlin, test infrastructure |
