@@ -1010,3 +1010,218 @@ class QuoteTest {
         quote(input)
     }
 }
+
+// --- KtTokenAdapter / TokenStream.fromString integration tests ---
+
+class KtTokenAdapterTest {
+    @Test
+    fun fromStringParsesSimpleFunction() {
+        val result = TokenStream.fromString("fun hello() {}")
+        assertTrue(result.isSuccess)
+        val stream = result.getOrThrow()
+        val trees = stream.toList()
+        // fun -> Ident, hello -> Ident, ( -> Group(PARENTHESIS), { } -> Group(BRACE)
+        assertTrue(trees.size >= 3, "Expected at least 3 top-level trees, got ${trees.size}")
+    }
+
+    @Test
+    fun fromStringMapsKeywordsToIdents() {
+        val result = TokenStream.fromString("class Foo")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        // "class" is a hard keyword → Ident("class"), "Foo" → Ident("Foo")
+        val idents = trees.filterIsInstance<TokenTree.Ident>()
+        assertTrue(idents.any { it.value.toString() == "class" }, "Expected 'class' as Ident")
+        assertTrue(idents.any { it.value.toString() == "Foo" }, "Expected 'Foo' as Ident")
+    }
+
+    @Test
+    fun fromStringDecomposesArrow() {
+        val result = TokenStream.fromString("->")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        // ARROW (->) decomposes into Punct('-', JOINT) + Punct('>', ALONE)
+        assertEquals(2, trees.size)
+        val first = trees[0] as TokenTree.Punct
+        val second = trees[1] as TokenTree.Punct
+        assertEquals('-', first.value.asChar())
+        assertEquals(Spacing.JOINT, first.value.spacing())
+        assertEquals('>', second.value.asChar())
+        assertEquals(Spacing.ALONE, second.value.spacing())
+    }
+
+    @Test
+    fun fromStringDecomposesEqEq() {
+        val result = TokenStream.fromString("==")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(2, trees.size)
+        val first = trees[0] as TokenTree.Punct
+        val second = trees[1] as TokenTree.Punct
+        assertEquals('=', first.value.asChar())
+        assertEquals(Spacing.JOINT, first.value.spacing())
+        assertEquals('=', second.value.asChar())
+        assertEquals(Spacing.ALONE, second.value.spacing())
+    }
+
+    @Test
+    fun fromStringSinglePunctIsAlone() {
+        val result = TokenStream.fromString("+")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val punct = trees[0] as TokenTree.Punct
+        assertEquals('+', punct.value.asChar())
+        assertEquals(Spacing.ALONE, punct.value.spacing())
+    }
+
+    @Test
+    fun fromStringParsesStringLiteral() {
+        val result = TokenStream.fromString("\"hello\"")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val lit = trees[0] as TokenTree.Literal
+        assertTrue(lit.value.toString().contains("hello"), "Expected string literal containing 'hello', got ${lit.value}")
+    }
+
+    @Test
+    fun fromStringParsesIntegerLiteral() {
+        val result = TokenStream.fromString("42")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val lit = trees[0] as TokenTree.Literal
+        assertTrue(lit.value.toString().contains("42"), "Expected integer literal, got ${lit.value}")
+    }
+
+    @Test
+    fun fromStringParsesFloatLiteral() {
+        val result = TokenStream.fromString("3.14")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val lit = trees[0] as TokenTree.Literal
+        assertTrue(lit.value.toString().contains("3.14"), "Expected float literal, got ${lit.value}")
+    }
+
+    @Test
+    fun fromStringNestsParenGroups() {
+        val result = TokenStream.fromString("(a, b)")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val group = trees[0] as TokenTree.Group
+        assertEquals(Delimiter.PARENTHESIS, group.value.delimiter())
+        val inner = group.value.stream().toList()
+        // a , b → Ident Punct COMMA Punct Ident (comma and idents)
+        assertTrue(inner.any { it is TokenTree.Ident }, "Expected Ident inside group")
+    }
+
+    @Test
+    fun fromStringNestsBraceGroups() {
+        val result = TokenStream.fromString("{ x }")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val group = trees[0] as TokenTree.Group
+        assertEquals(Delimiter.BRACE, group.value.delimiter())
+    }
+
+    @Test
+    fun fromStringNestedGroups() {
+        val result = TokenStream.fromString("f({ g })")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        // f → Ident, ( → Group(PAREN), containing Group(BRACE)
+        assertTrue(trees.size >= 2, "Expected at least 2 top-level trees")
+        val outerGroup = trees.filterIsInstance<TokenTree.Group>().firstOrNull()
+        assertTrue(outerGroup != null, "Expected a Group in the result")
+        assertEquals(Delimiter.PARENTHESIS, outerGroup!!.value.delimiter())
+        val inner = outerGroup.value.stream().toList()
+        val innerBrace = inner.filterIsInstance<TokenTree.Group>().firstOrNull()
+        assertTrue(innerBrace != null, "Expected nested brace group")
+        assertEquals(Delimiter.BRACE, innerBrace!!.value.delimiter())
+    }
+
+    @Test
+    fun fromStringFailsOnUnbalancedParen() {
+        val result = TokenStream.fromString("( unclosed")
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun fromStringFailsOnExtraCloseParen() {
+        val result = TokenStream.fromString(")")
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun fromStringQuestDotAreSeparateTokens() {
+        val result = TokenStream.fromString("?.")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        // Lexer produces QUEST + DOT separately
+        assertEquals(2, trees.size)
+        val quest = trees[0] as TokenTree.Punct
+        val dot = trees[1] as TokenTree.Punct
+        assertEquals('?', quest.value.asChar())
+        assertEquals(Spacing.ALONE, quest.value.spacing())
+        assertEquals('.', dot.value.asChar())
+        assertEquals(Spacing.ALONE, dot.value.spacing())
+    }
+
+    @Test
+    fun fromStringDecomposesRangeUntil() {
+        val result = TokenStream.fromString("..<")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        // RANGE_UNTIL (..<) decomposes into Punct('.', JOINT), Punct('.', JOINT), Punct('<', ALONE)
+        assertEquals(3, trees.size)
+        assertEquals('.', (trees[0] as TokenTree.Punct).value.asChar())
+        assertEquals(Spacing.JOINT, (trees[0] as TokenTree.Punct).value.spacing())
+        assertEquals('.', (trees[1] as TokenTree.Punct).value.asChar())
+        assertEquals(Spacing.JOINT, (trees[1] as TokenTree.Punct).value.spacing())
+        assertEquals('<', (trees[2] as TokenTree.Punct).value.asChar())
+        assertEquals(Spacing.ALONE, (trees[2] as TokenTree.Punct).value.spacing())
+    }
+
+    @Test
+    fun fromStringDecomposesNotIn() {
+        val result = TokenStream.fromString("!in")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        // NOT_IN → Punct('!', ALONE) + Ident("in")
+        assertEquals(2, trees.size)
+        val punct = trees[0] as TokenTree.Punct
+        assertEquals('!', punct.value.asChar())
+        val ident = trees[1] as TokenTree.Ident
+        assertEquals("in", ident.value.toString())
+    }
+
+    @Test
+    fun fromStringFiltersWhitespace() {
+        val result = TokenStream.fromString("  a  b  ")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(2, trees.size, "Expected 2 idents after whitespace filtering")
+    }
+
+    @Test
+    fun fromStringFiltersComments() {
+        val result = TokenStream.fromString("a // comment\nb")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(2, trees.size, "Expected 2 idents after comment filtering")
+    }
+
+    @Test
+    fun fromStringParsesCharacterLiteral() {
+        val result = TokenStream.fromString("'x'")
+        assertTrue(result.isSuccess)
+        val trees = result.getOrThrow().toList()
+        assertEquals(1, trees.size)
+        val lit = trees[0] as TokenTree.Literal
+        assertTrue(lit.value.toString().contains("x"), "Expected char literal, got ${lit.value}")
+    }
+}

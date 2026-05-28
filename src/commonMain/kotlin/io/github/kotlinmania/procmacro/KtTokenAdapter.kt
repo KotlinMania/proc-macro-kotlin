@@ -14,6 +14,13 @@ import org.jetbrains.kotlin.kmp.lexer.KtTokens
  * accumulates string-template tokens into atomic [Literal]s, decomposes
  * multi-character Kotlin operators into [Punct] sequences with correct
  * [Spacing], and matches delimiter pairs into nested [Group]s.
+ *
+ * Note: The JetBrains `KotlinLexer` produces separate `QUEST` + `DOT`
+ * tokens for `?.` and separate `QUEST` + `COLON` tokens for `?:`. The
+ * parser-level `SemanticWhitespaceAwareSyntaxBuilderImpl` joins these
+ * into `SAFE_ACCESS` and `ELVIS` — but the lexer never produces those
+ * compound types. This adapter handles each individual lexer token
+ * independently.
  */
 internal object KtTokenAdapter {
 
@@ -82,17 +89,6 @@ internal object KtTokenAdapter {
 
     // --- Phase 2: string template collapse ---
 
-    /**
-     * KotlinLexer breaks string literals into template parts
-     * (OPEN_QUOTE, REGULAR_STRING_PART, ESCAPE_SEQUENCE,
-     * SHORT/LONG_TEMPLATE_ENTRY_*, CLOSING_QUOTE, etc.).
-     *
-     * For `proc_macro` purposes a non-interpolated string is an atomic
-     * [Literal]. String interpolation is a Kotlin-specific semantic
-     * with no direct proc_macro decomposition — the entire template
-     * (including `${...}` interpolations) is preserved as the literal's
-     * source representation so that `toString()` round-trips correctly.
-     */
     private fun collapseStringTemplates(tokens: List<RawToken>): List<FlatToken> {
         val result = mutableListOf<FlatToken>()
         var i = 0
@@ -105,7 +101,7 @@ internal object KtTokenAdapter {
                     i++
                 }
                 val closeEnd = if (i < tokens.size) {
-                    i++ // consume CLOSING_QUOTE
+                    i++
                     tokens[i - 1].end
                 } else {
                     first.end
@@ -126,16 +122,10 @@ internal object KtTokenAdapter {
     private fun isStringStart(type: SyntaxElementType): Boolean =
         type == KtTokens.OPEN_QUOTE || type == KtTokens.INTERPOLATION_PREFIX
 
-    /** Sentinel type marking a collapsed string literal. */
     private val STRING_LITERAL = SyntaxElementType("KOTLIN_STRING_LITERAL", transient = true)
 
     // --- Phase 3: delimiter grouping ---
 
-    /**
-     * Walks the flat token list, matching LPAR/RPAR, LBRACE/RBRACE,
-     * LBRACKET/RBRACKET into nested [FlatToken]s with children.
-     * Returns null on unbalanced delimiters.
-     */
     private fun groupDelimiters(tokens: List<FlatToken>): List<FlatToken>? {
         val result = mutableListOf<FlatToken>()
         var i = 0
@@ -154,7 +144,6 @@ internal object KtTokenAdapter {
                     i++
                 }
                 if (depth != 0) return null
-
                 val closeEnd = tokens[i - 1].end
                 val innerGrouped = groupDelimiters(childList) ?: return null
                 result.add(FlatToken(
@@ -233,7 +222,17 @@ internal object KtTokenAdapter {
             return listOf(TokenTree.Literal(Literal.fromKotlinFloat(text)))
         }
 
-        // Identifier and all keywords
+        // Compound tokens must be checked BEFORE isIdentLike because
+        // NOT_IN, NOT_IS, and AS_SAFE are in HARD_KEYWORDS_AND_MODIFIERS
+        // but their text ("!in", "!is", "as?") is not valid as Ident.
+        // The lexer produces NOT_IN/NOT_IS as atomic tokens; AS_SAFE
+        // is a parser-level join (the lexer produces AS_KEYWORD + QUEST
+        // separately), but we handle it here for completeness.
+        val compound = compoundTokenDecomposition(ft.type, text)
+        if (compound != null) return compound
+
+        // Identifier and all keywords. In proc_macro, keywords are
+        // identifiers — `class`, `fun`, `val` are all valid idents.
         if (isIdentLike(ft.type)) {
             return listOf(TokenTree.Ident(Ident.new(text, Span.callSite())))
         }
@@ -244,7 +243,9 @@ internal object KtTokenAdapter {
             return listOf(TokenTree.Punct(Punct.new(single, Spacing.ALONE)))
         }
 
-        // Multi-character operators decompose into Punct chain
+        // Multi-character operators decompose into Punct chain.
+        // NOTE: SAFE_ACCESS and ELVIS are NOT produced by the lexer —
+        // the lexer emits QUEST+DOT and QUEST+COLON separately.
         val multi = multiCharPunct(ft.type)
         if (multi != null) {
             return multi.mapIndexed { i, ch ->
@@ -253,12 +254,6 @@ internal object KtTokenAdapter {
             }
         }
 
-        // Compound tokens: NOT_IN (!in), NOT_IS (!is), AS_SAFE (as?)
-        // These are atomic lexer tokens but decompose into Punct + Ident
-        // or Ident + Punct in proc_macro token trees.
-        val compound = compoundTokenDecomposition(ft.type, text)
-        if (compound != null) return compound
-
         return null
     }
 
@@ -266,12 +261,23 @@ internal object KtTokenAdapter {
      * Whether the lexer token should map to [Ident]. In `proc_macro`,
      * keywords are identifiers — `class`, `fun`, `val` are all valid
      * idents in the token stream.
+     *
+     * NOTE: NOT_IN, NOT_IS, and AS_SAFE are in HARD_KEYWORDS_AND_MODIFIERS
+     * but must be handled by [compoundTokenDecomposition] instead, because
+     * their text representation ("!in", "!is", "as?") is not a valid Ident.
      */
     private fun isIdentLike(type: SyntaxElementType): Boolean =
         type == KtTokens.IDENTIFIER ||
             type == KtTokens.FIELD_IDENTIFIER ||
-            KtTokens.HARD_KEYWORDS_AND_MODIFIERS.contains(type) ||
+            (KtTokens.HARD_KEYWORDS_AND_MODIFIERS.contains(type) && type !in COMPOUND_KEYWORDS) ||
             KtTokens.SOFT_KEYWORDS_AND_MODIFIERS.contains(type)
+
+    /** Tokens in HARD_KEYWORDS_AND_MODIFIERS whose text is not a valid Ident. */
+    private val COMPOUND_KEYWORDS: Set<SyntaxElementType> = setOf(
+        KtTokens.NOT_IN,
+        KtTokens.NOT_IS,
+        KtTokens.AS_SAFE,
+    )
 
     private fun singleCharPunct(type: SyntaxElementType): Char? = when (type) {
         KtTokens.PLUS -> '+'
@@ -294,6 +300,15 @@ internal object KtTokenAdapter {
         else -> null
     }
 
+    /**
+     * Multi-character operators that the lexer produces as atomic tokens
+     * and that decompose into Punct chains with JOINT/ALONE spacing.
+     *
+     * SAFE_ACCESS and ELVIS are NOT here because the KotlinLexer does not
+     * produce them — it emits QUEST+DOT and QUEST+COLON as separate
+     * tokens. The parser-level SemanticWhitespaceAwareSyntaxBuilder joins
+     * them.
+     */
     private fun multiCharPunct(type: SyntaxElementType): String? = when (type) {
         KtTokens.ARROW -> "->"
         KtTokens.DOUBLE_ARROW -> "=>"
@@ -317,8 +332,6 @@ internal object KtTokenAdapter {
         KtTokens.RANGE_UNTIL -> "..<"
         KtTokens.COLONCOLON -> "::"
         KtTokens.DOUBLE_SEMICOLON -> ";;"
-        KtTokens.SAFE_ACCESS -> "?."
-        KtTokens.ELVIS -> "?:"
         KtTokens.RESERVED -> "..."
         else -> null
     }
