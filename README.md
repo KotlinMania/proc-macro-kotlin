@@ -1,5 +1,10 @@
 # proc-macro-kotlin
 
+
+[![GitHub link](https://img.shields.io/badge/GitHub-KotlinMania%2Fproc--macro--kotlin-blue.svg)](https://github.com/KotlinMania/proc-macro-kotlin)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.kotlinmania/proc-macro-kotlin)](https://central.sonatype.com/artifact/io.github.kotlinmania/proc-macro-kotlin)
+[![Build status](https://img.shields.io/github/actions/workflow/status/KotlinMania/proc-macro-kotlin/ci.yml?branch=main)](https://github.com/KotlinMania/proc-macro-kotlin/actions)
+
 **Rust's `proc_macro` API. Kotlin's tokenizer underneath.**
 
 The Kotlin Multiplatform port of Rust's compiler-internal
