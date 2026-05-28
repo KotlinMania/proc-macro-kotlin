@@ -19,7 +19,7 @@ open class DFASerializer(
 
     @Deprecated
     @Deprecated("Use {@link #DFASerializer(DFA, Vocabulary)} instead.")
-    constructor(dfa: DFA?, tokenNames: Array<String?>?) : this(dfa, VocabularyImpl.fromTokenNames(tokenNames))
+    constructor(dfa: DFA?, tokenNames: Array<String?>?) : this(dfa!!, VocabularyImpl.fromTokenNames(tokenNames))
 
     init {
         this.dfa = dfa
@@ -29,13 +29,12 @@ open class DFASerializer(
     fun toString(): String? {
         if (dfa.s0 == null) return null
         val buf: StringBuilder = StringBuilder()
-        val states: List<DFAState?> = dfa.states
         for (s in states) {
             var n = 0
             if (s.edges != null) n = s.edges.size
             for (i in 0..<n) {
-                val t: DFAState? = s.edges[i]
-                if (t != null && t.stateNumber !== Int.MAX_VALUE) {
+                val t: DFAState? = s.edges!![i]
+                if (t != null && t.stateNumber != Int.MAX_VALUE) {
                     buf.append(getStateString(s))
                     val label = getEdgeLabel(i)
                     buf
@@ -49,7 +48,7 @@ open class DFASerializer(
         }
 
         val output = buf.toString()
-        if (output.size === 0) return null
+        if (output.length == 0) return null
         // return Utils.sortLinesInString(output);
         return output
     }

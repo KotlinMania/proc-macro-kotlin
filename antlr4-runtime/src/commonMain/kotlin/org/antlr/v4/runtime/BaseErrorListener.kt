@@ -17,7 +17,7 @@ import org.antlr.v4.runtime.misc.BitSet
  * @author Sam Harwell
  */
 open class BaseErrorListener : ANTLRErrorListener {
-    open fun syntaxError(
+    override fun syntaxError(
         recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,
         line: Int,

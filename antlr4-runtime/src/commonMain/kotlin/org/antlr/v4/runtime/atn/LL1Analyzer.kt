@@ -38,13 +38,13 @@ class LL1Analyzer(
         val look: Array<IntervalSet?> = arrayOfNulls<IntervalSet>(s.numberOfTransitions)
         for (alt in 0..<s.numberOfTransitions) {
             look[alt] = IntervalSet()
-            val lookBusy: MutableSet<ATNConfig> = HashSet()()
+            val lookBusy: MutableSet<ATNConfig> = HashSet()
             val seeThruPreds = false // fail to get lookahead upon pred
             _LOOK(
                 s.transition(alt).target,
                 null,
                 EmptyPredictionContext.Instance,
-                look[alt],
+                look[alt]!!,
                 lookBusy,
                 BitSet(),
                 seeThruPreds,
@@ -52,7 +52,7 @@ class LL1Analyzer(
             )
             // Wipe out lookahead for this alternative if we found nothing
             // or we had a predicate when we !seeThruPreds
-            if (look[alt].size() === 0 || look[alt].contains(org.antlr.v4.runtime.atn.LL1Analyzer.Companion.HIT_PRED)) {
+            if (look[alt]!!.size() === 0 || look[alt]!!.contains(HIT_PRED)) {
                 look[alt] = null
             }
         }
@@ -234,7 +234,7 @@ class LL1Analyzer(
                 if (seeThruPreds) {
                     _LOOK(t.target, stopState, ctx, look, lookBusy, calledRuleStack, seeThruPreds, addEOF)
                 } else {
-                    look.add(org.antlr.v4.runtime.atn.LL1Analyzer.Companion.HIT_PRED)
+                    look.add(HIT_PRED)
                 }
             } else if (t.isEpsilon()) {
                 _LOOK(t.target, stopState, ctx, look, lookBusy, calledRuleStack, seeThruPreds, addEOF)

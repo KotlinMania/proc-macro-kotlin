@@ -31,7 +31,7 @@ class ListTokenSource(
      * the next token in [.tokens] (or the previous token if the end of
      * the input has been reached).
      */
-    private val sourceName: String?
+    override val sourceName: String?
 
     /**
      * The index into [.tokens] of token to return by the next call to
@@ -89,9 +89,9 @@ class ListTokenSource(
          */
         get() {
             if (i < tokens.size) {
-                return tokens.get(i).charPositionInLine
+                return tokens.get(i)!!.charPositionInLine
             } else if (eofToken != null) {
-                return eofToken.charPositionInLine
+                return eofToken!!.charPositionInLine
             } else if (tokens.size > 0) {
                 // have to calculate the result from the line/column of the previous
                 // token, along with the text of the token.
@@ -100,7 +100,7 @@ class ListTokenSource(
                 if (tokenText != null) {
                     val lastNewLine: Int = tokenText.lastIndexOf('\n')
                     if (lastNewLine >= 0) {
-                        return tokenText.size - lastNewLine - 1
+                        return tokenText.length - lastNewLine - 1
                     }
                 }
 
@@ -120,7 +120,7 @@ class ListTokenSource(
             if (eofToken == null) {
                 var start = -1
                 if (tokens.size > 0) {
-                    val previousStop: Int = tokens.get(tokens.size - 1).stopIndex
+                    val previousStop: Int = tokens.get(tokens.size - 1)!!.stopIndex
                     if (previousStop != -1) {
                         start = previousStop + 1
                     }
@@ -158,9 +158,9 @@ class ListTokenSource(
          */
         get() {
             if (i < tokens.size) {
-                return tokens.get(i).line
+                return tokens.get(i)!!.line
             } else if (eofToken != null) {
-                return eofToken.line
+                return eofToken!!.line
             } else if (tokens.size > 0) {
                 // have to calculate the result from the line/column of the previous
                 // token, along with the text of the token.
@@ -169,7 +169,7 @@ class ListTokenSource(
 
                 val tokenText: String? = lastToken.text
                 if (tokenText != null) {
-                    for (i in 0..<tokenText.size) {
+                    for (i in 0..<tokenText.length) {
                         if (tokenText[i] === '\n') {
                             line++
                         }
@@ -190,11 +190,11 @@ class ListTokenSource(
          */
         get() {
             if (i < tokens.size) {
-                return tokens.get(i).inputStream
+                return tokens.get(i)!!.inputStream
             } else if (eofToken != null) {
-                return eofToken.inputStream
+                return eofToken!!.inputStream
             } else if (tokens.size > 0) {
-                return tokens.get(tokens.size - 1).inputStream
+                return tokens.get(tokens.size - 1)!!.inputStream
             }
 
             // no input stream information is available
@@ -204,7 +204,7 @@ class ListTokenSource(
     /**
      * {@inheritDoc}
      */
-    override fun getSourceName(): String? {
+    fun getSourceName(): String? {
         if (sourceName != null) {
             return sourceName
         }
@@ -220,11 +220,11 @@ class ListTokenSource(
     /**
      * {@inheritDoc}
      */
-    fun setTokenFactory(factory: TokenFactory<*>) {
+    override fun setTokenFactory(factory: TokenFactory<*>?) {
         this._factory = factory
     }
 
-    override val tokenFactory: TokenFactory<*>
+    override val tokenFactory: TokenFactory<*>?
         /**
          * {@inheritDoc}
          */

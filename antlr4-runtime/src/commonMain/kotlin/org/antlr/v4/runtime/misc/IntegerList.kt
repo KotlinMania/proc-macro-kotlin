@@ -31,7 +31,7 @@ open class IntList {
     }
 
     constructor(list: IntList) {
-        _data = list._data.clone()
+        _data = list._data.copyOf()
         _size = list._size
     }
 
@@ -50,19 +50,19 @@ open class IntList {
         _size++
     }
 
-    override fun addAll(array: IntArray) {
+    fun addAll(array: IntArray) {
         ensureCapacity(_size + array.size)
         array.copyInto(_data, _size, 0, array.size)
         _size += array.size
     }
 
-    override fun addAll(list: IntList) {
+    fun addAll(list: IntList) {
         ensureCapacity(_size + list._size)
         list._data.copyInto(_data, _size, 0, list._size)
         _size += list._size
     }
 
-    override fun addAll(list: Collection<Int?>) {
+    fun addAll(list: Collection<Int?>) {
         ensureCapacity(_size + list.size)
         var current = 0
         for (x in list) {
@@ -80,7 +80,7 @@ open class IntList {
         return _data[index]
     }
 
-    override fun contains(value: Int): Boolean {
+    fun contains(value: Int): Boolean {
         for (i in 0..<_size) {
             if (_data[i] == value) {
                 return true
@@ -128,7 +128,7 @@ open class IntList {
     val isEmpty: Boolean
         get() = _size == 0
 
-    override fun size(): Int = _size
+    fun size(): Int = _size
 
     fun trimToSize() {
         if (_data.size == _size) {
@@ -138,12 +138,12 @@ open class IntList {
         _data = _data.copyOf(_size)
     }
 
-    override fun clear() {
+    fun clear() {
         _data.fill(0, 0, _size)
         _size = 0
     }
 
-    override fun toArray(): IntArray {
+    fun toArray(): IntArray {
         if (_size == 0) {
             return org.antlr.v4.runtime.misc.IntList.Companion.EMPTY_DATA
         }
@@ -275,15 +275,14 @@ open class IntList {
             // Calculate the precise result size if we encounter
             // a code point > 0xFFFF
             if (!calculatedPreciseResultSize &&
-                Character.isSupplementaryCodePoint(codePoint)
+                codePoint >= 0x10000
             ) {
-                resultArray = resultArray.copyOf(charArraySize())
+                resultArray = resultArray!!.copyOf(charArraySize())
                 calculatedPreciseResultSize = true
             }
-            // This will throw IllegalArgumentException if
-            // the code point is not a valid Unicode code point
-            val charsWritten: Int = Character.toChars(codePoint, resultArray, resultIdx)
-            resultIdx += charsWritten
+            val chars = Char.toChars(codePoint)
+            chars.copyInto(resultArray!!, resultIdx)
+            resultIdx += chars.size
         }
         return resultArray
     }
@@ -291,7 +290,7 @@ open class IntList {
     private fun charArraySize(): Int {
         var result = 0
         for (i in 0..<_size) {
-            result += Character.charCount(_data[i])
+            result += Char.charCount(_data[i])
         }
         return result
     }

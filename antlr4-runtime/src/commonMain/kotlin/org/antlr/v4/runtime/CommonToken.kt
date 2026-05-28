@@ -9,33 +9,28 @@ import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.Pair
 
 class CommonToken :
-    WritableToken,
-    Serializable {
+    WritableToken {
     /**
      * This is the backing field for [.getType] and [.setType].
      */
-    @set:Override
-    var type: Int
+    override var type: Int
 
     /**
      * This is the backing field for [.getLine] and [.setLine].
      */
-    @set:Override
-    var line: Int = 0
+    override var line: Int = 0
 
     /**
      * This is the backing field for [.getCharPositionInLine] and
      * [.setCharPositionInLine].
      */
-    @set:Override
-    var charPositionInLine: Int = -1 // set to invalid position
+    override var charPositionInLine: Int = -1 // set to invalid position
 
     /**
      * This is the backing field for [.getChannel] and
      * [.setChannel].
      */
-    @set:Override
-    var channel: Int = DEFAULT_CHANNEL
+    override var channel: Int = Token.DEFAULT_CHANNEL
 
     /**
      * This is the backing field for [.getTokenSource] and
@@ -56,14 +51,13 @@ class CommonToken :
      *
      * @see .getText
      */
-    protected var text: String? = null
+    override var text: String? = null
 
     /**
      * This is the backing field for [.getTokenIndex] and
      * [.setTokenIndex].
      */
-    @set:Override
-    var tokenIndex: Int = -1
+    override var tokenIndex: Int = -1
 
     /**
      * This is the backing field for [.getStartIndex] and
@@ -108,7 +102,7 @@ class CommonToken :
      */
     constructor(type: Int, text: String?) {
         this.type = type
-        this.channel = DEFAULT_CHANNEL
+        this.channel = Token.DEFAULT_CHANNEL
         this.text = text
         this.source = org.antlr.v4.runtime.CommonToken.Companion.EMPTY_SOURCE
     }
@@ -173,10 +167,10 @@ class CommonToken :
         this.text = text
     }
 
-    val tokenSource: TokenSource
-        get() = source.a
-    val inputStream: CharStream
-        get() = source.b
+    override val tokenSource: TokenSource?
+        get() = source?.a
+    override val inputStream: CharStream?
+        get() = source?.b
 
     fun toString(): String? = toString(null)
 

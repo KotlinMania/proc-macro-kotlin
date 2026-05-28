@@ -87,7 +87,7 @@ class DFA(
     override fun toString(): String = toString(VocabularyImpl.EMPTY_VOCABULARY)
 
     @Deprecated("Use toString(Vocabulary) instead.")
-    fun toString(tokenNames: Array<String>?): String {
+    fun toString(tokenNames: Array<String?>?): String {
         if (s0 == null) return ""
         return DFASerializer(this, tokenNames).toString()
     }

@@ -84,7 +84,7 @@ class LexerActionExecutor(
         for (i in lexerActions.indices) {
             if (lexerActions[i].isPositionDependent() && lexerActions[i] !is LexerIndexedCustomAction) {
                 if (updatedLexerActions == null) {
-                    updatedLexerActions = lexerActions.clone()
+                    updatedLexerActions = lexerActions.copyOf()
                 }
 
                 updatedLexerActions[i] = LexerIndexedCustomAction(offset, lexerActions[i])
@@ -153,9 +153,9 @@ class LexerActionExecutor(
         }
     }
 
-    fun hashCode(): Int = this.hashCode
+    override fun hashCode(): Int = this.hashCode
 
-    fun equals(obj: Any?): Boolean {
+    override fun equals(obj: Any?): Boolean {
         if (obj === this) {
             return true
         } else if (obj !is LexerActionExecutor) {
@@ -188,7 +188,7 @@ class LexerActionExecutor(
             lexerAction: LexerAction?,
         ): LexerActionExecutor {
             if (lexerActionExecutor == null) {
-                return LexerActionExecutor(arrayOf(lexerAction))
+                return LexerActionExecutor(arrayOf(lexerAction!!))
             }
 
             val lexerActions: Array<LexerAction> =

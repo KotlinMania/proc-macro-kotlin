@@ -118,7 +118,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      * the exception
      *
      */
-    fun reportError(
+    open fun reportError(
         recognizer: Parser,
         e: RecognitionException,
     ) {
@@ -149,7 +149,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      * until we find one in the resynchronization set--loosely the set of tokens
      * that can follow the current rule.
      */
-    fun recover(
+    open fun recover(
         recognizer: Parser,
         e: RecognitionException?,
     ) {
@@ -231,7 +231,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      * functionality by simply overriding this method as a blank { }.
      */
     @kotlin.Throws(RecognitionException::class)
-    fun sync(recognizer: Parser) {
+    open fun sync(recognizer: Parser) {
         val s: ATNState =
             recognizer.interpreter!!.atn.states[recognizer.state]
         // 		println("sync @ "+s.stateNumber+"="+s::class.getSimpleName());
@@ -484,7 +484,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      * in rule `atom`. It can assume that you forgot the `')'`.
      */
     @kotlin.Throws(RecognitionException::class)
-    fun recoverInline(recognizer: Parser): Token? {
+    open fun recoverInline(recognizer: Parser): Token? {
         // SINGLE TOKEN DELETION
         val matchedSymbol: Token? = singleTokenDeletion(recognizer)
         if (matchedSymbol != null) {

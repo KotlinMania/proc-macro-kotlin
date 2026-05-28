@@ -22,12 +22,12 @@ class IntervalSet : IntSet {
         for (e in els) add(e)
     }
 
-    override fun clear() {
+    fun clear() {
         check(!readonly) { "can't alter readonly IntervalSet" }
         intervals.clear()
     }
 
-    fun add(el: Int) {
+    override fun add(el: Int) {
         check(!readonly) { "can't alter readonly IntervalSet" }
         add(el, el)
     }
@@ -41,9 +41,9 @@ class IntervalSet : IntSet {
         if (addition.b < addition.a) {
             return
         }
-        val iter: ListIterator<Interval> = intervals.listIterator()
+        val iter: MutableListIterator<Interval> = intervals.listIterator()
         while (iter.hasNext()) {
-            val r: Interval? = iter.next()
+            val r: Interval = iter.next()
             if (addition.equals(r)) {
                 return
             }
@@ -51,7 +51,7 @@ class IntervalSet : IntSet {
                 val bigger: Interval = addition.union(r)
                 iter.set(bigger)
                 while (iter.hasNext()) {
-                    val next: Interval? = iter.next()
+                    val next: Interval = iter.next()
                     if (!bigger.adjacent(next) && bigger.disjoint(next)) {
                         break
                     }
@@ -62,7 +62,7 @@ class IntervalSet : IntSet {
                 }
                 return
             }
-            if (addition.startsBeforeDisjoint(r)) {
+            if (addition.startsBeforeDisjoint(r) as Boolean) {
                 iter.previous()
                 iter.add(addition)
                 return
@@ -83,7 +83,7 @@ class IntervalSet : IntSet {
                 this.add(I.a, I.b)
             }
         } else {
-            for (value in set.toList()) {
+            for (value in set.toList()!!) {
                 if (value != null) add(value)
             }
         }
@@ -248,13 +248,13 @@ class IntervalSet : IntSet {
                 if (a == Token.EOF) {
                     buf.append("<EOF>")
                 } else if (elemAreChar) {
-                    buf.append("'").appendCodePoint(a).append("'")
+                    buf.append("'").append(a.toChar()).append("'")
                 } else {
                     buf.append(a)
                 }
             } else {
                 if (elemAreChar) {
-                    buf.append("'").appendCodePoint(a).append("'..'").appendCodePoint(b).append("'")
+                    buf.append("'").append(a.toChar()).append("'..'").append(b.toChar()).append("'")
                 } else {
                     buf.append(a).append("..").append(b)
                 }
@@ -270,7 +270,7 @@ class IntervalSet : IntSet {
     }
 
     @Deprecated("Use {@link #toString(Vocabulary)} instead.")
-    fun toString(tokenNames: Array<String?>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
+    fun toString(tokenNames: Array<out String?>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
 
     fun toString(vocabulary: Vocabulary): String? {
         val buf: StringBuilder = StringBuilder()
@@ -304,7 +304,7 @@ class IntervalSet : IntSet {
     }
 
     @Deprecated("Use {@link #elementName(Vocabulary, int)} instead.")
-    protected fun elementName(tokenNames: Array<String?>?, a: Int): String? =
+    protected fun elementName(tokenNames: Array<out String?>?, a: Int): String? =
         elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
 
     protected fun elementName(vocabulary: Vocabulary, a: Int): String? {

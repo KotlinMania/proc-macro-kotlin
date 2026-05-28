@@ -22,7 +22,7 @@ import org.antlr.v4.runtime.misc.Interval
 /** "dup" of ParserInterpreter  */
 class LexerATNSimulator(
     recog: Lexer?,
-    atn: ATN,
+    atn: ATN?,
     decisionToDFA: Array<DFA>,
     sharedContextCache: PredictionContextCache?,
 ) : ATNSimulator(atn, sharedContextCache) {
@@ -48,7 +48,7 @@ class LexerATNSimulator(
         var charPos: Int = -1
         var dfaState: DFAState? = null
 
-        override fun reset() {
+        fun reset() {
             index = -1
             line = 0
             charPos = -1
@@ -110,7 +110,7 @@ class LexerATNSimulator(
             if (dfa.s0 == null) {
                 return matchATN(input)
             } else {
-                return execATN(input, dfa.s0)
+                return execATN(input, dfa.s0!!)
             }
         } finally {
             input.release(mark)
@@ -252,7 +252,7 @@ class LexerATNSimulator(
             return null
         }
 
-        val target: DFAState? = s.edges[t - org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE]
+        val target: DFAState? = s.edges!![t - org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE]
         if (debug && target != null) {
             println(
                 "reuse state " + s.stateNumber +

@@ -78,18 +78,19 @@ open class ANTLRInputStream : CharStream {
         if (stop >= n) stop = n - 1
         val count = stop - start + 1
         if (start >= n) return ""
-        return String(data, start, count)
+        return data.concatToString(start, start + count)
     }
 
     override val sourceName: String?
         get() {
-            if (name == null || name.isEmpty()) {
+            val n = name
+        if (n == null || n.isEmpty()) {
                 return IntStream.UNKNOWN_SOURCE_NAME
             }
             return name
         }
 
-    override fun toString(): String = String(data)
+    override fun toString(): String = data.concatToString()
 
     companion object {
         const val READ_BUFFER_SIZE: Int = 1024

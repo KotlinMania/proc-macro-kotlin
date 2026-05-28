@@ -8,7 +8,7 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.dfa.DFAState
 
 abstract class ATNSimulator(
-    atn: ATN,
+    atn: ATN?,
     sharedContextCache: PredictionContextCache?,
 ) {
     val atn: ATN
@@ -63,8 +63,8 @@ abstract class ATNSimulator(
         if (sharedContextCache == null) return context
 
         synchronized(sharedContextCache) {
-            val visited: IdentityHashMap<PredictionContext?, PredictionContext?> =
-                IdentityHashMap<PredictionContext?, PredictionContext?>()
+            val visited: MutableMap<PredictionContext?, PredictionContext?> =
+                HashMap<PredictionContext?, PredictionContext?>()
             return PredictionContext.getCachedContext(
                 context,
                 sharedContextCache,
@@ -75,11 +75,8 @@ abstract class ATNSimulator(
 
     companion object {
         /** Must distinguish between missing edge and edge we know leads nowhere  */
-        val ERROR: DFAState
-
-        init {
-            org.antlr.v4.runtime.atn.ATNSimulator.Companion.ERROR = DFAState(ATNConfigSet())
-            org.antlr.v4.runtime.atn.ATNSimulator.Companion.ERROR.stateNumber = Int.MAX_VALUE
+        val ERROR: DFAState = DFAState(ATNConfigSet()).apply {
+            stateNumber = Int.MAX_VALUE
         }
     }
 }

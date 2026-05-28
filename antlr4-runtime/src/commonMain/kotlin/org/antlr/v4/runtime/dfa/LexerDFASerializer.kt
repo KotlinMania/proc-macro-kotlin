@@ -9,10 +9,10 @@ import org.antlr.v4.runtime.VocabularyImpl
 
 class LexerDFASerializer(
     dfa: DFA?,
-) : DFASerializer(dfa, VocabularyImpl.EMPTY_VOCABULARY) {
+) : DFASerializer(dfa!!, VocabularyImpl.EMPTY_VOCABULARY) {
     protected fun getEdgeLabel(i: Int): String =
         StringBuilder("'")
-            .appendCodePoint(i)
+            .append(i.toChar())
             .append("'")
             .toString()
 }

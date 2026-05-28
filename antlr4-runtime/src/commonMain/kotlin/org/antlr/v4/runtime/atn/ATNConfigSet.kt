@@ -18,11 +18,11 @@ open class ATNConfigSet
         class ConfigHashSet : AbstractConfigHashSet(ConfigEqualityComparator.INSTANCE)
 
         class ConfigEqualityComparator private constructor() : AbstractEqualityComparator<ATNConfig>() {
-            override fun hashCode(o: ATNConfig): Int {
+            override fun hashCode(obj: ATNConfig): Int {
                 var hashCode = 7
-                hashCode = 31 * hashCode + o.state.stateNumber
-                hashCode = 31 * hashCode + o.alt
-                hashCode = 31 * hashCode + o.semanticContext.hashCode()
+                hashCode = 31 * hashCode + obj.state.stateNumber
+                hashCode = 31 * hashCode + obj.alt
+                hashCode = 31 * hashCode + obj.semanticContext.hashCode()
                 return hashCode
             }
 

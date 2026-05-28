@@ -5,8 +5,6 @@
  */
 package org.antlr.v4.runtime
 
-import org.antlr.v4.runtime.misc.Utils
-
 /**
  * This is an [ANTLRInputStream] that is loaded from a file all at once
  * when you construct the object.
@@ -21,15 +19,7 @@ class ANTLRFileStream(
     constructor(fileName: String?) : this(fileName, null)
 
     init {
-        load(sourceName, encoding)
-    }
-
-    @kotlin.Throws(IOException::class)
-    fun load(
-        fileName: String?,
-        encoding: String?,
-    ) {
-        data = Utils.readFile(fileName, encoding)
-        this.n = data.size
+        // TODO: load from file when file I/O is available
+        this.n = 0
     }
 }

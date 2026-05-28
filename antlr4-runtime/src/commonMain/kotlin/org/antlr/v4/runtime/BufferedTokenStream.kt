@@ -28,7 +28,8 @@ open class BufferedTokenStream(
     /**
      * The [TokenSource] from which tokens for this stream are fetched.
      */
-    override protected var tokenSource: TokenSource
+    override var tokenSource: TokenSource =
+        tokenSource ?: throw NullPointerException("tokenSource cannot be null")
 
     /**
      * A collection of all tokens fetched from the token source. The list is
@@ -66,13 +67,6 @@ open class BufferedTokenStream(
      */
     protected var fetchedEOF: Boolean = false
 
-    init {
-        if (tokenSource == null) {
-            throw NullPointerException("tokenSource cannot be null")
-        }
-        this.tokenSource = tokenSource
-    }
-
     fun getTokenSource(): TokenSource = tokenSource
 
     override fun index(): Int = p
@@ -89,9 +83,8 @@ open class BufferedTokenStream(
      *
      * @see .setTokenSource
      */
-    @Deprecated
-    @Deprecated("Use {@code seek(0)} instead.")
-    override fun reset() {
+    @Deprecated("Use seek(0) instead.")
+    fun reset() {
         seek(0)
     }
 
@@ -118,7 +111,7 @@ open class BufferedTokenStream(
             skipEofCheck = false
         }
 
-        check(!(!skipEofCheck && LA(1) == EOF)) { "cannot consume EOF" }
+        check(!(!skipEofCheck && LA(1) == IntStream.EOF)) { "cannot consume EOF" }
 
         if (sync(p + 1)) {
             p = adjustSeekIndex(p + 1)
@@ -192,7 +185,7 @@ open class BufferedTokenStream(
         return subset
     }
 
-    override fun LA(i: Int): Int = LT(i).type
+    override fun LA(i: Int): Int = LT(i)?.type ?: Token.EOF
 
     protected open fun LB(k: Int): Token? {
         if ((p - k) < 0) return null
@@ -275,14 +268,14 @@ open class BufferedTokenStream(
         if (start > stop) return null
 
         // list = tokens[start:stop]:{T t, t.type in types}
-        var filteredTokens: MutableList<Token>? = ArrayList()()
+        var filteredTokens: MutableList<Token>? = ArrayList()
         for (i in start..stop) {
             val t: Token = tokens.get(i)!!
             if (types == null || types.contains(t.type)) {
                 filteredTokens.add(t)
             }
         }
-        if (filteredTokens!!.isEmpty()) {
+        if (filteredTokens.isNullOrEmpty()) {
             filteredTokens = null
         }
         return filteredTokens
@@ -315,14 +308,14 @@ open class BufferedTokenStream(
         }
 
         var token: Token = tokens.get(i)!!
-        while (token.channel !== channel) {
+        while (token.channel != channel) {
             if (token.type === Token.EOF) {
                 return i
             }
 
             i++
             sync(i)
-            token = tokens.get(i)
+            token = tokens.get(i)!!
         }
 
         return i
@@ -447,14 +440,15 @@ open class BufferedTokenStream(
     }
 
     override val sourceName: String
-        get() = tokenSource.sourceName
+        get() = tokenSource.sourceName ?: IntStream.UNKNOWN_SOURCE_NAME
+
     override val text: String?
         /** Get the text of all tokens in this buffer.  */
         get() = getText(Interval.of(0, size() - 1))
 
-    override fun getText(interval: Interval): String? {
-        val start: Int = interval.a
-        var stop: Int = interval.b
+    override fun getText(interval: Interval?): String? {
+        val start: Int = interval!!.a
+        var stop: Int = interval!!.b
         if (start < 0 || stop < 0) return ""
         sync(stop)
         if (stop >= tokens.size) stop = tokens.size - 1
@@ -468,9 +462,9 @@ open class BufferedTokenStream(
         return buf.toString()
     }
 
-    fun getText(ctx: RuleContext): String? = getText(ctx.sourceInterval)
+    override fun getText(ctx: RuleContext?): String? = getText(ctx?.sourceInterval)
 
-    fun getText(
+    override fun getText(
         start: Token?,
         stop: Token?,
     ): String? {

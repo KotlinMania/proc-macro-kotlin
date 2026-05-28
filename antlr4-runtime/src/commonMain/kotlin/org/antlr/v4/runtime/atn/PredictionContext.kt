@@ -220,8 +220,8 @@ abstract class PredictionContext protected constructor(
 
         // dispatch
         fun merge(
-            a: PredictionContext,
-            b: PredictionContext,
+            a: PredictionContext?,
+            b: PredictionContext?,
             rootIsWildcard: Boolean,
             mergeCache: DoubleKeyMap<PredictionContext, PredictionContext, PredictionContext>?,
         ): PredictionContext? {
@@ -699,7 +699,7 @@ abstract class PredictionContext protected constructor(
         fun getCachedContext(
             context: PredictionContext,
             contextCache: PredictionContextCache,
-            visited: IdentityHashMap<PredictionContext?, PredictionContext?>,
+            visited: MutableMap<PredictionContext?, PredictionContext?>,
         ): PredictionContext? {
             if (context.isEmpty) {
                 return context
@@ -787,9 +787,9 @@ var parents = arrayOfNulls<PredictionContext>(context.size())
         // 	}
         // ter's recursive version of Sam's getAllNodes()
         fun getAllContextNodes(context: PredictionContext?): List<PredictionContext?> {
-            val nodes: List<PredictionContext?> = ArrayList<PredictionContext?>()
-            val visited: Map<PredictionContext?, PredictionContext?> =
-                IdentityHashMap<PredictionContext?, PredictionContext?>()
+            val nodes: MutableList<PredictionContext?> = ArrayList<PredictionContext?>()
+            val visited: MutableMap<PredictionContext?, PredictionContext?> =
+                HashMap<PredictionContext?, PredictionContext?>()
             org.antlr.v4.runtime.atn.PredictionContext.Companion
                 .getAllContextNodes_(context, nodes, visited)
             return nodes
@@ -797,8 +797,8 @@ var parents = arrayOfNulls<PredictionContext>(context.size())
 
         fun getAllContextNodes_(
             context: PredictionContext?,
-            nodes: List<PredictionContext?>,
-            visited: Map<PredictionContext?, PredictionContext?>,
+            nodes: MutableList<PredictionContext?>,
+            visited: MutableMap<PredictionContext?, PredictionContext?>,
         ) {
             if (context == null || visited.containsKey(context)) return
             visited.put(context, context)
