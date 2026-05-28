@@ -5,8 +5,6 @@
  */
 package org.antlr.v4.runtime.misc
 
-import org.antlr.v4.runtime.misc.BitSet
-
 class BitSet {
     private var words: LongArray = LongArray(1)
 
