@@ -8,7 +8,9 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.misc.IntervalSet
 import kotlin.reflect.KClass
 
-abstract class Transition protected constructor(val target: ATNState) {
+abstract class Transition protected constructor(
+    val target: ATNState,
+) {
     abstract val serializationType: Int
 
     open val isEpsilon: Boolean
@@ -16,7 +18,11 @@ abstract class Transition protected constructor(val target: ATNState) {
 
     open fun label(): IntervalSet? = null
 
-    abstract fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean
+    abstract fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean
 
     companion object {
         const val EPSILON: Int = 1
@@ -30,22 +36,33 @@ abstract class Transition protected constructor(val target: ATNState) {
         const val WILDCARD: Int = 9
         const val PRECEDENCE: Int = 10
 
-        val serializationNames: List<String> = listOf(
-            "INVALID", "EPSILON", "RANGE", "RULE", "PREDICATE",
-            "ATOM", "ACTION", "SET", "NOT_SET", "WILDCARD", "PRECEDENCE"
-        )
+        val serializationNames: List<String> =
+            listOf(
+                "INVALID",
+                "EPSILON",
+                "RANGE",
+                "RULE",
+                "PREDICATE",
+                "ATOM",
+                "ACTION",
+                "SET",
+                "NOT_SET",
+                "WILDCARD",
+                "PRECEDENCE",
+            )
 
-        val serializationTypes: Map<KClass<out Transition>, Int> = mapOf(
-            EpsilonTransition::class to EPSILON,
-            RangeTransition::class to RANGE,
-            RuleTransition::class to RULE,
-            PredicateTransition::class to PREDICATE,
-            AtomTransition::class to ATOM,
-            ActionTransition::class to ACTION,
-            SetTransition::class to SET,
-            NotSetTransition::class to NOT_SET,
-            WildcardTransition::class to WILDCARD,
-            PrecedencePredicateTransition::class to PRECEDENCE
-        )
+        val serializationTypes: Map<KClass<out Transition>, Int> =
+            mapOf(
+                EpsilonTransition::class to EPSILON,
+                RangeTransition::class to RANGE,
+                RuleTransition::class to RULE,
+                PredicateTransition::class to PREDICATE,
+                AtomTransition::class to ATOM,
+                ActionTransition::class to ACTION,
+                SetTransition::class to SET,
+                NotSetTransition::class to NOT_SET,
+                WildcardTransition::class to WILDCARD,
+                PrecedencePredicateTransition::class to PRECEDENCE,
+            )
     }
 }

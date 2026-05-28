@@ -43,7 +43,10 @@ class BailErrorStrategy : DefaultErrorStrategy() {
      * rule function catches.  Use [Exception.getCause] to get the
      * original [RecognitionException].
      */
-    fun recover(recognizer: Parser, e: RecognitionException?) {
+    fun recover(
+        recognizer: Parser,
+        e: RecognitionException?,
+    ) {
         var context: ParserRuleContext? = recognizer.context
         while (context != null) {
             context.exception = e

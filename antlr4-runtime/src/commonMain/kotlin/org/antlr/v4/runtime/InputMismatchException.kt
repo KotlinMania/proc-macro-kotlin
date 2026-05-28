@@ -16,7 +16,7 @@ class InputMismatchException : RecognitionException {
     constructor(recognizer: Parser, state: Int, ctx: ParserRuleContext?) : super(
         recognizer,
         recognizer.inputStream,
-        ctx
+        ctx,
     ) {
         this.setOffendingState(state)
         this.setOffendingToken(recognizer.currentToken)

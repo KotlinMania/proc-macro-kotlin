@@ -8,21 +8,25 @@ import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.Vocabulary
 import org.antlr.v4.runtime.VocabularyImpl
 import org.antlr.v4.runtime.atn.ATN
+import org.antlr.v4.runtime.atn.ATNType
 import org.antlr.v4.runtime.misc.Interval
 
 open class XPathLexer(input: CharStream) : Lexer(input) {
-    override fun getGrammarFileName(): String = "XPathLexer.g4"
+    override val grammarFileName: String = "XPathLexer.g4"
 
-    override fun getRuleNames(): Array<String> = ruleNames
+    override val ruleNames: Array<String>
+        get() = Companion.ruleNames
 
-    override fun getModeNames(): Array<String> = modeNames
+    @Suppress("DEPRECATION")
+    @get:Deprecated
+    override val tokenNames: Array<String>
+        get() = Companion.tokenNames
 
-    @Deprecated("")
-    override fun getTokenNames(): Array<String> = tokenNames
+    @Suppress("DEPRECATION")
+    override val vocabulary: Vocabulary
+        get() = Companion.VOCABULARY
 
-    override fun getVocabulary(): Vocabulary = VOCABULARY
-
-    override fun getATN(): ATN? = null
+    override val atn: ATN = ATN(ATNType.LEXER, 8)
 
     override var line: Int = 1
     override var charPositionInLine: Int = 0

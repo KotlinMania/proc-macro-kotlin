@@ -18,7 +18,7 @@ class LexerInterpreter(
     channelNames: Collection<String?>,
     modeNames: Collection<String?>,
     atn: ATN,
-    input: CharStream?
+    input: CharStream?,
 ) : Lexer(input) {
     override val grammarFileName: String
     override val atn: ATN
@@ -29,7 +29,6 @@ class LexerInterpreter(
     val ruleNames: Array<String?>?
     val channelNames: Array<String?>?
     val modeNames: Array<String?>?
-
 
     private val vocabulary: Vocabulary?
 
@@ -43,7 +42,7 @@ class LexerInterpreter(
         ruleNames: Collection<String?>,
         modeNames: Collection<String?>,
         atn: ATN,
-        input: CharStream?
+        input: CharStream?,
     ) : this(
         grammarFileName,
         VocabularyImpl.fromTokenNames(tokenNames.toList().toTypedArray()),
@@ -51,7 +50,7 @@ class LexerInterpreter(
         ArrayList<String?>(),
         modeNames,
         atn,
-        input
+        input,
     )
 
     @Deprecated
@@ -61,7 +60,7 @@ class LexerInterpreter(
         ruleNames: Collection<String?>,
         modeNames: Collection<String?>,
         atn: ATN,
-        input: CharStream?
+        input: CharStream?,
     ) : this(grammarFileName, vocabulary, ruleNames, ArrayList<String?>(), modeNames, atn, input)
 
     init {
@@ -85,8 +84,10 @@ class LexerInterpreter(
         }
         this.interpreter = LexerATNSimulator(this, atn, _decisionToDFA, _sharedContextCache)
     }
+
     override val atn: ATN
         get() = atn
+
     fun getVocabulary(): Vocabulary? {
         if (vocabulary != null) {
             return vocabulary

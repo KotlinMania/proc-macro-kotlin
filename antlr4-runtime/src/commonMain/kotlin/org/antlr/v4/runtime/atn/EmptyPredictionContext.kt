@@ -8,27 +8,23 @@ package org.antlr.v4.runtime.atn
 class EmptyPredictionContext private constructor() : SingletonPredictionContext(null, EMPTY_RETURN_STATE) {
     override val isEmpty: Boolean
         get() = true
-    override fun size(): Int {
-        return 1
-    }
-    override fun getParent(index: Int): PredictionContext? {
-        return null
-    }
-    override fun getReturnState(index: Int): Int {
-        return returnState
-    }
-    override fun equals(o: Any?): Boolean {
-        return this === o
-    }
-    override fun toString(): String {
-        return "$"
-    }
+
+    override fun size(): Int = 1
+
+    override fun getParent(index: Int): PredictionContext? = null
+
+    override fun getReturnState(index: Int): Int = returnState
+
+    override fun equals(o: Any?): Boolean = this === o
+
+    override fun toString(): String = "$"
 
     companion object {
         /**
          * Represents `$` in local context prediction, which means wildcard.
          * `*+x = *`.
          */
-        val Instance: EmptyPredictionContext = org.antlr.v4.runtime.atn.EmptyPredictionContext()
+        val Instance: EmptyPredictionContext =
+            EmptyPredictionContext()
     }
 }

@@ -36,9 +36,11 @@ object InterpreterDataReader {
      * <a single line with comma separated int values> enclosed in a pair of squared brackets.
      *
      * Data for a parser does not contain channel and mode names.
-    </a> */
+     </a> */
     fun parseFile(fileName: String?): InterpreterData {
-        val result: InterpreterData = org.antlr.v4.runtime.misc.InterpreterDataReader.InterpreterData()
+        val result: InterpreterData =
+            org.antlr.v4.runtime.misc.InterpreterDataReader
+                .InterpreterData()
         result.ruleNames = ArrayList<String?>()
 
         try {
@@ -61,11 +63,13 @@ object InterpreterDataReader {
                     symbolicNames.add(if (line.equals("null")) "" else line)
                 }
 
-                result.vocabulary = VocabularyImpl(
-                    literalNames.toArray(arrayOfNulls<String>(0)), symbolicNames.toArray(
-                        arrayOfNulls<String>(0)
+                result.vocabulary =
+                    VocabularyImpl(
+                        literalNames.toArray(arrayOfNulls<String>(0)),
+                        symbolicNames.toArray(
+                            arrayOfNulls<String>(0),
+                        ),
                     )
-                )
 
                 line = br.readLine()
                 if (!line.equals("rule names:")) throw RuntimeException("Unexpected data entry")

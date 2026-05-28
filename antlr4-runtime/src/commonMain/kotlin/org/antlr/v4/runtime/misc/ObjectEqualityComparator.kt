@@ -37,7 +37,10 @@ class AnyEqualityComparator : AbstractEqualityComparator<Any?>() {
      * this method returns the result of
      * `a.`[equals][Any.equals]`(b)`.
      */
-    fun equals(a: Any?, b: Any?): Boolean {
+    fun equals(
+        a: Any?,
+        b: Any?,
+    ): Boolean {
         if (a == null) {
             return b == null
         }
@@ -46,6 +49,8 @@ class AnyEqualityComparator : AbstractEqualityComparator<Any?>() {
     }
 
     companion object {
-        val INSTANCE: AnyEqualityComparator = org.antlr.v4.runtime.misc.AnyEqualityComparator()
+        val INSTANCE: AnyEqualityComparator =
+            org.antlr.v4.runtime.misc
+                .AnyEqualityComparator()
     }
 }

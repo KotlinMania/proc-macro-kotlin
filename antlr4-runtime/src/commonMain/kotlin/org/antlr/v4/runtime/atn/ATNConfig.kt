@@ -8,8 +8,6 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.misc.MurmurHash
 
-import kotlin.reflect.KClass
-
 /**
  * A tuple: (ATN state, predicted alt, syntactic, semantic context).
  * The syntactic context is a graph-structured stack node whose
@@ -37,14 +35,14 @@ class ATNConfig {
     constructor(
         state: ATNState,
         alt: Int,
-        context: PredictionContext?
+        context: PredictionContext?,
     ) : this(state, alt, context, SemanticContext.Empty.Instance)
 
     constructor(
         state: ATNState,
         alt: Int,
         context: PredictionContext?,
-        semanticContext: SemanticContext
+        semanticContext: SemanticContext,
     ) {
         this.state = state
         this.alt = alt
@@ -55,24 +53,27 @@ class ATNConfig {
     constructor(c: ATNConfig, state: ATNState) : this(c, state, c.context, c.semanticContext)
 
     constructor(
-        c: ATNConfig, state: ATNState,
-        semanticContext: SemanticContext
+        c: ATNConfig,
+        state: ATNState,
+        semanticContext: SemanticContext,
     ) : this(c, state, c.context, semanticContext)
 
     constructor(
         c: ATNConfig,
-        semanticContext: SemanticContext
+        semanticContext: SemanticContext,
     ) : this(c, c.state, c.context, semanticContext)
 
     constructor(
-        c: ATNConfig, state: ATNState,
-        context: PredictionContext?
+        c: ATNConfig,
+        state: ATNState,
+        context: PredictionContext?,
     ) : this(c, state, context, c.semanticContext)
 
     constructor(
-        c: ATNConfig, state: ATNState,
+        c: ATNConfig,
+        state: ATNState,
         context: PredictionContext?,
-        semanticContext: SemanticContext
+        semanticContext: SemanticContext,
     ) {
         this.state = state
         this.alt = c.alt
@@ -101,11 +102,11 @@ class ATNConfig {
 
     fun equals(other: ATNConfig): Boolean {
         if (this === other) return true
-        return state.stateNumber == other.state.stateNumber
-                && alt == other.alt
-                && context == other.context
-                && semanticContext == other.semanticContext
-                && isPrecedenceFilterSuppressed == other.isPrecedenceFilterSuppressed
+        return state.stateNumber == other.state.stateNumber &&
+            alt == other.alt &&
+            context == other.context &&
+            semanticContext == other.semanticContext &&
+            isPrecedenceFilterSuppressed == other.isPrecedenceFilterSuppressed
     }
 
     override fun hashCode(): Int {
@@ -120,7 +121,10 @@ class ATNConfig {
 
     override fun toString(): String = toString(null, true)
 
-    fun toString(recog: Recognizer<*, *>?, showAlt: Boolean): String {
+    fun toString(
+        recog: Recognizer<*, *>?,
+        showAlt: Boolean,
+    ): String {
         val buf = StringBuilder()
         buf.append('(')
         buf.append(state)

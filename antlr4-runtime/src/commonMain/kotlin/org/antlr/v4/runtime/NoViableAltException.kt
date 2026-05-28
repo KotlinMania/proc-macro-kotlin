@@ -18,7 +18,7 @@ class NoViableAltException(
     startToken: Token?,
     offendingToken: Token?,
     deadEndConfigs: ATNConfigSet?,
-    ctx: ParserRuleContext?
+    ctx: ParserRuleContext?,
 ) : RecognitionException(recognizer, input, ctx) {
     /** Which configurations did we try at input.index() that couldn't match input.LT(1)?  */
     private val deadEndConfigs: ATNConfigSet?
@@ -36,7 +36,7 @@ class NoViableAltException(
         recognizer.currentToken,
         recognizer.currentToken,
         null,
-        recognizer._ctx
+        recognizer._ctx,
     )
 
     init {
@@ -45,13 +45,7 @@ class NoViableAltException(
         this.setOffendingToken(offendingToken)
     }
 
+    fun getStartToken(): Token? = startToken
 
-    fun getStartToken(): Token? {
-        return startToken
-    }
-
-
-    fun getDeadEndConfigs(): ATNConfigSet? {
-        return deadEndConfigs
-    }
+    fun getDeadEndConfigs(): ATNConfigSet? = deadEndConfigs
 }

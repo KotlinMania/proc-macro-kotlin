@@ -5,14 +5,21 @@
  */
 package org.antlr.v4.runtime.atn
 
-class EpsilonTransition(target: ATNState, val outermostPrecedenceReturn: Int = -1) : Transition(target) {
+class EpsilonTransition(
+    target: ATNState,
+    val outermostPrecedenceReturn: Int = -1,
+) : Transition(target) {
     override val serializationType: Int
         get() = EPSILON
 
     override val isEpsilon: Boolean
         get() = true
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean = false
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = false
 
     override fun toString(): String = if (outermostPrecedenceReturn == -1) "epsilon" else "epsilon>$outermostPrecedenceReturn"
 }

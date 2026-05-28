@@ -5,13 +5,12 @@
  */
 package org.antlr.v4.runtime.misc
 
-
 @Documented
 @Retention(RetentionPolicy.CLASS)
 @Target([ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE])
 @Deprecated
 @Deprecated(
     """THIS IS HERE FOR BACKWARD COMPATIBILITY WITH 4.5 ONLY.  It will
-   disappear in 4.6+"""
+   disappear in 4.6+""",
 )
 annotation class NotNull

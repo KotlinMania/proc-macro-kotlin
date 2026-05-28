@@ -19,13 +19,14 @@ class LexerChannelAction
 /**
  * Constructs a new `channel` action with the specified channel value.
  * @param channel The channel value to pass to [Lexer.setChannel].
- */(
+ */
+(
     /**
      * Gets the channel to use for the [Token] created by the lexer.
      *
      * @return The channel to use for the [Token] created by the lexer.
      */
-    val channel: Int
+    val channel: Int,
 ) : LexerAction {
     val actionType: LexerActionType
         /**
@@ -50,12 +51,14 @@ class LexerChannelAction
     override fun execute(lexer: Lexer) {
         lexer.setChannel(channel)
     }
+
     override fun hashCode(): Int {
         var hash: Int = MurmurHash.initialize()
         hash = MurmurHash.update(hash, this.actionType.ordinal)
         hash = MurmurHash.update(hash, channel)
         return MurmurHash.finish(hash, 2)
     }
+
     override fun equals(obj: Any): Boolean {
         if (obj === this) {
             return true
@@ -65,7 +68,6 @@ class LexerChannelAction
 
         return channel == obj.channel
     }
-    override fun toString(): String {
-        return String.format("channel(%d)", channel)
-    }
+
+    override fun toString(): String = String.format("channel(%d)", channel)
 }

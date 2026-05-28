@@ -9,7 +9,6 @@ import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 
-
 class LogManager {
     protected class Record {
         var timestamp: Long
@@ -21,6 +20,7 @@ class LogManager {
             timestamp = System.currentTimeMillis()
             location = Throwable().getStackTrace()[0]
         }
+
         fun toString(): String {
             val buf: StringBuilder = StringBuilder()
             buf.append(SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS").format(Date(timestamp)))
@@ -38,8 +38,13 @@ class LogManager {
 
     protected var records: MutableList<Record>? = null
 
-    fun log(component: String?, msg: String?) {
-        val r: Record = org.antlr.v4.runtime.misc.LogManager.Record()
+    fun log(
+        component: String?,
+        msg: String?,
+    ) {
+        val r: Record =
+            org.antlr.v4.runtime.misc.LogManager
+                .Record()
         r.component = component
         r.msg = msg
         if (records == null) {
@@ -65,14 +70,15 @@ class LogManager {
 
     @kotlin.Throws(IOException::class)
     fun save(): String {
-        //String dir = System.getProperty("java.io.tmpdir");
+        // String dir = System.getProperty("java.io.tmpdir");
         val dir = "."
         val defaultFilename =
             dir.toString() + "/antlr-" +
-                    SimpleDateFormat("yyyy-MM-dd-HH.mm.ss").format(Date()) + ".log"
+                SimpleDateFormat("yyyy-MM-dd-HH.mm.ss").format(Date()) + ".log"
         save(defaultFilename)
         return defaultFilename
     }
+
     fun toString(): String? {
         if (records == null) return ""
         val nl: String? = System.getProperty("line.separator")
@@ -87,7 +93,9 @@ class LogManager {
     companion object {
         @kotlin.Throws(IOException::class)
         fun main(args: Array<String?>?) {
-            val mgr: LogManager = org.antlr.v4.runtime.misc.LogManager()
+            val mgr: LogManager =
+                org.antlr.v4.runtime.misc
+                    .LogManager()
             mgr.log("atn", "test msg")
             mgr.log("dfa", "test msg 2")
             println(mgr)

@@ -9,7 +9,10 @@ import org.antlr.v4.runtime.Vocabulary
 import org.antlr.v4.runtime.VocabularyImpl
 
 /** A DFA walker that knows how to dump them to serialized strings.  */
-open class DFASerializer(dfa: DFA, vocabulary: Vocabulary) {
+open class DFASerializer(
+    dfa: DFA,
+    vocabulary: Vocabulary,
+) {
     private val dfa: DFA
 
     private val vocabulary: Vocabulary
@@ -22,6 +25,7 @@ open class DFASerializer(dfa: DFA, vocabulary: Vocabulary) {
         this.dfa = dfa
         this.vocabulary = vocabulary
     }
+
     fun toString(): String? {
         if (dfa.s0 == null) return null
         val buf: StringBuilder = StringBuilder()
@@ -34,21 +38,23 @@ open class DFASerializer(dfa: DFA, vocabulary: Vocabulary) {
                 if (t != null && t.stateNumber !== Int.MAX_VALUE) {
                     buf.append(getStateString(s))
                     val label = getEdgeLabel(i)
-                    buf.append("-").append(label).append("->").append(getStateString(t)).append('\n')
+                    buf
+                        .append("-")
+                        .append(label)
+                        .append("->")
+                        .append(getStateString(t))
+                        .append('\n')
                 }
             }
         }
 
         val output = buf.toString()
         if (output.size === 0) return null
-        //return Utils.sortLinesInString(output);
+        // return Utils.sortLinesInString(output);
         return output
     }
 
-    protected fun getEdgeLabel(i: Int): String {
-        return vocabulary.getDisplayName(i - 1)
-    }
-
+    protected fun getEdgeLabel(i: Int): String = vocabulary.getDisplayName(i - 1)
 
     protected fun getStateString(s: DFAState): String? {
         val n: Int = s.stateNumber

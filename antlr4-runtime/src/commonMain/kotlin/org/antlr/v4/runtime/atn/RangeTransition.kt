@@ -7,14 +7,21 @@ package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.misc.IntervalSet
 
-class RangeTransition(target: ATNState, val from: Int, val to: Int) : Transition(target) {
+class RangeTransition(
+    target: ATNState,
+    val from: Int,
+    val to: Int,
+) : Transition(target) {
     override val serializationType: Int
         get() = RANGE
 
     override fun label(): IntervalSet = IntervalSet.of(from, to)
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean =
-        symbol >= from && symbol <= to
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = symbol >= from && symbol <= to
 
     override fun toString(): String = "'${from.toChar()}'..'${to.toChar()}'"
 }

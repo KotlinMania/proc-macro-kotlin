@@ -13,7 +13,9 @@ import org.antlr.v4.runtime.dfa.DFA
  *
  * @since 4.3
  */
-class ParseInfo(atnSimulator: ProfilingATNSimulator) {
+class ParseInfo(
+    atnSimulator: ProfilingATNSimulator,
+) {
     protected val atnSimulator: ProfilingATNSimulator
 
     init {

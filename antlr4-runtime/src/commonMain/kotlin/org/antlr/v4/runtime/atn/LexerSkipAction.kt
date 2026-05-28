@@ -20,48 +20,48 @@ import org.antlr.v4.runtime.misc.MurmurHash
  */
 class LexerSkipAction
 /**
- * Constructs the singleton instance of the lexer `skip` command.
- */
-private constructor() : LexerAction {
-    val actionType: LexerActionType
-        /**
-         * {@inheritDoc}
-         * @return This method returns [LexerActionType.SKIP].
-         */
-        get() = LexerActionType.SKIP
-    val isPositionDependent: Boolean
-        /**
-         * {@inheritDoc}
-         * @return This method returns `false`.
-         */
-        get() = false
-
-    /**
-     * {@inheritDoc}
-     *
-     *
-     * This action is implemented by calling [Lexer.skip].
+     * Constructs the singleton instance of the lexer `skip` command.
      */
-    override fun execute(lexer: Lexer) {
-        lexer.skip()
-    }
-    override fun hashCode(): Int {
-        var hash: Int = MurmurHash.initialize()
-        hash = MurmurHash.update(hash, this.actionType.ordinal)
-        return MurmurHash.finish(hash, 1)
-    }
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-    override fun equals(obj: Any?): Boolean {
-        return obj === this
-    }
-    override fun toString(): String {
-        return "skip"
-    }
+    private constructor() :
+    LexerAction {
+        val actionType: LexerActionType
+            /**
+             * {@inheritDoc}
+             * @return This method returns [LexerActionType.SKIP].
+             */
+            get() = LexerActionType.SKIP
+        val isPositionDependent: Boolean
+            /**
+             * {@inheritDoc}
+             * @return This method returns `false`.
+             */
+            get() = false
 
-    companion object {
         /**
-         * Provides a singleton instance of this parameterless lexer action.
+         * {@inheritDoc}
+         *
+         *
+         * This action is implemented by calling [Lexer.skip].
          */
-        val INSTANCE: LexerSkipAction = org.antlr.v4.runtime.atn.LexerSkipAction()
+        override fun execute(lexer: Lexer) {
+            lexer.skip()
+        }
+
+        override fun hashCode(): Int {
+            var hash: Int = MurmurHash.initialize()
+            hash = MurmurHash.update(hash, this.actionType.ordinal)
+            return MurmurHash.finish(hash, 1)
+        }
+
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        override fun equals(obj: Any?): Boolean = obj === this
+
+        override fun toString(): String = "skip"
+
+        companion object {
+            /**
+             * Provides a singleton instance of this parameterless lexer action.
+             */
+            val INSTANCE: LexerSkipAction = LexerSkipAction()
+        }
     }
-}

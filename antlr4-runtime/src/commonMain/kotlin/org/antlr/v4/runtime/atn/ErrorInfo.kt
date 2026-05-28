@@ -34,9 +34,11 @@ class ErrorInfo
  * prediction; otherwise, `false` if the syntax error was identified
  * during SLL prediction
  */
-    (
+(
     decision: Int,
     configs: ATNConfigSet?,
-    input: TokenStream?, startIndex: Int, stopIndex: Int,
-    fullCtx: Boolean
+    input: TokenStream?,
+    startIndex: Int,
+    stopIndex: Int,
+    fullCtx: Boolean,
 ) : DecisionEventInfo(decision, configs, input, startIndex, stopIndex, fullCtx)

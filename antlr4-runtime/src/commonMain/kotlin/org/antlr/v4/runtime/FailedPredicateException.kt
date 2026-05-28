@@ -17,13 +17,13 @@ import org.antlr.v4.runtime.atn.PredicateTransition
 class FailedPredicateException(
     recognizer: Parser,
     predicate: String?,
-    message: String?
+    message: String?,
 ) : RecognitionException(
-    org.antlr.v4.runtime.FailedPredicateException.Companion.formatMessage(predicate, message),
-    recognizer,
-    recognizer.inputStream,
-    recognizer._ctx
-) {
+        formatMessage(predicate, message),
+        recognizer,
+        recognizer.inputStream,
+        recognizer._ctx,
+    ) {
     val ruleIndex: Int
     val predIndex: Int
     val predicate: String?
@@ -33,7 +33,10 @@ class FailedPredicateException(
     constructor(recognizer: Parser, predicate: String?) : this(recognizer, predicate, null)
 
     init {
-        val s: ATNState = recognizer.interpreter!!.atn.states.get(recognizer.state)
+        val s: ATNState =
+            recognizer.interpreter!!
+                .atn.states
+                .get(recognizer.state)
 
         val trans: AbstractPredicateTransition = s.transition(0) as AbstractPredicateTransition
         if (trans is PredicateTransition) {
@@ -48,9 +51,11 @@ class FailedPredicateException(
         this.setOffendingToken(recognizer.currentToken)
     }
 
-
     companion object {
-        private fun formatMessage(predicate: String?, message: String?): String? {
+        private fun formatMessage(
+            predicate: String?,
+            message: String?,
+        ): String? {
             if (message != null) {
                 return message
             }

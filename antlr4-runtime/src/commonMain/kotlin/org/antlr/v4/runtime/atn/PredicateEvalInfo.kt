@@ -18,11 +18,13 @@ import org.antlr.v4.runtime.TokenStream
  */
 class PredicateEvalInfo(
     decision: Int,
-    input: TokenStream?, startIndex: Int, stopIndex: Int,
+    input: TokenStream?,
+    startIndex: Int,
+    stopIndex: Int,
     semctx: SemanticContext?,
     evalResult: Boolean,
     predictedAlt: Int,
-    fullCtx: Boolean
+    fullCtx: Boolean,
 ) : DecisionEventInfo(decision, ATNConfigSet(), input, startIndex, stopIndex, fullCtx) {
     /**
      * The semantic context which was evaluated.

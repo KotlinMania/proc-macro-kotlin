@@ -7,13 +7,18 @@ package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.misc.IntervalSet
 
-class NotSetTransition(target: ATNState, set: IntervalSet?) : SetTransition(target, set) {
+class NotSetTransition(
+    target: ATNState,
+    set: IntervalSet?,
+) : SetTransition(target, set) {
     override val serializationType: Int
         get() = NOT_SET
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean {
-        return symbol >= minVocabSymbol && symbol <= maxVocabSymbol && !super.matches(symbol, minVocabSymbol, maxVocabSymbol)
-    }
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = symbol >= minVocabSymbol && symbol <= maxVocabSymbol && !super.matches(symbol, minVocabSymbol, maxVocabSymbol)
 
     override fun toString(): String = "~${super.toString()}"
 }

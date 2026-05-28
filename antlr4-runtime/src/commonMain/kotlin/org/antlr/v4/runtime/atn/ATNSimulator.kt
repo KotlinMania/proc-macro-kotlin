@@ -9,7 +9,7 @@ import org.antlr.v4.runtime.dfa.DFAState
 
 abstract class ATNSimulator(
     atn: ATN?,
-    sharedContextCache: PredictionContextCache?
+    sharedContextCache: PredictionContextCache?,
 ) {
     val atn: ATN?
 
@@ -55,13 +55,9 @@ abstract class ATNSimulator(
      *
      * @since 4.3
      */
-    fun clearDFA() {
-        throw UnsupportedOperationException("This ATN simulator does not support clearing the DFA.")
-    }
+    fun clearDFA(): Unit = throw UnsupportedOperationException("This ATN simulator does not support clearing the DFA.")
 
-    fun getSharedContextCache(): PredictionContextCache? {
-        return sharedContextCache
-    }
+    fun getSharedContextCache(): PredictionContextCache? = sharedContextCache
 
     fun getCachedContext(context: PredictionContext?): PredictionContext? {
         if (sharedContextCache == null) return context
@@ -72,7 +68,7 @@ abstract class ATNSimulator(
             return PredictionContext.getCachedContext(
                 context,
                 sharedContextCache,
-                visited
+                visited,
             )
         }
     }

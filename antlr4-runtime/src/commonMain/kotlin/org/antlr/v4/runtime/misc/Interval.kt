@@ -5,7 +5,10 @@
  */
 package org.antlr.v4.runtime.misc
 
-class Interval(val a: Int, val b: Int) {
+class Interval(
+    val a: Int,
+    val b: Int,
+) {
     fun length(): Int = if (b < a) 0 else b - a + 1
 
     override fun equals(other: Any?): Boolean {
@@ -40,21 +43,23 @@ class Interval(val a: Int, val b: Int) {
 
     fun intersection(other: Interval): Interval = of(maxOf(a, other.a), minOf(b, other.b))
 
-    fun differenceNotProperlyContained(other: Interval): Interval? {
-        return if (other.startsBeforeNonDisjoint(this)) {
+    fun differenceNotProperlyContained(other: Interval): Interval? =
+        if (other.startsBeforeNonDisjoint(this)) {
             of(maxOf(a, other.b + 1), b)
         } else if (other.startsAfterNonDisjoint(this)) {
             of(a, other.a - 1)
         } else {
             null
         }
-    }
 
     override fun toString(): String = "$a..$b"
 
     companion object {
         val INVALID = Interval(-1, -2)
 
-        fun of(a: Int, b: Int): Interval = Interval(a, b)
+        fun of(
+            a: Int,
+            b: Int,
+        ): Interval = Interval(a, b)
     }
 }

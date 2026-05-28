@@ -12,9 +12,12 @@ import org.antlr.v4.runtime.misc.Utils
  * when you construct the object.
  *
  */
-@Deprecated
+
 @Deprecated("as of 4.7 Please use {@link CharStreams} interface.")
-class ANTLRFileStream( var sourceName: String?, encoding: String?) : ANTLRInputStream() {
+class ANTLRFileStream(
+    var sourceName: String?,
+    encoding: String?,
+) : ANTLRInputStream() {
     constructor(fileName: String?) : this(fileName, null)
 
     init {
@@ -22,7 +25,10 @@ class ANTLRFileStream( var sourceName: String?, encoding: String?) : ANTLRInputS
     }
 
     @kotlin.Throws(IOException::class)
-    fun load(fileName: String?, encoding: String?) {
+    fun load(
+        fileName: String?,
+        encoding: String?,
+    ) {
         data = Utils.readFile(fileName, encoding)
         this.n = data.size
     }

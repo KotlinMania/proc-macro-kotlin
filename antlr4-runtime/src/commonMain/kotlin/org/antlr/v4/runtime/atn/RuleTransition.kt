@@ -6,7 +6,10 @@
 package org.antlr.v4.runtime.atn
 
 class RuleTransition(
-    ruleStart: ATNState, val ruleIndex: Int, val precedence: Int, val followState: ATNState?
+    ruleStart: ATNState,
+    val ruleIndex: Int,
+    val precedence: Int,
+    val followState: ATNState?,
 ) : Transition(ruleStart) {
     override val serializationType: Int
         get() = RULE
@@ -14,5 +17,9 @@ class RuleTransition(
     override val isEpsilon: Boolean
         get() = true
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean = false
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = false
 }

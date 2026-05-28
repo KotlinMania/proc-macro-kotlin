@@ -10,13 +10,14 @@ import org.antlr.v4.runtime.misc.IntStack
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.Pair
 
-
 /** A lexer is recognizer that draws input symbols from a character stream.
  * lexer grammars result in a subclass of this object. A Lexer object
  * uses simplified match() and error recovery mechanisms in the interest
  * of speed.
  */
-abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
+abstract class Lexer :
+    Recognizer<Int, LexerATNSimulator>,
+    TokenSource {
     var _input: CharStream? = null
     protected var _tokenFactorySourcePair: Pair<TokenSource?, CharStream?>? = null
 
@@ -115,9 +116,9 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
                 _text = null
                 do {
                     this.type = Token.INVALID_TYPE
-                    //				println("nextToken line "+tokenStartLine+" at "+((char)input.LA(1))+
-//								   " in mode "+mode+
-//								   " at index "+input.index());
+                    // 				println("nextToken line "+tokenStartLine+" at "+((char)input.LA(1))+
+// 								   " in mode "+mode+
+// 								   " at index "+input.index());
                     var ttype: Int
                     try {
                         ttype = interpreter!!.match(_input, _mode)
@@ -174,9 +175,11 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
         mode(_modeStack.pop())
         return _mode
     }
+
     fun setTokenFactory(factory: TokenFactory<*>) {
         this._factory = factory
     }
+
     val tokenFactory: TokenFactory<out Token?>
         get() = _factory
 
@@ -188,6 +191,7 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
         this._input = input as CharStream?
         this._tokenFactorySourcePair = Pair<TokenSource?, CharStream?>(this, _input)
     }
+
     val sourceName: String
         get() = _input.sourceName
     val inputStream: CharStream?
@@ -199,7 +203,7 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
      * rather than a single variable as this implementation does).
      */
     fun emit(token: Token?) {
-        //println("emit "+token);
+        // println("emit "+token);
         this._token = token
     }
 
@@ -210,12 +214,17 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
      * custom Token objects or provide a new factory.
      */
     fun emit(): Token? {
-        val t: Token? = _factory.create(
-            _tokenFactorySourcePair,
-            this.type, _text,
-            this.channel, _tokenStartCharIndex, this.charIndex - 1,
-            _tokenStartLine, _tokenStartCharPositionInLine
-        )
+        val t: Token? =
+            _factory.create(
+                _tokenFactorySourcePair,
+                this.type,
+                _text,
+                this.channel,
+                _tokenStartCharIndex,
+                this.charIndex - 1,
+                _tokenStartLine,
+                _tokenStartCharPositionInLine,
+            )
         emit(t)
         return t
     }
@@ -223,13 +232,21 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
     fun emitEOF(): Token? {
         val cpos = this.charPositionInLine
         val line = this.line
-        val eof: Token? = _factory.create(
-            _tokenFactorySourcePair, Token.EOF, null, Token.DEFAULT_CHANNEL, _input.index(), _input.index() - 1,
-            line, cpos
-        )
+        val eof: Token? =
+            _factory.create(
+                _tokenFactorySourcePair,
+                Token.EOF,
+                null,
+                Token.DEFAULT_CHANNEL,
+                _input.index(),
+                _input.index() - 1,
+                line,
+                cpos,
+            )
         emit(eof)
         return eof
     }
+
     open var line: Int
         get() = interpreter!!.line
         set(line) {
@@ -255,6 +272,7 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
             }
             return interpreter!!.getText(_input)
         }
+
         /** Set the complete text of this token; it wipes any previous
          * changes to the text.
          */
@@ -276,8 +294,9 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
     val modeNames: Array<String?>?
         get() = null
 
+    @Suppress("DEPRECATION")
     @get:Deprecated
-    val tokenNames: Array<String?>?
+    override val tokenNames: Array<String>?
         /** Used to print out token names like ID during debugging and
          * error reporting.  The generated parsers implement a method
          * that overrides this to point to their String[] tokenNames.
@@ -343,8 +362,8 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
      * to do sophisticated error recovery if you are in a fragment rule.
      */
     fun recover(re: RecognitionException?) {
-        //println("consuming char "+(char)input.LA(1)+" during recovery");
-        //re.printStackTrace();
+        // println("consuming char "+(char)input.LA(1)+" during recovery");
+        // re.printStackTrace();
         // TODO: Do we lose character or line position information?
         _input.consume()
     }

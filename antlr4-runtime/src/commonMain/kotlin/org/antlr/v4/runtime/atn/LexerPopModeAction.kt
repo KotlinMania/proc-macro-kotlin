@@ -20,48 +20,48 @@ import org.antlr.v4.runtime.misc.MurmurHash
  */
 class LexerPopModeAction
 /**
- * Constructs the singleton instance of the lexer `popMode` command.
- */
-private constructor() : LexerAction {
-    val actionType: LexerActionType
-        /**
-         * {@inheritDoc}
-         * @return This method returns [LexerActionType.POP_MODE].
-         */
-        get() = LexerActionType.POP_MODE
-    val isPositionDependent: Boolean
-        /**
-         * {@inheritDoc}
-         * @return This method returns `false`.
-         */
-        get() = false
-
-    /**
-     * {@inheritDoc}
-     *
-     *
-     * This action is implemented by calling [Lexer.popMode].
+     * Constructs the singleton instance of the lexer `popMode` command.
      */
-    override fun execute(lexer: Lexer) {
-        lexer.popMode()
-    }
-    override fun hashCode(): Int {
-        var hash: Int = MurmurHash.initialize()
-        hash = MurmurHash.update(hash, this.actionType.ordinal)
-        return MurmurHash.finish(hash, 1)
-    }
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-    override fun equals(obj: Any?): Boolean {
-        return obj === this
-    }
-    override fun toString(): String {
-        return "popMode"
-    }
+    private constructor() :
+    LexerAction {
+        val actionType: LexerActionType
+            /**
+             * {@inheritDoc}
+             * @return This method returns [LexerActionType.POP_MODE].
+             */
+            get() = LexerActionType.POP_MODE
+        val isPositionDependent: Boolean
+            /**
+             * {@inheritDoc}
+             * @return This method returns `false`.
+             */
+            get() = false
 
-    companion object {
         /**
-         * Provides a singleton instance of this parameterless lexer action.
+         * {@inheritDoc}
+         *
+         *
+         * This action is implemented by calling [Lexer.popMode].
          */
-        val INSTANCE: LexerPopModeAction = org.antlr.v4.runtime.atn.LexerPopModeAction()
+        override fun execute(lexer: Lexer) {
+            lexer.popMode()
+        }
+
+        override fun hashCode(): Int {
+            var hash: Int = MurmurHash.initialize()
+            hash = MurmurHash.update(hash, this.actionType.ordinal)
+            return MurmurHash.finish(hash, 1)
+        }
+
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        override fun equals(obj: Any?): Boolean = obj === this
+
+        override fun toString(): String = "popMode"
+
+        companion object {
+            /**
+             * Provides a singleton instance of this parameterless lexer action.
+             */
+            val INSTANCE: LexerPopModeAction = LexerPopModeAction()
+        }
     }
-}

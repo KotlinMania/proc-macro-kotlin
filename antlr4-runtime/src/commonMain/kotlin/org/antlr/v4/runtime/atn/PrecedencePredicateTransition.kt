@@ -5,14 +5,21 @@
  */
 package org.antlr.v4.runtime.atn
 
-class PrecedencePredicateTransition(target: ATNState, val precedence: Int) : AbstractPredicateTransition(target) {
+class PrecedencePredicateTransition(
+    target: ATNState,
+    val precedence: Int,
+) : AbstractPredicateTransition(target) {
     override val serializationType: Int
         get() = PRECEDENCE
 
     override val isEpsilon: Boolean
         get() = true
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean = false
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = false
 
     val predicate: SemanticContext.PrecedencePredicate
         get() = SemanticContext.PrecedencePredicate(precedence)

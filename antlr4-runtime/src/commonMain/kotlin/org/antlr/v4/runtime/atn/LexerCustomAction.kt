@@ -31,7 +31,8 @@ class LexerCustomAction
  * [Recognizer.action].
  * @param actionIndex The action index to use for calls to
  * [Recognizer.action].
- */(
+ */
+(
     /**
      * Gets the rule index to use for calls to [Recognizer.action].
      *
@@ -43,7 +44,7 @@ class LexerCustomAction
      *
      * @return The action index for the custom action.
      */
-    val actionIndex: Int
+    val actionIndex: Int,
 ) : LexerAction {
     val actionType: LexerActionType
         /**
@@ -77,6 +78,7 @@ class LexerCustomAction
     override fun execute(lexer: Lexer) {
         lexer.action(null, ruleIndex, actionIndex)
     }
+
     override fun hashCode(): Int {
         var hash: Int = MurmurHash.initialize()
         hash = MurmurHash.update(hash, this.actionType.ordinal)
@@ -84,6 +86,7 @@ class LexerCustomAction
         hash = MurmurHash.update(hash, actionIndex)
         return MurmurHash.finish(hash, 3)
     }
+
     override fun equals(obj: Any?): Boolean {
         if (obj === this) {
             return true
@@ -92,7 +95,7 @@ class LexerCustomAction
         }
 
         val other = obj
-        return ruleIndex == other.ruleIndex
-                && actionIndex == other.actionIndex
+        return ruleIndex == other.ruleIndex &&
+            actionIndex == other.actionIndex
     }
 }

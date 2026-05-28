@@ -44,31 +44,10 @@ import org.antlr.v4.runtime.misc.BitSet
 class AmbiguityInfo(
     decision: Int,
     configs: ATNConfigSet?,
-    ambigAlts: BitSet?,
-    input: TokenStream?, startIndex: Int, stopIndex: Int,
-    fullCtx: Boolean
-) : DecisionEventInfo(decision, configs, input, startIndex, stopIndex, fullCtx) {
     /** The set of alternative numbers for this decision event that lead to a valid parse.  */
-    var ambigAlts: BitSet?
-
-    /**
-     * Constructs a new instance of the [AmbiguityInfo] class with the
-     * specified detailed ambiguity information.
-     *
-     * @param decision The decision number
-     * @param configs The final configuration set identifying the ambiguous
-     * alternatives for the current input
-     * @param ambigAlts The set of alternatives in the decision that lead to a valid parse.
-     * The predicted alt is the min(ambigAlts)
-     * @param input The input token stream
-     * @param startIndex The start index for the current prediction
-     * @param stopIndex The index at which the ambiguity was identified during
-     * prediction
-     * @param fullCtx `true` if the ambiguity was identified during LL
-     * prediction; otherwise, `false` if the ambiguity was identified
-     * during SLL prediction
-     */
-    init {
-        this.ambigAlts = ambigAlts
-    }
-}
+    var ambigAlts: BitSet?,
+    input: TokenStream?,
+    startIndex: Int,
+    stopIndex: Int,
+    fullCtx: Boolean,
+) : DecisionEventInfo(decision, configs, input, startIndex, stopIndex, fullCtx)

@@ -131,7 +131,7 @@ interface IntStream {
      * }
      * stream.release(mark);
      * }
-    </pre> *
+     </pre> *
      *
      * @return An opaque marker which should be passed to
      * [release()][.release] when the marked range is no longer required.

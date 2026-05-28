@@ -11,7 +11,10 @@ import org.antlr.v4.runtime.atn.ATNConfigSet
 import org.antlr.v4.runtime.atn.DecisionState
 import org.antlr.v4.runtime.atn.StarLoopEntryState
 
-class DFA(atnStartState: DecisionState, decision: Int) {
+class DFA(
+    atnStartState: DecisionState,
+    decision: Int,
+) {
     val states: MutableMap<DFAState, DFAState> = HashMap()
 
     @kotlin.concurrent.Volatile
@@ -54,7 +57,10 @@ class DFA(atnStartState: DecisionState, decision: Int) {
         return s0!!.edges[precedence]
     }
 
-    fun setPrecedenceStartState(precedence: Int, startState: DFAState?) {
+    fun setPrecedenceStartState(
+        precedence: Int,
+        startState: DFAState?,
+    ) {
         check(isPrecedenceDfa()) { "Only precedence DFAs may contain a precedence start state." }
         if (precedence < 0) return
         synchronized(s0!!) {

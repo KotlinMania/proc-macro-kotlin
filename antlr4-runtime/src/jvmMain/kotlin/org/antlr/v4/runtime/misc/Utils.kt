@@ -11,12 +11,14 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.util.Arrays
 import java.util.BitSet
 
 object Utils {
     // Seriously: why isn't this built in to java? ugh!
-    fun <T> join(iter: Iterator<T?>, separator: String?): String {
+    fun <T> join(
+        iter: Iterator<T?>,
+        separator: String?,
+    ): String {
         val buf: StringBuilder = StringBuilder()
         while (iter.hasNext()) {
             buf.append(iter.next())
@@ -27,7 +29,10 @@ object Utils {
         return buf.toString()
     }
 
-    fun <T> join(array: Array<T?>, separator: String?): String {
+    fun <T> join(
+        array: Array<T?>,
+        separator: String?,
+    ): String {
         val builder: StringBuilder = StringBuilder()
         for (i in array.indices) {
             builder.append(array[i])
@@ -48,30 +53,50 @@ object Utils {
         return n
     }
 
-    fun <T> removeAllElements(data: Collection<T?>?, value: T?) {
+    fun <T> removeAllElements(
+        data: Collection<T?>?,
+        value: T?,
+    ) {
         if (data == null) return
         while (data.contains(value)) data.remove(value)
     }
 
-    fun escapeWhitespace(s: String, escapeSpaces: Boolean): String {
+    fun escapeWhitespace(
+        s: String,
+        escapeSpaces: Boolean,
+    ): String {
         val buf: StringBuilder = StringBuilder()
         for (c in s.toCharArray()) {
-            if (c == ' ' && escapeSpaces) buf.append('\u00B7')
-            else if (c == '\t') buf.append("\\t")
-            else if (c == '\n') buf.append("\\n")
-            else if (c == '\r') buf.append("\\r")
-            else buf.append(c)
+            if (c == ' ' && escapeSpaces) {
+                buf.append('\u00B7')
+            } else if (c == '\t') {
+                buf.append("\\t")
+            } else if (c == '\n') {
+                buf.append("\\n")
+            } else if (c == '\r') {
+                buf.append("\\r")
+            } else {
+                buf.append(c)
+            }
         }
         return buf.toString()
     }
 
     @kotlin.Throws(IOException::class)
-    fun writeFile(fileName: String?, content: String?) {
-        org.antlr.v4.runtime.misc.Utils.writeFile(fileName, content, null)
+    fun writeFile(
+        fileName: String?,
+        content: String?,
+    ) {
+        org.antlr.v4.runtime.misc.Utils
+            .writeFile(fileName, content, null)
     }
 
     @kotlin.Throws(IOException::class)
-    fun writeFile(fileName: String?, content: String?, encoding: String?) {
+    fun writeFile(
+        fileName: String?,
+        content: String?,
+        encoding: String?,
+    ) {
         val f: File = File(fileName)
         val fos: FileOutputStream = FileOutputStream(f)
         val osw: OutputStreamWriter?
@@ -88,15 +113,16 @@ object Utils {
         }
     }
 
+    @kotlin.Throws(IOException::class)
+    fun readFile(fileName: String?): CharArray? =
+        org.antlr.v4.runtime.misc.Utils
+            .readFile(fileName, null)
 
     @kotlin.Throws(IOException::class)
-    fun readFile(fileName: String?): CharArray? {
-        return org.antlr.v4.runtime.misc.Utils.readFile(fileName, null)
-    }
-
-
-    @kotlin.Throws(IOException::class)
-    fun readFile(fileName: String?, encoding: String?): CharArray? {
+    fun readFile(
+        fileName: String?,
+        encoding: String?,
+    ): CharArray? {
         val f: File = File(fileName)
         val size = f.length() as Int
         val isr: InputStreamReader?
@@ -147,7 +173,10 @@ object Utils {
 
     /** @since 4.6
      */
-    fun expandTabs(s: String?, tabSize: Int): String? {
+    fun expandTabs(
+        s: String?,
+        tabSize: Int,
+    ): String? {
         if (s == null) return null
         val buf: StringBuilder = StringBuilder()
         var col = 0
@@ -162,7 +191,10 @@ object Utils {
                 '\t' -> {
                     val n = tabSize - col % tabSize
                     col += n
-                    buf.append(org.antlr.v4.runtime.misc.Utils.spaces(n))
+                    buf.append(
+                        org.antlr.v4.runtime.misc.Utils
+                            .spaces(n),
+                    )
                 }
 
                 else -> {
@@ -176,19 +208,22 @@ object Utils {
 
     /** @since 4.6
      */
-    fun spaces(n: Int): String {
-        return org.antlr.v4.runtime.misc.Utils.sequence(n, " ")
-    }
+    fun spaces(n: Int): String =
+        org.antlr.v4.runtime.misc.Utils
+            .sequence(n, " ")
 
     /** @since 4.6
      */
-    fun newlines(n: Int): String {
-        return org.antlr.v4.runtime.misc.Utils.sequence(n, "\n")
-    }
+    fun newlines(n: Int): String =
+        org.antlr.v4.runtime.misc.Utils
+            .sequence(n, "\n")
 
     /** @since 4.6
      */
-    fun sequence(n: Int, s: String?): String {
+    fun sequence(
+        n: Int,
+        s: String?,
+    ): String {
         val buf: StringBuilder = StringBuilder()
         for (sp in 1..n) buf.append(s)
         return buf.toString()
@@ -196,7 +231,10 @@ object Utils {
 
     /** @since 4.6
      */
-    fun count(s: String, x: Char): Int {
+    fun count(
+        s: String,
+        x: Char,
+    ): Int {
         var n = 0
         for (i in 0..<s.length()) {
             if (s.charAt(i) === x) {

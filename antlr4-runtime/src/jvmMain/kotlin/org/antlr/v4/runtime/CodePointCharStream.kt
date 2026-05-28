@@ -16,7 +16,11 @@ import java.nio.charset.StandardCharsets
  * Use this if you need to parse input which potentially contains
  * Unicode values > U+FFFF.
  */
-abstract class CodePointCharStream private constructor(position: Int, remaining: Int, name: String?) : CharStream {
+abstract class CodePointCharStream private constructor(
+    position: Int,
+    remaining: Int,
+    name: String?,
+) : CharStream {
     protected val size: Int
     protected val name: String?
 
@@ -37,6 +41,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
 
     // Visible for testing.
     abstract val internalStorage: Any?
+
     fun consume() {
         if (size - position == 0) {
             assert(LA(1) === IntStream.EOF)
@@ -44,22 +49,21 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
         }
         position = position + 1
     }
-    fun index(): Int {
-        return position
-    }
-    fun size(): Int {
-        return size
-    }
+
+    fun index(): Int = position
+
+    fun size(): Int = size
 
     /** mark/release do nothing; we have entire buffer  */
-    fun mark(): Int {
-        return -1
-    }
+    fun mark(): Int = -1
+
     fun release(marker: Int) {
     }
+
     fun seek(index: Int) {
         position = index
     }
+
     val sourceName: String?
         get() {
             if (name == null || name.isEmpty()) {
@@ -68,9 +72,8 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
 
             return name
         }
-    fun toString(): String {
-        return getText(Interval.of(0, size - 1))
-    }
+
+    fun toString(): String = getText(Interval.of(0, size - 1))
 
     // 8-bit storage for code points <= U+00FF.
     private class CodePoint8BitCharStream(
@@ -78,7 +81,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
         remaining: Int,
         name: String?,
         byteArray: ByteArray,
-        arrayOffset: Int
+        arrayOffset: Int,
     ) : CodePointCharStream(position, remaining, name) {
         private val byteArray: ByteArray
 
@@ -98,6 +101,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
             // which shares the same code points up to 0xFF.
             return String(byteArray, startIdx, len, StandardCharsets.ISO_8859_1)
         }
+
         fun LA(i: Int): Int {
             val offset: Int
             when (Integer.signum(i)) {
@@ -109,7 +113,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
                     return byteArray[offset].toInt() and 0xFF
                 }
 
-                0 ->                    // Undefined
+                0 -> // Undefined
                     return 0
 
                 1 -> {
@@ -122,9 +126,8 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
             }
             throw UnsupportedOperationException("Not reached")
         }
-        override fun getInternalStorage(): Any {
-            return byteArray
-        }
+
+        override fun getInternalStorage(): Any = byteArray
     }
 
     // 16-bit internal storage for code points between U+0100 and U+FFFF.
@@ -133,7 +136,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
         remaining: Int,
         name: String?,
         private val charArray: CharArray,
-        arrayOffset: Int
+        arrayOffset: Int,
     ) : CodePointCharStream(position, remaining, name) {
         init {
             // TODO
@@ -153,6 +156,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
             // UTF-16.
             return String(charArray, startIdx, len)
         }
+
         fun LA(i: Int): Int {
             val offset: Int
             when (Integer.signum(i)) {
@@ -164,7 +168,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
                     return charArray[offset].code and 0xFFFF
                 }
 
-                0 ->                    // Undefined
+                0 -> // Undefined
                     return 0
 
                 1 -> {
@@ -177,9 +181,8 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
             }
             throw UnsupportedOperationException("Not reached")
         }
-        override fun getInternalStorage(): Any {
-            return charArray
-        }
+
+        override fun getInternalStorage(): Any = charArray
     }
 
     // 32-bit internal storage for code points between U+10000 and U+10FFFF.
@@ -188,7 +191,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
         remaining: Int,
         name: String?,
         private val intArray: IntArray,
-        arrayOffset: Int
+        arrayOffset: Int,
     ) : CodePointCharStream(position, remaining, name) {
         init {
             // TODO
@@ -204,6 +207,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
             // this is supported, and the constructor will convert to UTF-16 internally.
             return String(intArray, startIdx, len)
         }
+
         fun LA(i: Int): Int {
             val offset: Int
             when (Integer.signum(i)) {
@@ -215,7 +219,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
                     return intArray[offset]
                 }
 
-                0 ->                    // Undefined
+                0 -> // Undefined
                     return 0
 
                 1 -> {
@@ -228,9 +232,8 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
             }
             throw UnsupportedOperationException("Not reached")
         }
-        override fun getInternalStorage(): Any {
-            return intArray
-        }
+
+        override fun getInternalStorage(): Any = intArray
     }
 
     companion object {
@@ -238,15 +241,18 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
          * Constructs a [CodePointCharStream] which provides access
          * to the Unicode code points stored in `codePointBuffer`.
          */
-        fun fromBuffer(codePointBuffer: CodePointBuffer): CodePointCharStream {
-            return org.antlr.v4.runtime.CodePointCharStream.Companion.fromBuffer(codePointBuffer, IntStream.UNKNOWN_SOURCE_NAME)
-        }
+        fun fromBuffer(codePointBuffer: CodePointBuffer): CodePointCharStream =
+            org.antlr.v4.runtime.CodePointCharStream.Companion
+                .fromBuffer(codePointBuffer, IntStream.UNKNOWN_SOURCE_NAME)
 
         /**
          * Constructs a named [CodePointCharStream] which provides access
          * to the Unicode code points stored in `codePointBuffer`.
          */
-        fun fromBuffer(codePointBuffer: CodePointBuffer, name: String?): CodePointCharStream {
+        fun fromBuffer(
+            codePointBuffer: CodePointBuffer,
+            name: String?,
+        ): CodePointCharStream {
             // Java lacks generics on primitive types.
             //
             // To avoid lots of calls to virtual methods in the
@@ -263,7 +269,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
                     codePointBuffer.remaining(),
                     name,
                     codePointBuffer.byteArray(),
-                    codePointBuffer.arrayOffset()
+                    codePointBuffer.arrayOffset(),
                 )
 
                 CHAR -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint16BitCharStream(
@@ -271,7 +277,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
                     codePointBuffer.remaining(),
                     name,
                     codePointBuffer.charArray(),
-                    codePointBuffer.arrayOffset()
+                    codePointBuffer.arrayOffset(),
                 )
 
                 INT -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint32BitCharStream(
@@ -279,7 +285,7 @@ abstract class CodePointCharStream private constructor(position: Int, remaining:
                     codePointBuffer.remaining(),
                     name,
                     codePointBuffer.intArray(),
-                    codePointBuffer.arrayOffset()
+                    codePointBuffer.arrayOffset(),
                 )
             }
             throw UnsupportedOperationException("Not reached")

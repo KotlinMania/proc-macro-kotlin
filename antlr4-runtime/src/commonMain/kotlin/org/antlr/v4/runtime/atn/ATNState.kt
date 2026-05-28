@@ -53,7 +53,10 @@ abstract class ATNState {
         addTransition(transitions.size, e)
     }
 
-    fun addTransition(index: Int, e: Transition) {
+    fun addTransition(
+        index: Int,
+        e: Transition,
+    ) {
         if (transitions.isEmpty) {
             epsilonOnlyTransitions = e.isEpsilon
         } else if (epsilonOnlyTransitions != e.isEpsilon) {
@@ -80,7 +83,10 @@ abstract class ATNState {
 
     fun transition(i: Int): Transition = transitions[i]
 
-    fun setTransition(i: Int, e: Transition) {
+    fun setTransition(
+        i: Int,
+        e: Transition,
+    ) {
         transitions[i] = e
     }
 
@@ -111,12 +117,22 @@ abstract class ATNState {
         const val PLUS_LOOP_BACK: Int = 11
         const val LOOP_END: Int = 12
 
-        val serializationNames: List<String> = listOf(
-            "INVALID", "BASIC", "RULE_START", "BLOCK_START",
-            "PLUS_BLOCK_START", "STAR_BLOCK_START", "TOKEN_START",
-            "RULE_STOP", "BLOCK_END", "STAR_LOOP_BACK",
-            "STAR_LOOP_ENTRY", "PLUS_LOOP_BACK", "LOOP_END"
-        )
+        val serializationNames: List<String> =
+            listOf(
+                "INVALID",
+                "BASIC",
+                "RULE_START",
+                "BLOCK_START",
+                "PLUS_BLOCK_START",
+                "STAR_BLOCK_START",
+                "TOKEN_START",
+                "RULE_STOP",
+                "BLOCK_END",
+                "STAR_LOOP_BACK",
+                "STAR_LOOP_ENTRY",
+                "PLUS_LOOP_BACK",
+                "LOOP_END",
+            )
 
         const val INVALID_STATE_NUMBER: Int = -1
     }

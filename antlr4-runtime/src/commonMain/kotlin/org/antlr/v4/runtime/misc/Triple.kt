@@ -5,7 +5,11 @@
  */
 package org.antlr.v4.runtime.misc
 
-class Triple<A, B, C>(val a: A?, val b: B?, val c: C?) {
+class Triple<A, B, C>(
+    val a: A?,
+    val b: B?,
+    val c: C?,
+) {
     fun equals(obj: Any?): Boolean {
         if (obj === this) {
             return true
@@ -14,10 +18,11 @@ class Triple<A, B, C>(val a: A?, val b: B?, val c: C?) {
         }
 
         val other = obj
-        return AnyEqualityComparator.INSTANCE.equals(a, other.a)
-                && AnyEqualityComparator.INSTANCE.equals(b, other.b)
-                && AnyEqualityComparator.INSTANCE.equals(c, other.c)
+        return AnyEqualityComparator.INSTANCE.equals(a, other.a) &&
+            AnyEqualityComparator.INSTANCE.equals(b, other.b) &&
+            AnyEqualityComparator.INSTANCE.equals(c, other.c)
     }
+
     fun hashCode(): Int {
         var hash: Int = MurmurHash.initialize()
         hash = MurmurHash.update(hash, a)
@@ -25,7 +30,6 @@ class Triple<A, B, C>(val a: A?, val b: B?, val c: C?) {
         hash = MurmurHash.update(hash, c)
         return MurmurHash.finish(hash, 3)
     }
-    fun toString(): String {
-        return String.format("(%s, %s, %s)", a, b, c)
-    }
+
+    fun toString(): String = String.format("(%s, %s, %s)", a, b, c)
 }

@@ -19,7 +19,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-
 /** This class represents the primary interface for creating [CharStream]s
  * from a variety of sources as of 4.7.  The motivation was to support
  * Unicode code points > U+FFFF.  [ANTLRInputStream] and
@@ -68,9 +67,9 @@ object CharStreams {
      * Reads the entire contents of the file into the result before returning.
      */
     @kotlin.Throws(IOException::class)
-    fun fromPath(path: Path): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromPath(path, StandardCharsets.UTF_8)
-    }
+    fun fromPath(path: Path): CharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromPath(path, StandardCharsets.UTF_8)
 
     /**
      * Creates a [CharStream] given a path to a file on disk and the
@@ -79,7 +78,10 @@ object CharStreams {
      * Reads the entire contents of the file into the result before returning.
      */
     @kotlin.Throws(IOException::class)
-    fun fromPath(path: Path, charset: Charset): CharStream {
+    fun fromPath(
+        path: Path,
+        charset: Charset,
+    ): CharStream {
         val size: Long = Files.size(path)
         Files.newByteChannel(path).use { channel ->
             return org.antlr.v4.runtime.CharStreams.fromChannel(
@@ -88,7 +90,7 @@ object CharStreams {
                 org.antlr.v4.runtime.CharStreams.DEFAULT_BUFFER_SIZE,
                 CodingErrorAction.REPLACE,
                 path.toString(),
-                size
+                size,
             )
         }
     }
@@ -100,9 +102,9 @@ object CharStreams {
      * Reads the entire contents of the file into the result before returning.
      */
     @kotlin.Throws(IOException::class)
-    fun fromFileName(fileName: String?): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromPath(Paths.get(fileName), StandardCharsets.UTF_8)
-    }
+    fun fromFileName(fileName: String?): CharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromPath(Paths.get(fileName), StandardCharsets.UTF_8)
 
     /**
      * Creates a [CharStream] given a string containing a
@@ -112,10 +114,12 @@ object CharStreams {
      * Reads the entire contents of the file into the result before returning.
      */
     @kotlin.Throws(IOException::class)
-    fun fromFileName(fileName: String?, charset: Charset): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromPath(Paths.get(fileName), charset)
-    }
-
+    fun fromFileName(
+        fileName: String?,
+        charset: Charset,
+    ): CharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromPath(Paths.get(fileName), charset)
 
     /**
      * Creates a [CharStream] given an opened [InputStream]
@@ -125,9 +129,9 @@ object CharStreams {
      * the result before returning, then closes the `InputStream`.
      */
     @kotlin.Throws(IOException::class)
-    fun fromStream(`is`: InputStream?): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromStream(`is`, StandardCharsets.UTF_8)
-    }
+    fun fromStream(`is`: InputStream?): CharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromStream(`is`, StandardCharsets.UTF_8)
 
     /**
      * Creates a [CharStream] given an opened [InputStream] and the
@@ -137,12 +141,19 @@ object CharStreams {
      * the result before returning, then closes the `InputStream`.
      */
     @kotlin.Throws(IOException::class)
-    fun fromStream(`is`: InputStream?, charset: Charset): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromStream(`is`, charset, -1)
-    }
+    fun fromStream(
+        `is`: InputStream?,
+        charset: Charset,
+    ): CharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromStream(`is`, charset, -1)
 
     @kotlin.Throws(IOException::class)
-    fun fromStream(`is`: InputStream?, charset: Charset, inputSize: Long): CharStream {
+    fun fromStream(
+        `is`: InputStream?,
+        charset: Charset,
+        inputSize: Long,
+    ): CharStream {
         Channels.newChannel(`is`).use { channel ->
             return org.antlr.v4.runtime.CharStreams.fromChannel(
                 channel,
@@ -150,7 +161,7 @@ object CharStreams {
                 org.antlr.v4.runtime.CharStreams.DEFAULT_BUFFER_SIZE,
                 CodingErrorAction.REPLACE,
                 IntStream.UNKNOWN_SOURCE_NAME,
-                inputSize
+                inputSize,
             )
         }
     }
@@ -163,9 +174,9 @@ object CharStreams {
      * the result before returning, then closes the `channel`.
      */
     @kotlin.Throws(IOException::class)
-    fun fromChannel(channel: ReadableByteChannel): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromChannel(channel, StandardCharsets.UTF_8)
-    }
+    fun fromChannel(channel: ReadableByteChannel): CharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromChannel(channel, StandardCharsets.UTF_8)
 
     /**
      * Creates a [CharStream] given an opened [ReadableByteChannel] and the
@@ -175,30 +186,35 @@ object CharStreams {
      * the result before returning, then closes the `channel`.
      */
     @kotlin.Throws(IOException::class)
-    fun fromChannel(channel: ReadableByteChannel, charset: Charset?): CharStream {
-        return org.antlr.v4.runtime.CharStreams.fromChannel(
+    fun fromChannel(
+        channel: ReadableByteChannel,
+        charset: Charset?,
+    ): CharStream =
+        org.antlr.v4.runtime.CharStreams.fromChannel(
             channel,
             org.antlr.v4.runtime.CharStreams.DEFAULT_BUFFER_SIZE,
             CodingErrorAction.REPLACE,
-            IntStream.UNKNOWN_SOURCE_NAME
+            IntStream.UNKNOWN_SOURCE_NAME,
         )
-    }
 
     /**
      * Creates a [CharStream] given a [Reader]. Closes
      * the reader before returning.
      */
     @kotlin.Throws(IOException::class)
-    fun fromReader(r: Reader): CodePointCharStream {
-        return org.antlr.v4.runtime.CharStreams.fromReader(r, IntStream.UNKNOWN_SOURCE_NAME)
-    }
+    fun fromReader(r: Reader): CodePointCharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromReader(r, IntStream.UNKNOWN_SOURCE_NAME)
 
     /**
      * Creates a [CharStream] given a [Reader] and its
      * source name. Closes the reader before returning.
      */
     @kotlin.Throws(IOException::class)
-    fun fromReader(r: Reader, sourceName: String?): CodePointCharStream {
+    fun fromReader(
+        r: Reader,
+        sourceName: String?,
+    ): CodePointCharStream {
         try {
             val codePointBufferBuilder: CodePointBuffer.Builder =
                 CodePointBuffer.builder(org.antlr.v4.runtime.CharStreams.DEFAULT_BUFFER_SIZE)
@@ -217,15 +233,18 @@ object CharStreams {
     /**
      * Creates a [CharStream] given a [String].
      */
-    fun fromString(s: String): CodePointCharStream {
-        return org.antlr.v4.runtime.CharStreams.fromString(s, IntStream.UNKNOWN_SOURCE_NAME)
-    }
+    fun fromString(s: String): CodePointCharStream =
+        org.antlr.v4.runtime.CharStreams
+            .fromString(s, IntStream.UNKNOWN_SOURCE_NAME)
 
     /**
      * Creates a [CharStream] given a [String] and the `sourceName`
      * from which it came.
      */
-    fun fromString(s: String, sourceName: String?): CodePointCharStream {
+    fun fromString(
+        s: String,
+        sourceName: String?,
+    ): CodePointCharStream {
         // Initial guess assumes no code points > U+FFFF: one code
         // point for each code unit in the string
         val codePointBufferBuilder: CodePointBuffer.Builder = CodePointBuffer.builder(s.length())
@@ -250,17 +269,16 @@ object CharStreams {
         channel: ReadableByteChannel,
         bufferSize: Int,
         decodingErrorAction: CodingErrorAction,
-        sourceName: String?
-    ): CodePointCharStream {
-        return org.antlr.v4.runtime.CharStreams.fromChannel(
+        sourceName: String?,
+    ): CodePointCharStream =
+        org.antlr.v4.runtime.CharStreams.fromChannel(
             channel,
             StandardCharsets.UTF_8,
             bufferSize,
             decodingErrorAction,
             sourceName,
-            -1
+            -1,
         )
-    }
 
     @kotlin.Throws(IOException::class)
     fun fromChannel(
@@ -269,7 +287,7 @@ object CharStreams {
         bufferSize: Int,
         decodingErrorAction: CodingErrorAction,
         sourceName: String?,
-        inputSize: Long
+        inputSize: Long,
     ): CodePointCharStream {
         var inputSize = inputSize
         try {
@@ -282,21 +300,23 @@ object CharStreams {
                 throw IOException(String.format("inputSize %d larger than max %d", inputSize, Int.MAX_VALUE))
             }
             val codePointBufferBuilder: CodePointBuffer.Builder = CodePointBuffer.builder(inputSize.toInt())
-            val decoder: CharsetDecoder = charset
-                .newDecoder()
-                .onMalformedInput(decodingErrorAction)
-                .onUnmappableCharacter(decodingErrorAction)
+            val decoder: CharsetDecoder =
+                charset
+                    .newDecoder()
+                    .onMalformedInput(decodingErrorAction)
+                    .onUnmappableCharacter(decodingErrorAction)
 
             var endOfInput = false
             while (!endOfInput) {
                 val bytesRead: Int = channel.read(utf8BytesIn)
                 endOfInput = (bytesRead == -1)
                 utf8BytesIn.flip()
-                val result: CoderResult = decoder.decode(
-                    utf8BytesIn,
-                    utf16CodeUnitsOut,
-                    endOfInput
-                )
+                val result: CoderResult =
+                    decoder.decode(
+                        utf8BytesIn,
+                        utf16CodeUnitsOut,
+                        endOfInput,
+                    )
                 if (result.isError() && decodingErrorAction.equals(CodingErrorAction.REPORT)) {
                     result.throwException()
                 }

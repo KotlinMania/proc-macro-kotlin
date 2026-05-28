@@ -5,12 +5,17 @@
  */
 package org.antlr.v4.runtime.atn
 
-class WildcardTransition(target: ATNState) : Transition(target) {
+class WildcardTransition(
+    target: ATNState,
+) : Transition(target) {
     override val serializationType: Int
         get() = WILDCARD
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean =
-        symbol >= minVocabSymbol && symbol <= maxVocabSymbol
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = symbol >= minVocabSymbol && symbol <= maxVocabSymbol
 
     override fun toString(): String = "."
 }

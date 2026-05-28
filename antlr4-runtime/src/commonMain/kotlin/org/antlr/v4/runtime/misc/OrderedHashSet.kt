@@ -11,7 +11,10 @@ class OrderedHashSet<T> : MutableSet<T> {
 
     fun get(i: Int): T = elements[i]
 
-    fun set(i: Int, value: T): T {
+    fun set(
+        i: Int,
+        value: T,
+    ): T {
         val oldElement = elements[i]
         elements[i] = value
         backingSet.remove(oldElement)

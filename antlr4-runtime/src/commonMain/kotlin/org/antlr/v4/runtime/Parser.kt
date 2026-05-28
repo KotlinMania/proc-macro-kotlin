@@ -67,34 +67,9 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         }
     }
 
-    /**
-     * This field holds the deserialized [ATN] with bypass alternatives, created
-     * lazily upon first demand. In 4.10 I changed from map<serializedATNstring></serializedATNstring>, ATN>
-     * since we only need one per parser object and also it complicates other targets
-     * that don't use ATN strings.
-     *
-     * @see ATNDeserializationOptions.isGenerateRuleBypassTransitions
-     */
-    private var bypassAltsAtnCache: ATN? = null
 
-    /**
-     * The error handling strategy for the parser. The default value is a new
-     * instance of [DefaultErrorStrategy].
-     *
-     * @see .getErrorHandler
-     *
-     * @see .setErrorHandler
-     */
-    protected var _errHandler: ANTLRErrorStrategy = DefaultErrorStrategy()
 
-    /**
-     * The input stream.
-     *
-     * @see .getInputStream
-     *
-     * @see .setInputStream
-     */
-    protected var _input: TokenStream? = null
+
 
     protected val _precedenceStack: IntStack
 
@@ -415,14 +390,14 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         _input!!.tokenSource.setTokenFactory(factory)
     }
 
+    /**
+     * The ATN with bypass alternatives is expensive to create so we create it
+     * lazily.
+     *
+     * @throws UnsupportedOperationException if the current parser does not
+     * implement the [getSerializedATN] method.
+     */
     val aTNWithBypassAlts: ATN?
-        /**
-         * The ATN with bypass alternatives is expensive to create so we create it
-         * lazily.
-         *
-         * @throws UnsupportedOperationException if the current parser does not
-         * implement the [.getSerializedATN] method.
-         */
         get() {
             val serializedAtn: String = getSerializedATN()
             if (serializedAtn == null) {
@@ -439,5 +414,4 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
                 return bypassAltsAtnCache
             }
         }
-
-    /**
+}

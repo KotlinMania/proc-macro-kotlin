@@ -5,8 +5,8 @@
  */
 package org.antlr.v4.runtime.atn
 
-import org.antlr.v4.runtime.misc.MurmurHash
 import org.antlr.v4.runtime.misc.AnyEqualityComparator
+import org.antlr.v4.runtime.misc.MurmurHash
 
 class LexerATNConfig : ATNConfig {
     private val lexerActionExecutor: LexerActionExecutor?
@@ -15,7 +15,7 @@ class LexerATNConfig : ATNConfig {
     constructor(
         state: ATNState,
         alt: Int,
-        context: PredictionContext?
+        context: PredictionContext?,
     ) : super(state, alt, context, SemanticContext.Empty.Instance) {
         this.passedThroughNonGreedyDecision = false
         this.lexerActionExecutor = null
@@ -25,7 +25,7 @@ class LexerATNConfig : ATNConfig {
         state: ATNState,
         alt: Int,
         context: PredictionContext?,
-        lexerActionExecutor: LexerActionExecutor?
+        lexerActionExecutor: LexerActionExecutor?,
     ) : super(state, alt, context, SemanticContext.Empty.Instance) {
         this.lexerActionExecutor = lexerActionExecutor
         this.passedThroughNonGreedyDecision = false
@@ -37,16 +37,18 @@ class LexerATNConfig : ATNConfig {
     }
 
     constructor(
-        c: LexerATNConfig, state: ATNState,
-        lexerActionExecutor: LexerActionExecutor?
+        c: LexerATNConfig,
+        state: ATNState,
+        lexerActionExecutor: LexerActionExecutor?,
     ) : super(c, state, c.context, c.semanticContext) {
         this.lexerActionExecutor = lexerActionExecutor
         this.passedThroughNonGreedyDecision = checkNonGreedyDecision(c, state)
     }
 
     constructor(
-        c: LexerATNConfig, state: ATNState,
-        context: PredictionContext?
+        c: LexerATNConfig,
+        state: ATNState,
+        context: PredictionContext?,
     ) : super(c, state, context, c.semanticContext) {
         this.lexerActionExecutor = c.lexerActionExecutor
         this.passedThroughNonGreedyDecision = checkNonGreedyDecision(c, state)
@@ -80,9 +82,11 @@ class LexerATNConfig : ATNConfig {
     }
 
     companion object {
-        private fun checkNonGreedyDecision(source: LexerATNConfig, target: ATNState): Boolean {
-            return source.passedThroughNonGreedyDecision
-                    || (target is DecisionState && target.nonGreedy)
-        }
+        private fun checkNonGreedyDecision(
+            source: LexerATNConfig,
+            target: ATNState,
+        ): Boolean =
+            source.passedThroughNonGreedyDecision ||
+                (target is DecisionState && target.nonGreedy)
     }
 }

@@ -7,13 +7,20 @@ package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.misc.IntervalSet
 
-class AtomTransition(target: ATNState, val label: Int) : Transition(target) {
+class AtomTransition(
+    target: ATNState,
+    val label: Int,
+) : Transition(target) {
     override val serializationType: Int
         get() = ATOM
 
     override fun label(): IntervalSet = IntervalSet.of(label)
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean = label == symbol
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = label == symbol
 
     override fun toString(): String = label.toString()
 }

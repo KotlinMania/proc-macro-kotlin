@@ -6,17 +6,17 @@
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.misc.AbstractEqualityComparator
+import org.antlr.v4.runtime.misc.BitSet
 import org.antlr.v4.runtime.misc.FlexibleHashMap
 import org.antlr.v4.runtime.misc.MurmurHash
-import org.antlr.v4.runtime.misc.BitSet
 
 enum class PredictionMode {
     SLL,
     LL,
-    LL_EXACT_AMBIG_DETECTION;
+    LL_EXACT_AMBIG_DETECTION,
+    ;
 
-    internal class AltAndContextMap :
-        FlexibleHashMap<ATNConfig, BitSet>(AltAndContextConfigEqualityComparator.INSTANCE)
+    internal class AltAndContextMap : FlexibleHashMap<ATNConfig, BitSet>(AltAndContextConfigEqualityComparator.INSTANCE)
 
     private class AltAndContextConfigEqualityComparator : AbstractEqualityComparator<ATNConfig>() {
         override fun hashCode(o: ATNConfig): Int {
@@ -27,7 +27,10 @@ enum class PredictionMode {
             return hashCode
         }
 
-        override fun equals(a: ATNConfig?, b: ATNConfig?): Boolean {
+        override fun equals(
+            a: ATNConfig?,
+            b: ATNConfig?,
+        ): Boolean {
             if (a === b) return true
             if (a == null || b == null) return false
             return a.state.stateNumber == b.state.stateNumber && a.context == b.context
@@ -39,21 +42,32 @@ enum class PredictionMode {
     }
 
     companion object {
-        fun hasSLLConflictTerminatingPrediction(mode: PredictionMode, configs: ATNConfigSet): Boolean {
+        fun hasSLLConflictTerminatingPrediction(
+            mode: PredictionMode,
+            configs: ATNConfigSet,
+        ): Boolean {
             if (configs.hasSemanticContext) return false
             val altsets = getConflictingAltSubsets(configs)
             return if (mode == SLL) hasConflictingAltSet(altsets) else hasConflictingAltSet(altsets) && !allSubsetsConflict(altsets)
         }
 
-        fun evalSemanticContext(predPredictions: Array<DFAState.PredPrediction>, parser: Recognizer<*, *>, outerContext: RuleContext?, complete: Boolean): Int {
+        fun evalSemanticContext(
+            predPredictions: Array<DFAState.PredPrediction>,
+            parser: Recognizer<*, *>,
+            outerContext: RuleContext?,
+            complete: Boolean,
+        ): Int {
             val predictions = BitSet()
             for (pair in predPredictions) {
                 if (pair.pred is SemanticContext.Predicate) {
                     val pred = pair.pred as SemanticContext.Predicate
                     var evalResult = false
                     if (pred.ruleIndex == -1 || pred.isCtxDependent) {
-                        if (complete) evalResult = parser.sempred(outerContext, pred.ruleIndex, pred.predIndex)
-                        else continue
+                        if (complete) {
+                            evalResult = parser.sempred(outerContext, pred.ruleIndex, pred.predIndex)
+                        } else {
+                            continue
+                        }
                     } else {
                         evalResult = parser.sempred(outerContext, pred.ruleIndex, pred.predIndex)
                     }
@@ -68,13 +82,10 @@ enum class PredictionMode {
             return predictions.nextSetBit(0)
         }
 
-        fun resolvesToJustOneViableAlt(altsets: Collection<BitSet>): Int {
-            return if (allSubsetsConflict(altsets)) getSingleViableAlt(altsets) else getUniqueAlt(altsets)
-        }
+        fun resolvesToJustOneViableAlt(altsets: Collection<BitSet>): Int =
+            if (allSubsetsConflict(altsets)) getSingleViableAlt(altsets) else getUniqueAlt(altsets)
 
-        fun allSubsetsConflict(altsets: Collection<BitSet>): Boolean {
-            return !hasNonConflictingAltSet(altsets)
-        }
+        fun allSubsetsConflict(altsets: Collection<BitSet>): Boolean = !hasNonConflictingAltSet(altsets)
 
         fun hasNonConflictingAltSet(altsets: Collection<BitSet>): Boolean {
             for (alts in altsets) {

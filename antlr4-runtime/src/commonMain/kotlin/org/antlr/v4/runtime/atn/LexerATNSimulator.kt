@@ -16,9 +16,10 @@ import org.antlr.v4.runtime.misc.Interval
 
 /** "dup" of ParserInterpreter  */
 class LexerATNSimulator(
-    recog: Lexer?, atn: ATN?,
+    recog: Lexer?,
+    atn: ATN?,
     decisionToDFA: Array<DFA>,
-    sharedContextCache: PredictionContextCache?
+    sharedContextCache: PredictionContextCache?,
 ) : ATNSimulator(atn, sharedContextCache) {
     /** When we hit an accept state in either the DFA or the ATN, we
      * have to notify the character stream to start buffering characters
@@ -50,7 +51,6 @@ class LexerATNSimulator(
         }
     }
 
-
     protected val recog: Lexer?
 
     /** The current token's starting index into the character stream.
@@ -66,16 +66,18 @@ class LexerATNSimulator(
     /** The index of the character relative to the beginning of the line 0..n-1  */
     var charPositionInLine: Int = 0
 
-
     val decisionToDFA: Array<DFA>
     protected var mode: Int = Lexer.DEFAULT_MODE
 
     /** Used during DFA/ATN exec to record the most recent accept configuration info  */
-    protected val prevAccept: SimState = org.antlr.v4.runtime.atn.LexerATNSimulator.SimState()
+    protected val prevAccept: SimState =
+        org.antlr.v4.runtime.atn.LexerATNSimulator
+            .SimState()
 
     constructor(
-        atn: ATN?, decisionToDFA: Array<DFA>,
-        sharedContextCache: PredictionContextCache?
+        atn: ATN?,
+        decisionToDFA: Array<DFA>,
+        sharedContextCache: PredictionContextCache?,
     ) : this(null, atn, decisionToDFA, sharedContextCache)
 
     init {
@@ -90,7 +92,10 @@ class LexerATNSimulator(
         this.startIndex = simulator.startIndex
     }
 
-    fun match(input: CharStream, mode: Int): Int {
+    fun match(
+        input: CharStream,
+        mode: Int,
+    ): Int {
         this.mode = mode
         val mark: Int = input.mark()
         try {
@@ -106,6 +111,7 @@ class LexerATNSimulator(
             input.release(mark)
         }
     }
+
     override fun reset() {
         prevAccept.reset()
         startIndex = -1
@@ -113,6 +119,7 @@ class LexerATNSimulator(
         charPositionInLine = 0
         mode = Lexer.DEFAULT_MODE
     }
+
     override fun clearDFA() {
         for (d in decisionToDFA.indices) {
             decisionToDFA[d] = DFA(atn.getDecisionState(d), d)
@@ -146,8 +153,11 @@ class LexerATNSimulator(
         return predict
     }
 
-    protected fun execATN(input: CharStream, ds0: DFAState): Int {
-        //println("enter exec index "+input.index()+" from "+ds0.configs);
+    protected fun execATN(
+        input: CharStream,
+        ds0: DFAState,
+    ): Int {
+        // println("enter exec index "+input.index()+" from "+ds0.configs);
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
             System.out.format("start state closure=%s\n", ds0.configs)
         }
@@ -225,8 +235,14 @@ class LexerATNSimulator(
      * `t`, or `null` if the target state for this edge is not
      * already cached
      */
-    protected fun getExistingTargetState(s: DFAState, t: Int): DFAState? {
-        if (s.edges == null || t < org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE || t > org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE) {
+    protected fun getExistingTargetState(
+        s: DFAState,
+        t: Int,
+    ): DFAState? {
+        if (s.edges == null ||
+            t < org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE ||
+            t > org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE
+        ) {
             return null
         }
 
@@ -234,7 +250,7 @@ class LexerATNSimulator(
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug && target != null) {
             println(
                 "reuse state " + s.stateNumber +
-                        " edge to " + target.stateNumber
+                    " edge to " + target.stateNumber,
             )
         }
 
@@ -253,7 +269,11 @@ class LexerATNSimulator(
      * `t`. If `t` does not lead to a valid DFA state, this method
      * returns [.ERROR].
      */
-    protected fun computeTargetState(input: CharStream, s: DFAState, t: Int): DFAState {
+    protected fun computeTargetState(
+        input: CharStream,
+        s: DFAState,
+        t: Int,
+    ): DFAState {
         val reach: ATNConfigSet = OrderedATNConfigSet()
 
         // if we don't find an existing DFA state
@@ -276,14 +296,20 @@ class LexerATNSimulator(
     }
 
     protected fun failOrAccept(
-        prevAccept: SimState, input: CharStream,
-        reach: ATNConfigSet?, t: Int
+        prevAccept: SimState,
+        input: CharStream,
+        reach: ATNConfigSet?,
+        t: Int,
     ): Int {
         if (prevAccept.dfaState != null) {
             val lexerActionExecutor: LexerActionExecutor? = prevAccept.dfaState.lexerActionExecutor
             accept(
-                input, lexerActionExecutor, startIndex,
-                prevAccept.index, prevAccept.line, prevAccept.charPos
+                input,
+                lexerActionExecutor,
+                startIndex,
+                prevAccept.index,
+                prevAccept.line,
+                prevAccept.charPos,
             )
             return prevAccept.dfaState.prediction
         } else {
@@ -300,7 +326,12 @@ class LexerATNSimulator(
      * we can reach upon input `t`. Parameter `reach` is a return
      * parameter.
      */
-    protected fun getReachableConfigSet(input: CharStream, closure: ATNConfigSet, reach: ATNConfigSet, t: Int) {
+    protected fun getReachableConfigSet(
+        input: CharStream,
+        closure: ATNConfigSet,
+        reach: ATNConfigSet,
+        t: Int,
+    ) {
         // this is used to skip processing for configs which have a lower priority
         // than a config that already reached an accept state for the same rule
         var skipAlt: Int = ATN.INVALID_ALT_NUMBER
@@ -315,7 +346,7 @@ class LexerATNSimulator(
             }
 
             val n: Int = c.state.numberOfTransitions
-            for (ti in 0..<n) {               // for each transition
+            for (ti in 0..<n) { // for each transition
                 val trans: Transition = c.state.transition(ti)
                 val target: ATNState? = getReachableTarget(trans, t)
                 if (target != null) {
@@ -331,7 +362,7 @@ class LexerATNSimulator(
                             reach,
                             currentAltReachedAcceptState,
                             true,
-                            treatEofAsEpsilon
+                            treatEofAsEpsilon,
                         )
                     ) {
                         // any remaining configs for this alt have a lower priority than
@@ -345,8 +376,12 @@ class LexerATNSimulator(
     }
 
     protected fun accept(
-        input: CharStream, lexerActionExecutor: LexerActionExecutor?,
-        startIndex: Int, index: Int, line: Int, charPos: Int
+        input: CharStream,
+        lexerActionExecutor: LexerActionExecutor?,
+        startIndex: Int,
+        index: Int,
+        line: Int,
+        charPos: Int,
     ) {
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
             System.out.format("ACTION %s\n", lexerActionExecutor)
@@ -362,8 +397,10 @@ class LexerATNSimulator(
         }
     }
 
-
-    protected fun getReachableTarget(trans: Transition, t: Int): ATNState? {
+    protected fun getReachableTarget(
+        trans: Transition,
+        t: Int,
+    ): ATNState? {
         if (trans.matches(t, Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)) {
             return trans.target
         }
@@ -371,10 +408,9 @@ class LexerATNSimulator(
         return null
     }
 
-
     protected fun computeStartState(
         input: CharStream,
-        p: ATNState
+        p: ATNState,
     ): ATNConfigSet {
         val initialContext: PredictionContext? = EmptyPredictionContext.Instance
         val configs: ATNConfigSet = OrderedATNConfigSet()
@@ -402,7 +438,7 @@ class LexerATNSimulator(
         configs: ATNConfigSet,
         currentAltReachedAcceptState: Boolean,
         speculative: Boolean,
-        treatEofAsEpsilon: Boolean
+        treatEofAsEpsilon: Boolean,
     ): Boolean {
         var currentAltReachedAcceptState = currentAltReachedAcceptState
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
@@ -415,7 +451,7 @@ class LexerATNSimulator(
                     System.out.format(
                         "closure at %s rule stop %s\n",
                         recog.ruleNames[config.state.ruleIndex],
-                        config
+                        config,
                     )
                 } else {
                     System.out.format("closure at rule stop %s\n", config)
@@ -474,7 +510,7 @@ class LexerATNSimulator(
         t: Transition,
         configs: ATNConfigSet,
         speculative: Boolean,
-        treatEofAsEpsilon: Boolean
+        treatEofAsEpsilon: Boolean,
     ): LexerATNConfig? {
         var c: LexerATNConfig? = null
         when (t.serializationType) {
@@ -505,7 +541,7 @@ class LexerATNSimulator(
 				 collection of ATN states the following ID references includes
 				 states reached by traversing predicates. Since this is when we
 				 test them, we cannot cash the DFA state target of ID.
-			 */
+                 */
                 val pt: PredicateTransition = t as PredicateTransition
                 if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
                     println("EVAL rule " + pt.ruleIndex + ":" + pt.predIndex)
@@ -516,39 +552,41 @@ class LexerATNSimulator(
                 }
             }
 
-            Transition.ACTION -> if (config.context == null || config.context.hasEmptyPath()) {
-                // execute actions anywhere in the start rule for a token.
-                //
-                // TODO: if the entry rule is invoked recursively, some
-                // actions may be executed during the recursive call. The
-                // problem can appear when hasEmptyPath() is true but
-                // isEmpty() is false. In this case, the config needs to be
-                // split into two contexts - one with just the empty path
-                // and another with everything but the empty path.
-                // Unfortunately, the current algorithm does not allow
-                // getEpsilonTarget to return two configurations, so
-                // additional modifications are needed before we can support
-                // the split operation.
-                val lexerActionExecutor: LexerActionExecutor? = LexerActionExecutor.append(
-                    config.getLexerActionExecutor(),
-                    atn.lexerActions[(t as ActionTransition).actionIndex]
-                )
-                c = LexerATNConfig(config, t.target, lexerActionExecutor)
-                break
-            } else {
-                // ignore actions in referenced rules
-                c = LexerATNConfig(config, t.target)
-                break
-            }
-
-            Transition.EPSILON -> c = LexerATNConfig(config, t.target)
-            Transition.ATOM, Transition.RANGE, Transition.SET -> if (treatEofAsEpsilon) {
-                if (t.matches(CharStream.EOF, Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)) {
+            Transition.ACTION ->
+                if (config.context == null || config.context.hasEmptyPath()) {
+                    // execute actions anywhere in the start rule for a token.
+                    //
+                    // TODO: if the entry rule is invoked recursively, some
+                    // actions may be executed during the recursive call. The
+                    // problem can appear when hasEmptyPath() is true but
+                    // isEmpty() is false. In this case, the config needs to be
+                    // split into two contexts - one with just the empty path
+                    // and another with everything but the empty path.
+                    // Unfortunately, the current algorithm does not allow
+                    // getEpsilonTarget to return two configurations, so
+                    // additional modifications are needed before we can support
+                    // the split operation.
+                    val lexerActionExecutor: LexerActionExecutor? =
+                        LexerActionExecutor.append(
+                            config.getLexerActionExecutor(),
+                            atn.lexerActions[(t as ActionTransition).actionIndex],
+                        )
+                    c = LexerATNConfig(config, t.target, lexerActionExecutor)
+                    break
+                } else {
+                    // ignore actions in referenced rules
                     c = LexerATNConfig(config, t.target)
                     break
                 }
-            }
 
+            Transition.EPSILON -> c = LexerATNConfig(config, t.target)
+            Transition.ATOM, Transition.RANGE, Transition.SET ->
+                if (treatEofAsEpsilon) {
+                    if (t.matches(CharStream.EOF, Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)) {
+                        c = LexerATNConfig(config, t.target)
+                        break
+                    }
+                }
         }
 
         return c
@@ -576,7 +614,12 @@ class LexerATNSimulator(
      * @return `true` if the specified predicate evaluates to
      * `true`.
      */
-    protected fun evaluatePredicate(input: CharStream, ruleIndex: Int, predIndex: Int, speculative: Boolean): Boolean {
+    protected fun evaluatePredicate(
+        input: CharStream,
+        ruleIndex: Int,
+        predIndex: Int,
+        speculative: Boolean,
+    ): Boolean {
         // assume true if no recognizer was provided
         if (recog == null) {
             return true
@@ -604,7 +647,7 @@ class LexerATNSimulator(
     protected fun captureSimState(
         settings: SimState,
         input: CharStream,
-        dfaState: DFAState?
+        dfaState: DFAState?,
     ) {
         settings.index = input.index()
         settings.line = line
@@ -612,26 +655,24 @@ class LexerATNSimulator(
         settings.dfaState = dfaState
     }
 
-
     protected fun addDFAEdge(
         from: DFAState,
         t: Int,
-        q: ATNConfigSet
+        q: ATNConfigSet,
     ): DFAState {
         /* leading to this call, ATNConfigSet.hasSemanticContext is used as a
-		 * marker indicating dynamic predicate evaluation makes this edge
-		 * dependent on the specific input sequence, so the static edge in the
-		 * DFA should be omitted. The target DFAState is still created since
-		 * execATN has the ability to resynchronize with the DFA state cache
-		 * following the predicate evaluation step.
-		 *
-		 * TJP notes: next time through the DFA, we see a pred again and eval.
-		 * If that gets us to a previously created (but dangling) DFA
-		 * state, we can continue in pure DFA mode from there.
-		 */
+         * marker indicating dynamic predicate evaluation makes this edge
+         * dependent on the specific input sequence, so the static edge in the
+         * DFA should be omitted. The target DFAState is still created since
+         * execATN has the ability to resynchronize with the DFA state cache
+         * following the predicate evaluation step.
+         *
+         * TJP notes: next time through the DFA, we see a pred again and eval.
+         * If that gets us to a previously created (but dangling) DFA
+         * state, we can continue in pure DFA mode from there.
+         */
         val suppressEdge: Boolean = q.hasSemanticContext
         q.hasSemanticContext = false
-
 
         val to: DFAState = addDFAState(q)
 
@@ -643,8 +684,14 @@ class LexerATNSimulator(
         return to
     }
 
-    protected fun addDFAEdge(p: DFAState, t: Int, q: DFAState?) {
-        if (t < org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE || t > org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE) {
+    protected fun addDFAEdge(
+        p: DFAState,
+        t: Int,
+        q: DFAState?,
+    ) {
+        if (t < org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE ||
+            t > org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE
+        ) {
             // Only track edges within the DFA bounds
             return
         }
@@ -657,7 +704,11 @@ class LexerATNSimulator(
             if (p.edges == null) {
                 //  make room for tokens 1..n and -1 masquerading as index 0
                 p.edges =
-                    arrayOfNulls<DFAState>(org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE - org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE + 1)
+                    arrayOfNulls<DFAState>(
+                        org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE -
+                            org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE +
+                            1,
+                    )
             }
             p.edges[t - org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE] = q // connect
         }
@@ -670,8 +721,8 @@ class LexerATNSimulator(
      */
     protected fun addDFAState(configs: ATNConfigSet): DFAState {
         /* the lexer evaluates predicates on-the-fly; by this point configs
-		 * should not contain any configurations with unevaluated predicates.
-		 */
+         * should not contain any configurations with unevaluated predicates.
+         */
         assert(!configs.hasSemanticContext)
 
         val proposed: DFAState = DFAState(configs)
@@ -704,10 +755,7 @@ class LexerATNSimulator(
         }
     }
 
-
-    fun getDFA(mode: Int): DFA {
-        return decisionToDFA[mode]
-    }
+    fun getDFA(mode: Int): DFA = decisionToDFA[mode]
 
     /** Get the text matched so far for the current token.
      */
@@ -727,10 +775,9 @@ class LexerATNSimulator(
         input.consume()
     }
 
-
     fun getTokenName(t: Int): String? {
         if (t == -1) return "EOF"
-        //if ( atn.g!=null ) return atn.g.getTokenDisplayName(t);
+        // if ( atn.g!=null ) return atn.g.getTokenDisplayName(t);
         return "'" + t.toChar() + "'"
     }
 

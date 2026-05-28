@@ -21,7 +21,9 @@ import org.antlr.v4.runtime.misc.MurmurHash
  * @author Sam Harwell
  * @since 4.2
  */
-class LexerActionExecutor(lexerActions: Array<LexerAction>) {
+class LexerActionExecutor(
+    lexerActions: Array<LexerAction>,
+) {
     private val lexerActions: Array<LexerAction>
 
     /**
@@ -93,16 +95,14 @@ class LexerActionExecutor(lexerActions: Array<LexerAction>) {
             return this
         }
 
-        return org.antlr.v4.runtime.atn.LexerActionExecutor(updatedLexerActions)
+        return LexerActionExecutor(updatedLexerActions)
     }
 
     /**
      * Gets the lexer actions to be executed by this executor.
      * @return The lexer actions to be executed by this executor.
      */
-    fun getLexerActions(): Array<LexerAction> {
-        return lexerActions
-    }
+    fun getLexerActions(): Array<LexerAction> = lexerActions
 
     /**
      * Execute the actions encapsulated by this executor within the context of a
@@ -124,7 +124,11 @@ class LexerActionExecutor(lexerActions: Array<LexerAction>) {
      * [IntStream.seek] to set the `input` position to the beginning
      * of the token.
      */
-    fun execute(lexer: Lexer?, input: CharStream, startIndex: Int) {
+    fun execute(
+        lexer: Lexer?,
+        input: CharStream,
+        startIndex: Int,
+    ) {
         var requiresSeek = false
         val stopIndex: Int = input.index()
         try {
@@ -148,9 +152,9 @@ class LexerActionExecutor(lexerActions: Array<LexerAction>) {
             }
         }
     }
-    fun hashCode(): Int {
-        return this.hashCode
-    }
+
+    fun hashCode(): Int = this.hashCode
+
     fun equals(obj: Any?): Boolean {
         if (obj === this) {
             return true
@@ -159,8 +163,8 @@ class LexerActionExecutor(lexerActions: Array<LexerAction>) {
         }
 
         val other = obj
-        return hashCode == other.hashCode
-                && lexerActions.contentEquals(other.lexerActions)
+        return hashCode == other.hashCode &&
+            lexerActions.contentEquals(other.lexerActions)
     }
 
     companion object {
@@ -179,15 +183,18 @@ class LexerActionExecutor(lexerActions: Array<LexerAction>) {
          * @return A [LexerActionExecutor] for executing the combine actions
          * of `lexerActionExecutor` and `lexerAction`.
          */
-        fun append(lexerActionExecutor: LexerActionExecutor?, lexerAction: LexerAction?): LexerActionExecutor {
+        fun append(
+            lexerActionExecutor: LexerActionExecutor?,
+            lexerAction: LexerAction?,
+        ): LexerActionExecutor {
             if (lexerActionExecutor == null) {
-                return org.antlr.v4.runtime.atn.LexerActionExecutor(arrayOf<LexerAction?>(lexerAction))
+                return LexerActionExecutor(arrayOf(lexerAction))
             }
 
             val lexerActions: Array<LexerAction> =
                 lexerActionExecutor.lexerActions.copyOf(lexerActionExecutor.lexerActions.size + 1)
             lexerActions[lexerActions.size - 1] = lexerAction
-            return org.antlr.v4.runtime.atn.LexerActionExecutor(lexerActions)
+            return LexerActionExecutor(lexerActions)
         }
     }
 }

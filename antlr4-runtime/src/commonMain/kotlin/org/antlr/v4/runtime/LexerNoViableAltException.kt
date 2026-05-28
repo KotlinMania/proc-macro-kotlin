@@ -14,7 +14,7 @@ class LexerNoViableAltException(
     input: CharStream?,
     /** Matching attempted at what input index?  */
     val startIndex: Int,
-    deadEndConfigs: ATNConfigSet?
+    deadEndConfigs: ATNConfigSet?,
 ) : RecognitionException(lexer, input, null) {
     /** Which configurations did we try at input.index() that couldn't match input.LA(1)?  */
     private val deadEndConfigs: ATNConfigSet?
@@ -23,12 +23,11 @@ class LexerNoViableAltException(
         this.deadEndConfigs = deadEndConfigs
     }
 
+    fun getDeadEndConfigs(): ATNConfigSet? = deadEndConfigs
 
-    fun getDeadEndConfigs(): ATNConfigSet? {
-        return deadEndConfigs
-    }
     val inputStream: CharStream?
         get() = super.inputStream as CharStream?
+
     fun toString(): String {
         var symbol: String? = ""
         if (startIndex >= 0 && startIndex < this.inputStream.size) {
@@ -39,7 +38,7 @@ class LexerNoViableAltException(
         return String.format(
             "%s('%s')",
             org.antlr.v4.runtime.LexerNoViableAltException::class.simpleName!!,
-            symbol
+            symbol,
         )
     }
 }

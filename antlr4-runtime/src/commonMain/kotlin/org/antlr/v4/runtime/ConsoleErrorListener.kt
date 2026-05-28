@@ -21,7 +21,7 @@ class ConsoleErrorListener : BaseErrorListener() {
      *
      * <pre>
      * line *line*:*charPositionInLine* *msg*
-    </pre> *
+     </pre> *
      */
     fun syntaxError(
         recognizer: Recognizer<*, *>?,
@@ -29,7 +29,7 @@ class ConsoleErrorListener : BaseErrorListener() {
         line: Int,
         charPositionInLine: Int,
         msg: String?,
-        e: RecognitionException?
+        e: RecognitionException?,
     ) {
         println("line " + line + ":" + charPositionInLine + " " + msg)
     }
@@ -38,6 +38,6 @@ class ConsoleErrorListener : BaseErrorListener() {
         /**
          * Provides a default instance of [ConsoleErrorListener].
          */
-        val INSTANCE: ConsoleErrorListener = org.antlr.v4.runtime.ConsoleErrorListener()
+        val INSTANCE: ConsoleErrorListener = ConsoleErrorListener()
     }
 }

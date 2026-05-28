@@ -3,7 +3,10 @@ package org.antlr.v4.runtime.misc
 class MultiMap<K, V> {
     val data: MutableMap<K, MutableList<V>> = LinkedHashMap()
 
-    fun map(key: K, value: V) {
+    fun map(
+        key: K,
+        value: V,
+    ) {
         data.getOrPut(key) { ArrayList() }.add(value)
     }
 

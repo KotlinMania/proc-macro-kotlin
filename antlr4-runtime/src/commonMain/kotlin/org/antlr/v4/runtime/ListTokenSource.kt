@@ -16,7 +16,10 @@ import org.antlr.v4.runtime.misc.Pair
  * as the EOF token for every call to [.nextToken] after the end of the
  * list is reached. Otherwise, an EOF token will be created.
  */
-class ListTokenSource(tokens: List<out Token?>, sourceName: String?) : TokenSource {
+class ListTokenSource(
+    tokens: List<out Token?>,
+    sourceName: String?,
+) : TokenSource {
     /**
      * The wrapped collection of [Token] objects to return.
      */
@@ -79,6 +82,7 @@ class ListTokenSource(tokens: List<out Token?>, sourceName: String?) : TokenSour
         this.tokens = tokens
         this.sourceName = sourceName
     }
+
     val charPositionInLine: Int
         /**
          * {@inheritDoc}
@@ -123,16 +127,17 @@ class ListTokenSource(tokens: List<out Token?>, sourceName: String?) : TokenSour
                 }
 
                 val stop: Int = maxOf(-1, start - 1)
-                eofToken = _factory.create(
-                    Pair<TokenSource?, CharStream?>(this, this.inputStream),
-                    Token.EOF,
-                    "EOF",
-                    Token.DEFAULT_CHANNEL,
-                    start,
-                    stop,
-                    this.line,
-                    this.charPositionInLine
-                )
+                eofToken =
+                    _factory.create(
+                        Pair<TokenSource?, CharStream?>(this, this.inputStream),
+                        Token.EOF,
+                        "EOF",
+                        Token.DEFAULT_CHANNEL,
+                        start,
+                        stop,
+                        this.line,
+                        this.charPositionInLine,
+                    )
             }
 
             return eofToken
@@ -146,6 +151,7 @@ class ListTokenSource(tokens: List<out Token?>, sourceName: String?) : TokenSour
         i++
         return t
     }
+
     val line: Int
         /**
          * {@inheritDoc}
@@ -164,7 +170,7 @@ class ListTokenSource(tokens: List<out Token?>, sourceName: String?) : TokenSour
                 val tokenText: String? = lastToken.text
                 if (tokenText != null) {
                     for (i in 0..<tokenText.size) {
-                        if (tokenText[i) === '\n') {
+                        if (tokenText[i] === '\n') {
                             line++
                         }
                     }
@@ -217,6 +223,7 @@ class ListTokenSource(tokens: List<out Token?>, sourceName: String?) : TokenSour
     fun setTokenFactory(factory: TokenFactory<*>) {
         this._factory = factory
     }
+
     val tokenFactory: TokenFactory<*>
         /**
          * {@inheritDoc}

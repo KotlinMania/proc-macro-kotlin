@@ -85,7 +85,7 @@ object RuntimeMetaData {
          *
          * @return The currently executing version of the ANTLR 4 library
          */
-        get() = org.antlr.v4.runtime.RuntimeMetaData.VERSION
+        get() = VERSION
 
     /**
      * This method provides the ability to detect mismatches between the version
@@ -151,21 +151,19 @@ object RuntimeMetaData {
      * to [.VERSION].
      */
     fun checkVersion(generatingToolVersion: String?, compileTimeVersion: String) {
-        val runtimeVersion: String = org.antlr.v4.runtime.RuntimeMetaData.VERSION
+        val runtimeVersion: String = VERSION
         var runtimeConflictsWithGeneratingTool = false
         var runtimeConflictsWithCompileTimeTool = false
 
         if (generatingToolVersion != null) {
             runtimeConflictsWithGeneratingTool =
                 !runtimeVersion.equals(generatingToolVersion) &&
-                        !org.antlr.v4.runtime.RuntimeMetaData.getMajorMinorVersion(runtimeVersion)
-                            .equals(org.antlr.v4.runtime.RuntimeMetaData.getMajorMinorVersion(generatingToolVersion))
+                        getMajorMinorVersion(runtimeVersion) != getMajorMinorVersion(generatingToolVersion)
         }
 
         runtimeConflictsWithCompileTimeTool =
             !runtimeVersion.equals(compileTimeVersion) &&
-                    !org.antlr.v4.runtime.RuntimeMetaData.getMajorMinorVersion(runtimeVersion)
-                        .equals(org.antlr.v4.runtime.RuntimeMetaData.getMajorMinorVersion(compileTimeVersion))
+                    getMajorMinorVersion(runtimeVersion) != getMajorMinorVersion(compileTimeVersion)
 
         if (runtimeConflictsWithGeneratingTool) {
             println("...")

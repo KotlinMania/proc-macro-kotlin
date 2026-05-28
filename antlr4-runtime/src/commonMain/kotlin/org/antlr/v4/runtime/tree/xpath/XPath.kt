@@ -8,10 +8,8 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ParseTree
 
-class XPath(parser: Parser, path: String) {
-    protected var path: String
+open class XPath(protected var parser: Parser, path: String) {
     protected var elements: Array<XPathElement>
-    protected var parser: Parser
 
     companion object {
         const val WILDCARD: String = "*"
@@ -25,8 +23,6 @@ class XPath(parser: Parser, path: String) {
     }
 
     init {
-        this.parser = parser
-        this.path = path
         elements = split(path)
     }
 
@@ -59,7 +55,7 @@ class XPath(parser: Parser, path: String) {
                     val anywhere = el.type == XPathLexer.ANYWHERE
                     i++
                     var next = tokens[i]
-                    var invert = next.type == XPathLexer.BANG
+                    val invert = next.type == XPathLexer.BANG
                     if (invert) {
                         i++
                         next = tokens[i]
@@ -108,7 +104,7 @@ class XPath(parser: Parser, path: String) {
 
     fun evaluate(t: ParseTree?): Collection<ParseTree> {
         val dummyRoot = ParserRuleContext()
-        dummyRoot.children = mutableListOf<ParseTree>(t!!)
+        dummyRoot.children = mutableListOf(t!!)
         var work: MutableCollection<ParseTree> = mutableListOf(dummyRoot)
         var i = 0
         while (i < elements.size) {

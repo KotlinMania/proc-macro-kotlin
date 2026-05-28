@@ -7,10 +7,12 @@ package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
-import org.antlr.v4.runtime.misc.IntervalSet
 import org.antlr.v4.runtime.misc.BitSet
+import org.antlr.v4.runtime.misc.IntervalSet
 
-class LL1Analyzer(atn: ATN) {
+class LL1Analyzer(
+    atn: ATN,
+) {
     val atn: ATN
 
     init {
@@ -28,7 +30,7 @@ class LL1Analyzer(atn: ATN) {
      * @return the expected symbols for each outgoing transition of `s`.
      */
     fun getDecisionLookahead(s: ATNState?): Array<IntervalSet?>? {
-//		println("LOOK("+s.stateNumber+")");
+// 		println("LOOK("+s.stateNumber+")");
         if (s == null) {
             return null
         }
@@ -39,8 +41,14 @@ class LL1Analyzer(atn: ATN) {
             val lookBusy: MutableSet<ATNConfig> = HashSet()()
             val seeThruPreds = false // fail to get lookahead upon pred
             _LOOK(
-                s.transition(alt).target, null, EmptyPredictionContext.Instance,
-                look[alt], lookBusy, BitSet(), seeThruPreds, false
+                s.transition(alt).target,
+                null,
+                EmptyPredictionContext.Instance,
+                look[alt],
+                lookBusy,
+                BitSet(),
+                seeThruPreds,
+                false,
             )
             // Wipe out lookahead for this alternative if we found nothing
             // or we had a predicate when we !seeThruPreds
@@ -68,9 +76,10 @@ class LL1Analyzer(atn: ATN) {
      * @return The set of tokens that can follow `s` in the ATN in the
      * specified `ctx`.
      */
-    fun LOOK(s: ATNState, ctx: RuleContext?): IntervalSet {
-        return LOOK(s, null, ctx)
-    }
+    fun LOOK(
+        s: ATNState,
+        ctx: RuleContext?,
+    ): IntervalSet = LOOK(s, null, ctx)
 
     /**
      * Compute set of tokens that can follow `s` in the ATN in the
@@ -91,13 +100,23 @@ class LL1Analyzer(atn: ATN) {
      * @return The set of tokens that can follow `s` in the ATN in the
      * specified `ctx`.
      */
-    fun LOOK(s: ATNState, stopState: ATNState?, ctx: RuleContext?): IntervalSet {
+    fun LOOK(
+        s: ATNState,
+        stopState: ATNState?,
+        ctx: RuleContext?,
+    ): IntervalSet {
         val r: IntervalSet = IntervalSet()
         val seeThruPreds = true // ignore preds; get all lookahead
         val lookContext: PredictionContext? = if (ctx != null) PredictionContext.fromRuleContext(s.atn, ctx) else null
         _LOOK(
-            s, stopState, lookContext,
-            r, HashSet<ATNConfig?>(), BitSet(), seeThruPreds, true
+            s,
+            stopState,
+            lookContext,
+            r,
+            HashSet<ATNConfig?>(),
+            BitSet(),
+            seeThruPreds,
+            true,
         )
         return r
     }
@@ -140,9 +159,10 @@ class LL1Analyzer(atn: ATN) {
         look: IntervalSet,
         lookBusy: Set<ATNConfig?>,
         calledRuleStack: BitSet,
-        seeThruPreds: Boolean, addEOF: Boolean
+        seeThruPreds: Boolean,
+        addEOF: Boolean,
     ) {
-//		println("_LOOK("+s.stateNumber+", ctx="+ctx);
+// 		println("_LOOK("+s.stateNumber+", ctx="+ctx);
         val c: ATNConfig = ATNConfig(s, 0, ctx)
         if (!lookBusy.add(c)) return
 
@@ -172,7 +192,7 @@ class LL1Analyzer(atn: ATN) {
                     calledRuleStack.clear(s.ruleIndex)
                     for (i in 0..<ctx.size) {
                         val returnState: ATNState = atn.states.get(ctx.getReturnState(i))
-                        //					    println("popping back to "+retState);
+                        // 					    println("popping back to "+retState);
                         _LOOK(
                             returnState,
                             stopState,
@@ -181,7 +201,7 @@ class LL1Analyzer(atn: ATN) {
                             lookBusy,
                             calledRuleStack,
                             seeThruPreds,
-                            addEOF
+                            addEOF,
                         )
                     }
                 } finally {
@@ -221,7 +241,7 @@ class LL1Analyzer(atn: ATN) {
             } else if (t is WildcardTransition) {
                 look.addAll(IntervalSet.of(Token.MIN_USER_TOKEN_TYPE, atn.maxTokenType))
             } else {
-//				println("adding "+ t);
+// 				println("adding "+ t);
                 var set: IntervalSet? = t.label()
                 if (set != null) {
                     if (t is NotSetTransition) {

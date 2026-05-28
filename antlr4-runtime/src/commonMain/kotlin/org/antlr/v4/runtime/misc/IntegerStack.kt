@@ -20,11 +20,7 @@ class IntStack : IntList {
         add(value)
     }
 
-    fun pop(): Int {
-        return removeAt(size() - 1)
-    }
+    fun pop(): Int = removeAt(size() - 1)
 
-    fun peek(): Int {
-        return get(size() - 1)
-    }
+    fun peek(): Int = get(size() - 1)
 }

@@ -11,14 +11,21 @@ import org.antlr.v4.runtime.misc.MurmurHash
 import org.antlr.v4.runtime.misc.Utils
 
 abstract class SemanticContext {
-    abstract fun eval(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): Boolean
+    abstract fun eval(
+        parser: Recognizer<*, *>?,
+        parserCallStack: RuleContext?,
+    ): Boolean
 
-    open fun evalPrecedence(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): SemanticContext? {
-        return this
-    }
+    open fun evalPrecedence(
+        parser: Recognizer<*, *>?,
+        parserCallStack: RuleContext?,
+    ): SemanticContext? = this
 
     class Empty : SemanticContext() {
-        override fun eval(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): Boolean = false
+        override fun eval(
+            parser: Recognizer<*, *>?,
+            parserCallStack: RuleContext?,
+        ): Boolean = false
 
         companion object {
             val Instance: Empty = Empty()
@@ -42,7 +49,10 @@ abstract class SemanticContext {
             this.isCtxDependent = isCtxDependent
         }
 
-        override fun eval(parser: Recognizer<*, *>, parserCallStack: RuleContext?): Boolean {
+        override fun eval(
+            parser: Recognizer<*, *>,
+            parserCallStack: RuleContext?,
+        ): Boolean {
             val localctx = if (isCtxDependent) parserCallStack else null
             return parser.sempred(localctx, ruleIndex, predIndex)
         }
@@ -65,7 +75,9 @@ abstract class SemanticContext {
         override fun toString(): String = "{$ruleIndex:$predIndex}?"
     }
 
-    class PrecedencePredicate : SemanticContext, Comparable<PrecedencePredicate> {
+    class PrecedencePredicate :
+        SemanticContext,
+        Comparable<PrecedencePredicate> {
         val precedence: Int
 
         internal constructor() {
@@ -76,13 +88,15 @@ abstract class SemanticContext {
             this.precedence = precedence
         }
 
-        override fun eval(parser: Recognizer<*, *>, parserCallStack: RuleContext?): Boolean {
-            return parser.precpred(parserCallStack, precedence)
-        }
+        override fun eval(
+            parser: Recognizer<*, *>,
+            parserCallStack: RuleContext?,
+        ): Boolean = parser.precpred(parserCallStack, precedence)
 
-        override fun evalPrecedence(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): SemanticContext? {
-            return if (parser.precpred(parserCallStack, precedence)) Empty.Instance else null
-        }
+        override fun evalPrecedence(
+            parser: Recognizer<*, *>?,
+            parserCallStack: RuleContext?,
+        ): SemanticContext? = if (parser.precpred(parserCallStack, precedence)) Empty.Instance else null
 
         override fun compareTo(other: PrecedencePredicate): Int = precedence.compareTo(other.precedence)
 
@@ -98,6 +112,7 @@ abstract class SemanticContext {
 
     abstract class Operator : SemanticContext() {
         abstract val operands: Array<SemanticContext>
+
         abstract fun getOperands(): Collection<SemanticContext>
     }
 
@@ -129,14 +144,20 @@ abstract class SemanticContext {
 
         override fun hashCode(): Int = MurmurHash.hashCode(operands, AND::class.hashCode())
 
-        override fun eval(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): Boolean {
+        override fun eval(
+            parser: Recognizer<*, *>?,
+            parserCallStack: RuleContext?,
+        ): Boolean {
             for (opnd in operands) {
                 if (!opnd.eval(parser, parserCallStack)) return false
             }
             return true
         }
 
-        override fun evalPrecedence(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): SemanticContext? {
+        override fun evalPrecedence(
+            parser: Recognizer<*, *>?,
+            parserCallStack: RuleContext?,
+        ): SemanticContext? {
             var differs = false
             val operands = mutableListOf<SemanticContext>()
             for (context in this.operands) {
@@ -188,14 +209,20 @@ abstract class SemanticContext {
 
         override fun hashCode(): Int = MurmurHash.hashCode(operands, OR::class.hashCode())
 
-        override fun eval(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): Boolean {
+        override fun eval(
+            parser: Recognizer<*, *>?,
+            parserCallStack: RuleContext?,
+        ): Boolean {
             for (opnd in operands) {
                 if (opnd.eval(parser, parserCallStack)) return true
             }
             return false
         }
 
-        override fun evalPrecedence(parser: Recognizer<*, *>?, parserCallStack: RuleContext?): SemanticContext? {
+        override fun evalPrecedence(
+            parser: Recognizer<*, *>?,
+            parserCallStack: RuleContext?,
+        ): SemanticContext? {
             var differs = false
             val operands = mutableListOf<SemanticContext>()
             for (context in this.operands) {
@@ -220,7 +247,10 @@ abstract class SemanticContext {
     }
 
     companion object {
-        fun and(a: SemanticContext?, b: SemanticContext?): SemanticContext? {
+        fun and(
+            a: SemanticContext?,
+            b: SemanticContext?,
+        ): SemanticContext? {
             if (a == null || a === Empty.Instance) return b
             if (b == null || b === Empty.Instance) return a
             val result = AND(a, b)
@@ -228,7 +258,10 @@ abstract class SemanticContext {
             return result
         }
 
-        fun or(a: SemanticContext?, b: SemanticContext?): SemanticContext? {
+        fun or(
+            a: SemanticContext?,
+            b: SemanticContext?,
+        ): SemanticContext? {
             if (a == null) return b
             if (b == null) return a
             if (a === Empty.Instance || b === Empty.Instance) return Empty.Instance

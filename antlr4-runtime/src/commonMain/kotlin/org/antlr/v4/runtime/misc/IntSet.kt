@@ -5,7 +5,6 @@
  */
 package org.antlr.v4.runtime.misc
 
-
 /**
  * A generic set of integers.
  *

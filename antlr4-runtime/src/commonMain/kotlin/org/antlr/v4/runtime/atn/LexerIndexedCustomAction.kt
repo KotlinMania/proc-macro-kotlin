@@ -10,9 +10,8 @@ import org.antlr.v4.runtime.misc.MurmurHash
 
 class LexerIndexedCustomAction(
     val offset: Int,
-    val action: LexerAction
+    val action: LexerAction,
 ) : LexerAction {
-
     override val actionType: LexerActionType
         get() = action.actionType
 

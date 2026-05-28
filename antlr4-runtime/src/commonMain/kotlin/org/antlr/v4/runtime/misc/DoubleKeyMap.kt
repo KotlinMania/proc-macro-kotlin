@@ -8,7 +8,11 @@ package org.antlr.v4.runtime.misc
 class DoubleKeyMap<Key1, Key2, Value> {
     var data: MutableMap<Key1, MutableMap<Key2, Value>> = LinkedHashMap()
 
-    fun put(k1: Key1, k2: Key2, v: Value): Value? {
+    fun put(
+        k1: Key1,
+        k2: Key2,
+        v: Value,
+    ): Value? {
         var data2 = data[k1]
         var prev: Value? = null
         if (data2 == null) {
@@ -21,7 +25,10 @@ class DoubleKeyMap<Key1, Key2, Value> {
         return prev
     }
 
-    fun get(k1: Key1, k2: Key2): Value? {
+    fun get(
+        k1: Key1,
+        k2: Key2,
+    ): Value? {
         val data2 = data[k1] ?: return null
         return data2[k2]
     }

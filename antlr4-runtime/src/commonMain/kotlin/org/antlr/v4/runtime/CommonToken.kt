@@ -8,7 +8,9 @@ package org.antlr.v4.runtime
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.Pair
 
-class CommonToken : WritableToken, Serializable {
+class CommonToken :
+    WritableToken,
+    Serializable {
     /**
      * This is the backing field for [.getType] and [.setType].
      */
@@ -142,6 +144,7 @@ class CommonToken : WritableToken, Serializable {
             source = Pair<TokenSource?, CharStream?>(oldToken.tokenSource, oldToken.inputStream)
         }
     }
+
     fun getText(): String? {
         if (text != null) {
             return text
@@ -169,13 +172,13 @@ class CommonToken : WritableToken, Serializable {
     fun setText(text: String?) {
         this.text = text
     }
+
     val tokenSource: TokenSource
         get() = source.a
     val inputStream: CharStream
         get() = source.b
-    fun toString(): String? {
-        return toString(null)
-    }
+
+    fun toString(): String? = toString(null)
 
     fun toString(r: Recognizer<*, *>?): String? {
         var channelStr = ""
@@ -194,7 +197,12 @@ class CommonToken : WritableToken, Serializable {
         if (r != null) {
             typeString = r.vocabulary.getDisplayName(type)
         }
-        return "[@" + this.tokenIndex + "," + this.startIndex + ":" + this.stopIndex + "='" + txt + "',<" + typeString + ">" + channelStr + "," + line + ":" + this.charPositionInLine + "]"
+        return "[@" + this.tokenIndex + "," + this.startIndex + ":" + this.stopIndex + "='" + txt + "',<" + typeString + ">" + channelStr +
+            "," +
+            line +
+            ":" +
+            this.charPositionInLine +
+            "]"
     }
 
     companion object {

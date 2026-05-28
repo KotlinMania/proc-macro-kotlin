@@ -6,7 +6,6 @@
 package org.antlr.v4.runtime.misc
 import java.lang.reflect.Method
 
-
 /** A proxy for the real org.antlr.v4.gui.TestRig that we moved to tool
  * artifact from runtime.
  *

@@ -5,4 +5,6 @@
  */
 package org.antlr.v4.runtime.atn
 
-abstract class AbstractPredicateTransition(target: ATNState) : Transition(target)
+abstract class AbstractPredicateTransition(
+    target: ATNState,
+) : Transition(target)

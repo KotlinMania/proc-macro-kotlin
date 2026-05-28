@@ -16,7 +16,9 @@ import org.antlr.v4.runtime.misc.IntervalSet
  * See [ATNDeserializer.encodeIntsWith16BitWords] and
  * [org.antlr.v4.codegen.model.SerializedJavaATN].
  */
-class ATNSerializer(atn: ATN) {
+class ATNSerializer(
+    atn: ATN,
+) {
     var atn: ATN
 
     private val data: IntList = IntList()
@@ -134,10 +136,11 @@ class ATNSerializer(atn: ATN) {
                     }
 
                     else -> {
-                        val message: String? = String.format(
-                            "The specified lexer action type %s is not valid.",
-                            action.actionType
-                        )
+                        val message: String? =
+                            String.format(
+                                "The specified lexer action type %s is not valid.",
+                                action.actionType,
+                            )
                         throw IllegalArgumentException(message)
                     }
                 }
@@ -153,7 +156,10 @@ class ATNSerializer(atn: ATN) {
         }
     }
 
-    private fun addEdges(nedges: Int, setIndices: Map<IntervalSet?, Int?>) {
+    private fun addEdges(
+        nedges: Int,
+        setIndices: Map<IntervalSet?, Int?>,
+    ) {
         data.add(nedges)
         for (s in atn.states) {
             if (s == null) {
@@ -236,7 +242,8 @@ class ATNSerializer(atn: ATN) {
     }
 
     private fun addSets(): Map<IntervalSet?, Int?> {
-        org.antlr.v4.runtime.atn.ATNSerializer.Companion.serializeSets(data, sets.keys)
+        org.antlr.v4.runtime.atn.ATNSerializer.Companion
+            .serializeSets(data, sets.keys)
         val setIndices: Map<IntervalSet?, Int?> = HashMap()
         var setIndex = 0
         for (s in sets.keys) {
@@ -263,7 +270,7 @@ class ATNSerializer(atn: ATN) {
             data.add(ruleStartState.stateNumber)
             if (atn.grammarType === ATNType.LEXER) {
                 assert(
-                    atn.ruleToTokenType[r] >= 0 // 0 implies fragment rule, other token types > 0
+                    atn.ruleToTokenType[r] >= 0, // 0 implies fragment rule, other token types > 0
                 )
                 data.add(atn.ruleToTokenType[r])
             }
@@ -330,7 +337,10 @@ class ATNSerializer(atn: ATN) {
     }
 
     companion object {
-        private fun serializeSets(data: IntList, sets: Collection<IntervalSet?>) {
+        private fun serializeSets(
+            data: IntList,
+            sets: Collection<IntervalSet?>,
+        ) {
             val nSets: Int = sets.size
             data.add(nSets)
 
@@ -358,8 +368,9 @@ class ATNSerializer(atn: ATN) {
             }
         }
 
-        fun getSerialized(atn: ATN): IntList {
-            return org.antlr.v4.runtime.atn.ATNSerializer(atn).serialize()
-        }
+        fun getSerialized(atn: ATN): IntList =
+            org.antlr.v4.runtime.atn
+                .ATNSerializer(atn)
+                .serialize()
     }
 }

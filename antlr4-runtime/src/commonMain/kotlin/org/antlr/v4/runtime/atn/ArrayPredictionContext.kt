@@ -5,9 +5,10 @@
  */
 package org.antlr.v4.runtime.atn
 
-
-class ArrayPredictionContext(parents: Array<PredictionContext?>, returnStates: IntArray) :
-    PredictionContext(calculateHashCode(parents, returnStates)) {
+class ArrayPredictionContext(
+    parents: Array<PredictionContext?>,
+    returnStates: IntArray,
+) : PredictionContext(calculateHashCode(parents, returnStates)) {
     /** Parent can be null only if full ctx mode and we make an array
      * from [.EMPTY] and non-empty. We merge [.EMPTY] by using null parent and
      * returnState == [.EMPTY_RETURN_STATE].
@@ -24,27 +25,25 @@ class ArrayPredictionContext(parents: Array<PredictionContext?>, returnStates: I
     init {
         assert(parents != null && parents.size > 0)
         assert(returnStates != null && returnStates.size > 0)
-        //		println("CREATE ARRAY: "+parents.contentToString()+", "+returnStates.contentToString());
+        // 		println("CREATE ARRAY: "+parents.contentToString()+", "+returnStates.contentToString());
         this.parents = parents
         this.returnStates = returnStates
     }
+
     val isEmpty: Boolean
-        get() =// since EMPTY_RETURN_STATE can only appear in the last position, we
+        get() = // since EMPTY_RETURN_STATE can only appear in the last position, we
             // don't need to verify that size==1
             returnStates[0] == EMPTY_RETURN_STATE
-    override fun size(): Int {
-        return returnStates.size
-    }
-    fun getParent(index: Int): PredictionContext? {
-        return parents[index]
-    }
-    fun getReturnState(index: Int): Int {
-        return returnStates[index]
-    }
+
+    override fun size(): Int = returnStates.size
+
+    fun getParent(index: Int): PredictionContext? = parents[index]
+
+    fun getReturnState(index: Int): Int = returnStates[index]
 
     // //	public int findReturnState(int returnState) {
-    //		return .binarySearch(returnStates, returnState);
-    //	}
+    // 		return .binarySearch(returnStates, returnState);
+    // 	}
     fun equals(o: Any): Boolean {
         if (this === o) {
             return true
@@ -58,8 +57,9 @@ class ArrayPredictionContext(parents: Array<PredictionContext?>, returnStates: I
 
         val a = o
         return returnStates.contentEquals(a.returnStates) &&
-                parents.contentEquals(a.parents)
+            parents.contentEquals(a.parents)
     }
+
     fun toString(): String? {
         if (this.isEmpty) return "[]"
         val buf: StringBuilder = StringBuilder()

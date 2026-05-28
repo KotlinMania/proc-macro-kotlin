@@ -29,7 +29,7 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     abstract val ruleNames: Array<String>?
 
     @Suppress("DEPRECATION")
-    val vocabulary: Vocabulary
+    open val vocabulary: Vocabulary
         get() = VocabularyImpl.fromTokenNames(this.tokenNames)
 
     val tokenTypeMap: Map<String, Int>

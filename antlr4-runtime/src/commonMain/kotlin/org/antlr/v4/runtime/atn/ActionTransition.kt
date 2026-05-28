@@ -6,8 +6,10 @@
 package org.antlr.v4.runtime.atn
 
 class ActionTransition(
-    target: ATNState, val ruleIndex: Int, val actionIndex: Int,
-    val isCtxDependent: Boolean
+    target: ATNState,
+    val ruleIndex: Int,
+    val actionIndex: Int,
+    val isCtxDependent: Boolean,
 ) : Transition(target) {
     constructor(target: ATNState, ruleIndex: Int) : this(target, ruleIndex, -1, false)
 
@@ -17,7 +19,11 @@ class ActionTransition(
     override val isEpsilon: Boolean
         get() = true
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean = false
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = false
 
     override fun toString(): String = "action_$ruleIndex:$actionIndex"
 }

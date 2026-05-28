@@ -66,14 +66,17 @@ class IntervalSet : IntSet {
      * If this is {1..5, 10..20}, adding 6..7 yields
      * {1..5, 6..7, 10..20}.  Adding 4..8 yields {1..8, 10..20}.
      */
-    fun add(a: Int, b: Int) {
+    fun add(
+        a: Int,
+        b: Int,
+    ) {
         add(Interval.of(a, b))
     }
 
     // copy on write so we can cache a..a intervals and sets of that
     protected fun add(addition: Interval) {
         check(!readonly) { "can't alter readonly IntervalSet" }
-        //println("add "+addition+" to "+intervals.toString());
+        // println("add "+addition+" to "+intervals.toString());
         if (addition.b < addition.a) {
             return
         }
@@ -116,6 +119,7 @@ class IntervalSet : IntSet {
         // just add it
         intervals.add(addition)
     }
+
     override fun addAll(set: IntSet?): IntervalSet {
         if (set == null) {
             return this
@@ -138,9 +142,14 @@ class IntervalSet : IntSet {
         return this
     }
 
-    fun complement(minElement: Int, maxElement: Int): IntervalSet? {
-        return this.complement(org.antlr.v4.runtime.misc.IntervalSet.Companion.of(minElement, maxElement))
-    }
+    fun complement(
+        minElement: Int,
+        maxElement: Int,
+    ): IntervalSet? =
+        this.complement(
+            org.antlr.v4.runtime.misc.IntervalSet.Companion
+                .of(minElement, maxElement),
+        )
 
     /** {@inheritDoc}  */
     fun complement(vocabulary: IntSet?): IntervalSet? {
@@ -152,27 +161,38 @@ class IntervalSet : IntSet {
         if (vocabulary is IntervalSet) {
             vocabularyIS = vocabulary
         } else {
-            vocabularyIS = org.antlr.v4.runtime.misc.IntervalSet()
+            vocabularyIS =
+                org.antlr.v4.runtime.misc
+                    .IntervalSet()
             vocabularyIS!!.addAll(vocabulary)
         }
 
         return vocabularyIS.subtract(this)
     }
+
     fun subtract(a: IntSet?): IntervalSet {
         if (a == null || a.isNil()) {
-            return org.antlr.v4.runtime.misc.IntervalSet(this)
+            return org.antlr.v4.runtime.misc
+                .IntervalSet(this)
         }
 
         if (a is IntervalSet) {
-            return org.antlr.v4.runtime.misc.IntervalSet.Companion.subtract(this, a)
+            return org.antlr.v4.runtime.misc.IntervalSet.Companion
+                .subtract(this, a)
         }
 
-        val other: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet()
+        val other: IntervalSet =
+            org.antlr.v4.runtime.misc
+                .IntervalSet()
         other.addAll(a)
-        return org.antlr.v4.runtime.misc.IntervalSet.Companion.subtract(this, other)
+        return org.antlr.v4.runtime.misc.IntervalSet.Companion
+            .subtract(this, other)
     }
+
     fun or(a: IntSet?): IntervalSet {
-        val o: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet()
+        val o: IntervalSet =
+            org.antlr.v4.runtime.misc
+                .IntervalSet()
         o.addAll(this)
         o.addAll(a)
         return o
@@ -180,7 +200,7 @@ class IntervalSet : IntSet {
 
     /** {@inheritDoc}  */
     fun and(other: IntSet?): IntervalSet? {
-        if (other == null) { //|| !(other instanceof IntervalSet) ) {
+        if (other == null) { // || !(other instanceof IntervalSet) ) {
             return null // nothing in common with null set
         }
 
@@ -195,7 +215,7 @@ class IntervalSet : IntSet {
         while (i < mySize && j < theirSize) {
             val mine: Interval = myIntervals!!.get(i)
             val theirs: Interval = theirIntervals!!.get(j)
-            //println("mine="+mine+" and theirs="+theirs);
+            // println("mine="+mine+" and theirs="+theirs);
             if (mine.startsBeforeDisjoint(theirs)) {
                 // move this iterator looking for interval that might overlap
                 i++
@@ -205,21 +225,27 @@ class IntervalSet : IntSet {
             } else if (mine.properlyContains(theirs)) {
                 // overlap, add intersection, get next theirs
                 if (intersection == null) {
-                    intersection = org.antlr.v4.runtime.misc.IntervalSet()
+                    intersection =
+                        org.antlr.v4.runtime.misc
+                            .IntervalSet()
                 }
                 intersection.add(mine.intersection(theirs))
                 j++
             } else if (theirs.properlyContains(mine)) {
                 // overlap, add intersection, get next mine
                 if (intersection == null) {
-                    intersection = org.antlr.v4.runtime.misc.IntervalSet()
+                    intersection =
+                        org.antlr.v4.runtime.misc
+                            .IntervalSet()
                 }
                 intersection.add(mine.intersection(theirs))
                 i++
             } else if (!mine.disjoint(theirs)) {
                 // overlap, add intersection
                 if (intersection == null) {
-                    intersection = org.antlr.v4.runtime.misc.IntervalSet()
+                    intersection =
+                        org.antlr.v4.runtime.misc
+                            .IntervalSet()
                 }
                 intersection.add(mine.intersection(theirs))
                 // Move the iterator of lower range [a..b], but not
@@ -237,7 +263,8 @@ class IntervalSet : IntSet {
             }
         }
         if (intersection == null) {
-            return org.antlr.v4.runtime.misc.IntervalSet()
+            return org.antlr.v4.runtime.misc
+                .IntervalSet()
         }
         return intersection
     }
@@ -264,6 +291,7 @@ class IntervalSet : IntSet {
         }
         return false
     }
+
     val isNil: Boolean
         /** {@inheritDoc}  */
         get() = intervals.isEmpty
@@ -299,9 +327,8 @@ class IntervalSet : IntSet {
         }
 
     /** Return a list of Interval objects.  */
-    fun getIntervals(): MutableList<Interval> {
-        return intervals
-    }
+    fun getIntervals(): MutableList<Interval> = intervals
+
     override fun hashCode(): Int {
         var hash: Int = MurmurHash.initialize()
         for (I in intervals!!) {
@@ -325,9 +352,8 @@ class IntervalSet : IntSet {
         val other = obj
         return this.intervals.equals(other.intervals)
     }
-    override fun toString(): String? {
-        return toString(false)
-    }
+
+    override fun toString(): String? = toString(false)
 
     override fun toString(elemAreChar: Boolean): String? {
         val buf: StringBuilder = StringBuilder()
@@ -343,12 +369,24 @@ class IntervalSet : IntSet {
             val a: Int = I.a
             val b: Int = I.b
             if (a == b) {
-                if (a == Token.EOF) buf.append("<EOF>")
-                else if (elemAreChar) buf.append("'").appendCodePoint(a).append("'")
-                else buf.append(a)
+                if (a == Token.EOF) {
+                    buf.append("<EOF>")
+                } else if (elemAreChar) {
+                    buf.append("'").appendCodePoint(a).append("'")
+                } else {
+                    buf.append(a)
+                }
             } else {
-                if (elemAreChar) buf.append("'").appendCodePoint(a).append("'..'").appendCodePoint(b).append("'")
-                else buf.append(a).append("..").append(b)
+                if (elemAreChar) {
+                    buf
+                        .append("'")
+                        .appendCodePoint(a)
+                        .append("'..'")
+                        .appendCodePoint(b)
+                        .append("'")
+                } else {
+                    buf.append(a).append("..").append(b)
+                }
             }
             if (iter.hasNext()) {
                 buf.append(", ")
@@ -362,9 +400,7 @@ class IntervalSet : IntSet {
 
     @Deprecated
     @Deprecated("Use {@link #toString(Vocabulary)} instead.")
-    override fun toString(tokenNames: Array<String?>?): String? {
-        return toString(VocabularyImpl.fromTokenNames(tokenNames))
-    }
+    override fun toString(tokenNames: Array<String?>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
 
     override fun toString(vocabulary: Vocabulary): String? {
         val buf: StringBuilder = StringBuilder()
@@ -399,12 +435,15 @@ class IntervalSet : IntSet {
 
     @Deprecated
     @Deprecated("Use {@link #elementName(Vocabulary, int)} instead.")
-    protected fun elementName(tokenNames: Array<String?>?, a: Int): String? {
-        return elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
-    }
+    protected fun elementName(
+        tokenNames: Array<String?>?,
+        a: Int,
+    ): String? = elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
 
-
-    protected fun elementName(vocabulary: Vocabulary, a: Int): String? {
+    protected fun elementName(
+        vocabulary: Vocabulary,
+        a: Int,
+    ): String? {
         if (a == Token.EOF) {
             return "<EOF>"
         } else if (a == Token.EPSILON) {
@@ -413,6 +452,7 @@ class IntervalSet : IntSet {
             return vocabulary.getDisplayName(a)
         }
     }
+
     override fun size(): Int {
         var n = 0
         val numIntervals: Int = intervals.size
@@ -440,6 +480,7 @@ class IntervalSet : IntSet {
         }
         return values
     }
+
     fun toList(): List<Int> {
         val values: MutableList<Int> = ArrayList()
         val n: Int = intervals.size
@@ -487,9 +528,8 @@ class IntervalSet : IntSet {
         return -1
     }
 
-    override fun toArray(): IntArray {
-        return toIntList().toArray()
-    }
+    override fun toArray(): IntArray = toIntList().toArray()
+
     override fun remove(el: Int) {
         check(!readonly) { "can't alter readonly IntervalSet" }
         val n: Int = intervals.size
@@ -527,9 +567,7 @@ class IntervalSet : IntSet {
         }
     }
 
-    fun isReadonly(): Boolean {
-        return readonly
-    }
+    fun isReadonly(): Boolean = readonly
 
     fun setReadonly(readonly: Boolean) {
         check(!(this.readonly && !readonly)) { "can't alter readonly IntervalSet" }
@@ -538,35 +576,49 @@ class IntervalSet : IntSet {
 
     companion object {
         val COMPLETE_CHAR_SET: IntervalSet =
-            org.antlr.v4.runtime.misc.IntervalSet.Companion.of(Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)
+            org.antlr.v4.runtime.misc.IntervalSet.Companion
+                .of(Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)
 
         init {
-            org.antlr.v4.runtime.misc.IntervalSet.Companion.COMPLETE_CHAR_SET.setReadonly(true)
+            org.antlr.v4.runtime.misc.IntervalSet.Companion.COMPLETE_CHAR_SET
+                .setReadonly(true)
         }
 
-        val EMPTY_SET: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet()
+        val EMPTY_SET: IntervalSet =
+            org.antlr.v4.runtime.misc
+                .IntervalSet()
 
         init {
-            org.antlr.v4.runtime.misc.IntervalSet.Companion.EMPTY_SET.setReadonly(true)
+            org.antlr.v4.runtime.misc.IntervalSet.Companion.EMPTY_SET
+                .setReadonly(true)
         }
 
         /** Create a set with a single element, el.  */
         fun of(a: Int): IntervalSet {
-            val s: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet()
+            val s: IntervalSet =
+                org.antlr.v4.runtime.misc
+                    .IntervalSet()
             s.add(a)
             return s
         }
 
-        /** Create a set with all ints within range [a..b] (inclusive)  */
-        fun of(a: Int, b: Int): IntervalSet {
-            val s: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet()
+        /** Create a set with all ints within range `a..b` (inclusive)  */
+        fun of(
+            a: Int,
+            b: Int,
+        ): IntervalSet {
+            val s: IntervalSet =
+                org.antlr.v4.runtime.misc
+                    .IntervalSet()
             s.add(a, b)
             return s
         }
 
         /** combine all sets in the array returned the or'd value  */
         fun or(sets: Array<IntervalSet?>): IntervalSet {
-            val r: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet()
+            val r: IntervalSet =
+                org.antlr.v4.runtime.misc
+                    .IntervalSet()
             for (s in sets) r.addAll(s)
             return r
         }
@@ -576,12 +628,18 @@ class IntervalSet : IntSet {
          * operation is `left - right`. If either of the input sets is
          * `null`, it is treated as though it was an empty set.
          */
-        fun subtract(left: IntervalSet?, right: IntervalSet?): IntervalSet {
+        fun subtract(
+            left: IntervalSet?,
+            right: IntervalSet?,
+        ): IntervalSet {
             if (left == null || left.isNil) {
-                return org.antlr.v4.runtime.misc.IntervalSet()
+                return org.antlr.v4.runtime.misc
+                    .IntervalSet()
             }
 
-            val result: IntervalSet = org.antlr.v4.runtime.misc.IntervalSet(left)
+            val result: IntervalSet =
+                org.antlr.v4.runtime.misc
+                    .IntervalSet(left)
             if (right == null || right.isNil) {
                 // right set has no elements; just return the copy of the current set
                 return result

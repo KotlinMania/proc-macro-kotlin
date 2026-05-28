@@ -5,7 +5,6 @@
  */
 package org.antlr.v4.runtime.atn
 
-
 /**
  * This class contains profiling gathered for a particular decision.
  *
@@ -26,11 +25,12 @@ class DecisionInfo
  * statistics for a particular decision.
  *
  * @param decision The decision number
- */(
+ */
+(
     /**
      * The decision number, which is an index into [ATN.decisionToState].
      */
-    val decision: Int
+    val decision: Int,
 ) {
     /**
      * The total number of times [ParserATNSimulator.adaptivePredict] was
@@ -231,18 +231,18 @@ class DecisionInfo
      * @see LexerATNSimulator.getExistingTargetState
      */
     var LL_DFATransitions: Long = 0
-    fun toString(): String? {
-        return "{" +
-                "decision=" + decision +
-                ", contextSensitivities=" + contextSensitivities.size +
-                ", errors=" + errors.size +
-                ", ambiguities=" + ambiguities.size +
-                ", SLL_lookahead=" + SLL_TotalLook +
-                ", SLL_ATNTransitions=" + SLL_ATNTransitions +
-                ", SLL_DFATransitions=" + SLL_DFATransitions +
-                ", LL_Fallback=" + LL_Fallback +
-                ", LL_lookahead=" + LL_TotalLook +
-                ", LL_ATNTransitions=" + LL_ATNTransitions +
-                '}'
-    }
+
+    fun toString(): String? =
+        "{" +
+            "decision=" + decision +
+            ", contextSensitivities=" + contextSensitivities.size +
+            ", errors=" + errors.size +
+            ", ambiguities=" + ambiguities.size +
+            ", SLL_lookahead=" + SLL_TotalLook +
+            ", SLL_ATNTransitions=" + SLL_ATNTransitions +
+            ", SLL_DFATransitions=" + SLL_DFATransitions +
+            ", LL_Fallback=" + LL_Fallback +
+            ", LL_lookahead=" + LL_TotalLook +
+            ", LL_ATNTransitions=" + LL_ATNTransitions +
+            '}'
 }

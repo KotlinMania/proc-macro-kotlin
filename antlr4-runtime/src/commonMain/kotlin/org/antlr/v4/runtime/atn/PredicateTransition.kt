@@ -6,7 +6,10 @@
 package org.antlr.v4.runtime.atn
 
 class PredicateTransition(
-    target: ATNState, val ruleIndex: Int, val predIndex: Int, val isCtxDependent: Boolean
+    target: ATNState,
+    val ruleIndex: Int,
+    val predIndex: Int,
+    val isCtxDependent: Boolean,
 ) : AbstractPredicateTransition(target) {
     override val serializationType: Int
         get() = PREDICATE
@@ -14,7 +17,11 @@ class PredicateTransition(
     override val isEpsilon: Boolean
         get() = true
 
-    override fun matches(symbol: Int, minVocabSymbol: Int, maxVocabSymbol: Int): Boolean = false
+    override fun matches(
+        symbol: Int,
+        minVocabSymbol: Int,
+        maxVocabSymbol: Int,
+    ): Boolean = false
 
     val predicate: SemanticContext.Predicate
         get() = SemanticContext.Predicate(ruleIndex, predIndex, isCtxDependent)

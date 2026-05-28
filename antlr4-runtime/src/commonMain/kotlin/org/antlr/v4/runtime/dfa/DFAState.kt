@@ -27,7 +27,10 @@ class DFAState {
 
     var predicates: Array<PredPrediction>? = null
 
-    class PredPrediction(val pred: SemanticContext, val alt: Int) {
+    class PredPrediction(
+        val pred: SemanticContext,
+        val alt: Int,
+    ) {
         override fun toString(): String = "($pred, $alt)"
     }
 

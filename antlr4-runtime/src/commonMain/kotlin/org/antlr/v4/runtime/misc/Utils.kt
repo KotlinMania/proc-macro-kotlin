@@ -8,7 +8,10 @@ package org.antlr.v4.runtime.misc
 import org.antlr.v4.runtime.misc.BitSet
 
 object Utils {
-    fun <T> join(iter: Iterator<T?>, separator: String?): String {
+    fun <T> join(
+        iter: Iterator<T?>,
+        separator: String?,
+    ): String {
         val buf = StringBuilder()
         while (iter.hasNext()) {
             buf.append(iter.next())
@@ -17,7 +20,10 @@ object Utils {
         return buf.toString()
     }
 
-    fun <T> join(array: Array<T?>, separator: String?): String {
+    fun <T> join(
+        array: Array<T?>,
+        separator: String?,
+    ): String {
         val builder = StringBuilder()
         for (i in array.indices) {
             builder.append(array[i])
@@ -33,12 +39,18 @@ object Utils {
         return n
     }
 
-    fun <T> removeAllElements(data: Collection<T?>?, value: T?) {
+    fun <T> removeAllElements(
+        data: Collection<T?>?,
+        value: T?,
+    ) {
         if (data == null) return
         while (data.contains(value)) data.remove(value)
     }
 
-    fun escapeWhitespace(s: String, escapeSpaces: Boolean): String {
+    fun escapeWhitespace(
+        s: String,
+        escapeSpaces: Boolean,
+    ): String {
         val buf = StringBuilder()
         for (c in s) {
             when {
@@ -55,32 +67,55 @@ object Utils {
     fun toSet(bits: BitSet): IntervalSet {
         val s = IntervalSet()
         var i = bits.nextSetBit(0)
-        while (i >= 0) { s.add(i); i = bits.nextSetBit(i + 1) }
+        while (i >= 0) {
+            s.add(i)
+            i = bits.nextSetBit(i + 1)
+        }
         return s
     }
 
-    fun expandTabs(s: String?, tabSize: Int): String? {
+    fun expandTabs(
+        s: String?,
+        tabSize: Int,
+    ): String? {
         if (s == null) return null
         val buf = StringBuilder()
         var col = 0
         for (c in s) {
             when (c) {
-                '\n' -> { col = 0; buf.append(c) }
-                '\t' -> { val n = tabSize - col % tabSize; col += n; buf.append(spaces(n)) }
-                else -> { col++; buf.append(c) }
+                '\n' -> {
+                    col = 0
+                    buf.append(c)
+                }
+                '\t' -> {
+                    val n = tabSize - col % tabSize
+                    col += n
+                    buf.append(spaces(n))
+                }
+                else -> {
+                    col++
+                    buf.append(c)
+                }
             }
         }
         return buf.toString()
     }
 
     fun spaces(n: Int): String = sequence(n, " ")
+
     fun newlines(n: Int): String = sequence(n, "\n")
 
-    fun sequence(n: Int, s: String?): String {
+    fun sequence(
+        n: Int,
+        s: String?,
+    ): String {
         val buf = StringBuilder()
         repeat(n) { buf.append(s) }
         return buf.toString()
     }
 
-    fun count(s: String, x: Char): Int = s.count { it == x }
+    fun count(
+        s: String,
+        x: Char,
+    ): Int = s.count { it == x }
 }

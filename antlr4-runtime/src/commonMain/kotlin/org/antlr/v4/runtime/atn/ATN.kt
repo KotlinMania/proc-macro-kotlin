@@ -9,7 +9,10 @@ import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.IntervalSet
 
-class ATN(val grammarType: ATNType, val maxTokenType: Int) {
+class ATN(
+    val grammarType: ATNType,
+    val maxTokenType: Int,
+) {
     val states: MutableList<ATNState> = ArrayList()
 
     val decisionToState: MutableList<DecisionState> = ArrayList()
@@ -24,9 +27,10 @@ class ATN(val grammarType: ATNType, val maxTokenType: Int) {
 
     val modeToStartState: MutableList<TokensStartState> = ArrayList()
 
-    fun nextTokens(s: ATNState, ctx: RuleContext?): IntervalSet {
-        return LL1Analyzer(this).LOOK(s, ctx)!!
-    }
+    fun nextTokens(
+        s: ATNState,
+        ctx: RuleContext?,
+    ): IntervalSet = LL1Analyzer(this).LOOK(s, ctx)!!
 
     fun nextTokens(s: ATNState): IntervalSet {
         if (s.nextTokenWithinRule != null) return s.nextTokenWithinRule!!
@@ -40,12 +44,19 @@ class ATN(val grammarType: ATNType, val maxTokenType: Int) {
             state.atn = this
             state.stateNumber = states.size
         }
-        states.add(state ?: object : ATNState() { override val stateType: Int = INVALID_TYPE })
+        states.add(
+            state ?: object : ATNState() {
+                override val stateType: Int = INVALID_TYPE
+            },
+        )
     }
 
     fun removeState(state: ATNState) {
         // Replace with invalid-state sentinel instead of null
-        states[state.stateNumber] = object : ATNState() { override val stateType: Int = INVALID_TYPE }
+        states[state.stateNumber] =
+            object : ATNState() {
+                override val stateType: Int = INVALID_TYPE
+            }
     }
 
     fun defineDecisionState(s: DecisionState): Int {
@@ -64,7 +75,10 @@ class ATN(val grammarType: ATNType, val maxTokenType: Int) {
     val numberOfDecisions: Int
         get() = decisionToState.size
 
-    fun getExpectedTokens(stateNumber: Int, context: RuleContext?): IntervalSet {
+    fun getExpectedTokens(
+        stateNumber: Int,
+        context: RuleContext?,
+    ): IntervalSet {
         require(stateNumber in 0 until states.size) { "Invalid state number." }
 
         var ctx = context

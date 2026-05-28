@@ -5,8 +5,6 @@
  */
 package org.antlr.v4.runtime
 
-import org.antlr.v4.runtime.misc.BitSet
-
 import org.antlr.v4.runtime.misc.Interval
 
 /**
@@ -22,7 +20,9 @@ import org.antlr.v4.runtime.misc.Interval
  * [Token.HIDDEN_CHANNEL], use a filtering token stream such a
  * [CommonTokenStream].
  */
-class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
+class BufferedTokenStream(
+    tokenSource: TokenSource,
+) : TokenStream {
     /**
      * The [TokenSource] from which tokens for this stream are fetched.
      */
@@ -70,15 +70,13 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         }
         this.tokenSource = tokenSource
     }
-    fun getTokenSource(): TokenSource {
-        return tokenSource
-    }
-    fun index(): Int {
-        return p
-    }
-    fun mark(): Int {
-        return 0
-    }
+
+    fun getTokenSource(): TokenSource = tokenSource
+
+    fun index(): Int = p
+
+    fun mark(): Int = 0
+
     fun release(marker: Int) {
         // no resources to release
     }
@@ -94,13 +92,14 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
     override fun reset() {
         seek(0)
     }
+
     fun seek(index: Int) {
         lazyInit()
         p = adjustSeekIndex(index)
     }
-    override fun size(): Int {
-        return tokens.size
-    }
+
+    override fun size(): Int = tokens.size
+
     fun consume() {
         val skipEofCheck: Boolean
         if (p >= 0) {
@@ -133,7 +132,7 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
     protected fun sync(i: Int): Boolean {
         assert(i >= 0)
         val n: Int = i - tokens.size + 1 // how many more elements we need?
-        //println("sync("+i+") needs "+n);
+        // println("sync("+i+") needs "+n);
         if (n > 0) {
             val fetched = fetch(n)
             return fetched >= n
@@ -165,6 +164,7 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
 
         return n
     }
+
     fun get(i: Int): Token {
         if (i < 0 || i >= tokens.size) {
             throw IndexOutOfBoundsException("token index " + i + " out of range 0.." + (tokens.size - 1))
@@ -173,7 +173,10 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
     }
 
     /** Get all tokens from start..stop inclusively  */
-    fun get(start: Int, stop: Int): List<Token?>? {
+    fun get(
+        start: Int,
+        stop: Int,
+    ): List<Token?>? {
         var stop = stop
         if (start < 0 || stop < 0) return null
         lazyInit()
@@ -186,14 +189,14 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         }
         return subset
     }
-    fun LA(i: Int): Int {
-        return LT(i).type
-    }
+
+    fun LA(i: Int): Int = LT(i).type
 
     protected fun LB(k: Int): Token? {
         if ((p - k) < 0) return null
         return tokens.get(p - k)
     }
+
     fun LT(k: Int): Token? {
         lazyInit()
         if (k == 0) return null
@@ -205,7 +208,7 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
             // EOF must be last token
             return tokens.get(tokens.size - 1)
         }
-        //		if ( i>range ) range = i;
+        // 		if ( i>range ) range = i;
         return tokens.get(i)
     }
 
@@ -223,9 +226,7 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
      * @param i The target token index.
      * @return The adjusted target token index.
      */
-    protected fun adjustSeekIndex(i: Int): Int {
-        return i
-    }
+    protected fun adjustSeekIndex(i: Int): Int = i
 
     protected fun lazyInit() {
         if (p == -1) {
@@ -246,24 +247,27 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         fetchedEOF = false
     }
 
-    fun getTokens(): List<Token?> {
-        return tokens
-    }
+    fun getTokens(): List<Token?> = tokens
 
-    fun getTokens(start: Int, stop: Int): List<Token?>? {
-        return getTokens(start, stop, null)
-    }
+    fun getTokens(
+        start: Int,
+        stop: Int,
+    ): List<Token?>? = getTokens(start, stop, null)
 
     /** Given a start and stop index, return a List of all tokens in
      * the token type BitSet.  Return null if no tokens were found.  This
      * method looks at both on and off channel tokens.
      */
-    fun getTokens(start: Int, stop: Int, types: Set<Int?>?): List<Token?>? {
+    fun getTokens(
+        start: Int,
+        stop: Int,
+        types: Set<Int?>?,
+    ): List<Token?>? {
         lazyInit()
         if (start < 0 || stop >= tokens.size || stop < 0 || start >= tokens.size) {
             throw IndexOutOfBoundsException(
                 "start " + start + " or stop " + stop +
-                        " not in 0.." + (tokens.size - 1)
+                    " not in 0.." + (tokens.size - 1),
             )
         }
         if (start > stop) return null
@@ -282,7 +286,11 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         return filteredTokens
     }
 
-    fun getTokens(start: Int, stop: Int, ttype: Int): List<Token?>? {
+    fun getTokens(
+        start: Int,
+        stop: Int,
+        ttype: Int,
+    ): List<Token?>? {
         val s: HashSet<Int?> = HashSet<Int?>(ttype)
         s.add(ttype)
         return getTokens(start, stop, s)
@@ -294,7 +302,10 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
      * the EOF token if there are no tokens on channel between `i` and
      * EOF.
      */
-    protected fun nextTokenOnChannel(i: Int, channel: Int): Int {
+    protected fun nextTokenOnChannel(
+        i: Int,
+        channel: Int,
+    ): Int {
         var i = i
         sync(i)
         if (i >= size()) {
@@ -326,7 +337,10 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
      * index is returned. This is due to the fact that the EOF token is treated
      * as though it were on every channel.
      */
-    protected fun previousTokenOnChannel(i: Int, channel: Int): Int {
+    protected fun previousTokenOnChannel(
+        i: Int,
+        channel: Int,
+    ): Int {
         var i = i
         sync(i)
         if (i >= size()) {
@@ -350,7 +364,10 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
      * the current token up until we see a token on DEFAULT_TOKEN_CHANNEL or
      * EOF. If channel is -1, find any non default channel token.
      */
-    fun getHiddenTokensToRight(tokenIndex: Int, channel: Int): List<Token?>? {
+    fun getHiddenTokensToRight(
+        tokenIndex: Int,
+        channel: Int,
+    ): List<Token?>? {
         lazyInit()
         if (tokenIndex < 0 || tokenIndex >= tokens.size) {
             throw IndexOutOfBoundsException(tokenIndex.toString() + " not in 0.." + (tokens.size - 1))
@@ -361,8 +378,11 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         val to: Int
         val from = tokenIndex + 1
         // if none onchannel to right, nextOnChannel=-1 so set to = last token
-        if (nextOnChannel == -1) to = size() - 1
-        else to = nextOnChannel
+        if (nextOnChannel == -1) {
+            to = size() - 1
+        } else {
+            to = nextOnChannel
+        }
 
         return filterForChannel(from, to, channel)
     }
@@ -371,15 +391,16 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
      * the current token up until we see a token on DEFAULT_TOKEN_CHANNEL
      * or EOF.
      */
-    fun getHiddenTokensToRight(tokenIndex: Int): List<Token?>? {
-        return getHiddenTokensToRight(tokenIndex, -1)
-    }
+    fun getHiddenTokensToRight(tokenIndex: Int): List<Token?>? = getHiddenTokensToRight(tokenIndex, -1)
 
     /** Collect all tokens on specified channel to the left of
      * the current token up until we see a token on DEFAULT_TOKEN_CHANNEL.
      * If channel is -1, find any non default channel token.
      */
-    fun getHiddenTokensToLeft(tokenIndex: Int, channel: Int): List<Token?>? {
+    fun getHiddenTokensToLeft(
+        tokenIndex: Int,
+        channel: Int,
+    ): List<Token?>? {
         lazyInit()
         if (tokenIndex < 0 || tokenIndex >= tokens.size) {
             throw IndexOutOfBoundsException(tokenIndex.toString() + " not in 0.." + (tokens.size - 1))
@@ -403,11 +424,13 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
     /** Collect all hidden tokens (any off-default channel) to the left of
      * the current token up until we see a token on DEFAULT_TOKEN_CHANNEL.
      */
-    fun getHiddenTokensToLeft(tokenIndex: Int): List<Token?>? {
-        return getHiddenTokensToLeft(tokenIndex, -1)
-    }
+    fun getHiddenTokensToLeft(tokenIndex: Int): List<Token?>? = getHiddenTokensToLeft(tokenIndex, -1)
 
-    protected fun filterForChannel(from: Int, to: Int, channel: Int): List<Token?>? {
+    protected fun filterForChannel(
+        from: Int,
+        to: Int,
+        channel: Int,
+    ): List<Token?>? {
         val hidden: MutableList<Token> = ArrayList()
         for (i in from..to) {
             val t: Token = tokens.get(i)
@@ -420,11 +443,13 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         if (hidden.size === 0) return null
         return hidden
     }
+
     val sourceName: String
         get() = tokenSource.sourceName
     val text: String?
         /** Get the text of all tokens in this buffer.  */
         get() = getText(Interval.of(0, size() - 1))
+
     fun getText(interval: Interval): String? {
         val start: Int = interval.a
         var stop: Int = interval.b
@@ -440,10 +465,13 @@ class BufferedTokenStream(tokenSource: TokenSource) : TokenStream {
         }
         return buf.toString()
     }
-    fun getText(ctx: RuleContext): String? {
-        return getText(ctx.sourceInterval)
-    }
-    fun getText(start: Token?, stop: Token?): String? {
+
+    fun getText(ctx: RuleContext): String? = getText(ctx.sourceInterval)
+
+    fun getText(
+        start: Token?,
+        stop: Token?,
+    ): String? {
         if (start != null && stop != null) {
             return getText(Interval.of(start.tokenIndex, stop.tokenIndex))
         }

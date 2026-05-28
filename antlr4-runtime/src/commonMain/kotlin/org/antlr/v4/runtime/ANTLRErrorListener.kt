@@ -51,7 +51,7 @@ interface ANTLRErrorListener {
         line: Int,
         charPositionInLine: Int,
         msg: String?,
-        e: RecognitionException?
+        e: RecognitionException?,
     )
 
     /**
@@ -106,7 +106,7 @@ interface ANTLRErrorListener {
         stopIndex: Int,
         exact: Boolean,
         ambigAlts: BitSet?,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     )
 
     /**
@@ -140,7 +140,7 @@ interface ANTLRErrorListener {
         startIndex: Int,
         stopIndex: Int,
         conflictingAlts: BitSet?,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     )
 
     /**
@@ -192,6 +192,6 @@ interface ANTLRErrorListener {
         startIndex: Int,
         stopIndex: Int,
         prediction: Int,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     )
 }

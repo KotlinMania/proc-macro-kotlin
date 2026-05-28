@@ -36,7 +36,7 @@ class InterpreterRuleContext : ParserRuleContext {
     constructor(
         parent: ParserRuleContext?,
         invokingStateNumber: Int,
-        ruleIndex: Int
+        ruleIndex: Int,
     ) : super(parent, invokingStateNumber) {
         this.ruleIndex = ruleIndex
     }

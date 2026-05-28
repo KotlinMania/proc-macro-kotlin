@@ -41,8 +41,10 @@ class ContextSensitivityInfo
  * @param stopIndex The index at which the context sensitivity was
  * identified during full-context prediction
  */
-    (
+(
     decision: Int,
     configs: ATNConfigSet?,
-    input: TokenStream?, startIndex: Int, stopIndex: Int
+    input: TokenStream?,
+    startIndex: Int,
+    stopIndex: Int,
 ) : DecisionEventInfo(decision, configs, input, startIndex, stopIndex, true)

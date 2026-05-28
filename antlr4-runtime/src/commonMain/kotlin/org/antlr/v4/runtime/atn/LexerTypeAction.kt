@@ -19,12 +19,13 @@ class LexerTypeAction
 /**
  * Constructs a new `type` action with the specified token type value.
  * @param type The type to assign to the token using [Lexer.setType].
- */(
+ */
+(
     /**
      * Gets the type to assign to a token created by the lexer.
      * @return The type to assign to a token created by the lexer.
      */
-    val type: Int
+    val type: Int,
 ) : LexerAction {
     val actionType: LexerActionType
         /**
@@ -49,12 +50,14 @@ class LexerTypeAction
     override fun execute(lexer: Lexer) {
         lexer.setType(type)
     }
+
     override fun hashCode(): Int {
         var hash: Int = MurmurHash.initialize()
         hash = MurmurHash.update(hash, this.actionType.ordinal)
         hash = MurmurHash.update(hash, type)
         return MurmurHash.finish(hash, 2)
     }
+
     override fun equals(obj: Any): Boolean {
         if (obj === this) {
             return true
@@ -64,7 +67,6 @@ class LexerTypeAction
 
         return type == obj.type
     }
-    override fun toString(): String {
-        return String.format("type(%d)", type)
-    }
+
+    override fun toString(): String = String.format("type(%d)", type)
 }

@@ -22,7 +22,7 @@ import org.antlr.v4.runtime.TokenStream
  *
  * @since 4.3
  */
-class DecisionEventInfo(
+open class DecisionEventInfo(
     /**
      * The invoked decision number which this event is related to.
      *
@@ -30,7 +30,8 @@ class DecisionEventInfo(
      */
     val decision: Int,
     configs: ATNConfigSet?,
-    input: TokenStream?, startIndex: Int,
+    input: TokenStream?,
+    startIndex: Int,
     /**
      * The token index in the input stream at which the current event occurred.
      */
@@ -39,7 +40,7 @@ class DecisionEventInfo(
      * `true` if the current event occurred during LL prediction;
      * otherwise, `false` if the input occurred during SLL prediction.
      */
-    val fullCtx: Boolean
+    val fullCtx: Boolean,
 ) {
     /**
      * The configuration set containing additional information relevant to the

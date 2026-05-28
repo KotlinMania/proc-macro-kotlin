@@ -25,23 +25,18 @@ class ATNDeserializationOptions {
         this.generateRuleBypassTransitions = options.generateRuleBypassTransitions
     }
 
-
     fun makeReadOnly() {
         this.isReadOnly = true
     }
 
-    fun isVerifyATN(): Boolean {
-        return verifyATN
-    }
+    fun isVerifyATN(): Boolean = verifyATN
 
     fun setVerifyATN(verifyATN: Boolean) {
         throwIfReadOnly()
         this.verifyATN = verifyATN
     }
 
-    fun isGenerateRuleBypassTransitions(): Boolean {
-        return generateRuleBypassTransitions
-    }
+    fun isGenerateRuleBypassTransitions(): Boolean = generateRuleBypassTransitions
 
     fun setGenerateRuleBypassTransitions(generateRuleBypassTransitions: Boolean) {
         throwIfReadOnly()
@@ -58,8 +53,8 @@ class ATNDeserializationOptions {
 
         init {
             org.antlr.v4.runtime.atn.ATNDeserializationOptions.Companion.defaultOptions =
-                org.antlr.v4.runtime.atn.ATNDeserializationOptions()
-            org.antlr.v4.runtime.atn.ATNDeserializationOptions.Companion.defaultOptions.makeReadOnly()
+                ATNDeserializationOptions()
+            ATNDeserializationOptions.Companion.defaultOptions.makeReadOnly()
         }
     }
 }

@@ -20,7 +20,10 @@ class BitSet {
         words[wordIndex(bitIndex)] = words[wordIndex(bitIndex)] or (1L shl bitIndex)
     }
 
-    fun set(bitIndex: Int, value: Boolean) {
+    fun set(
+        bitIndex: Int,
+        value: Boolean,
+    ) {
         if (value) set(bitIndex) else clear(bitIndex)
     }
 
@@ -83,14 +86,18 @@ class BitSet {
     fun toIntArray(): IntArray {
         val result = mutableListOf<Int>()
         var i = nextSetBit(0)
-        while (i >= 0) { result.add(i); i = nextSetBit(i + 1) }
+        while (i >= 0) {
+            result.add(i)
+            i = nextSetBit(i + 1)
+        }
         return result.toIntArray()
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         other as BitSet
-        trimTrailingZeros(); other.trimTrailingZeros()
+        trimTrailingZeros()
+        other.trimTrailingZeros()
         return words.contentEquals(other.words)
     }
 
@@ -118,6 +125,7 @@ class BitSet {
     companion object {
         private const val BITS_PER_WORD = 64
         private const val MASK: Long = -1L
+
         private fun wordIndex(bitIndex: Int): Int = bitIndex shr 6
     }
 }

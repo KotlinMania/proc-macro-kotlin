@@ -19,13 +19,14 @@ class LexerModeAction
 /**
  * Constructs a new `mode` action with the specified mode value.
  * @param mode The mode value to pass to [Lexer.mode].
- */(
+ */
+(
     /**
      * Get the lexer mode this action should transition the lexer to.
      *
      * @return The lexer mode for this `mode` command.
      */
-    val mode: Int
+    val mode: Int,
 ) : LexerAction {
     val actionType: LexerActionType
         /**
@@ -50,12 +51,14 @@ class LexerModeAction
     override fun execute(lexer: Lexer) {
         lexer.mode(mode)
     }
+
     override fun hashCode(): Int {
         var hash: Int = MurmurHash.initialize()
         hash = MurmurHash.update(hash, this.actionType.ordinal)
         hash = MurmurHash.update(hash, mode)
         return MurmurHash.finish(hash, 2)
     }
+
     override fun equals(obj: Any): Boolean {
         if (obj === this) {
             return true
@@ -65,7 +68,6 @@ class LexerModeAction
 
         return mode == obj.mode
     }
-    override fun toString(): String {
-        return String.format("mode(%d)", mode)
-    }
+
+    override fun toString(): String = String.format("mode(%d)", mode)
 }

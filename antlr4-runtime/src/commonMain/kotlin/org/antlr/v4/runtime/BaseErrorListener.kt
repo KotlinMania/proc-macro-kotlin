@@ -23,9 +23,10 @@ class BaseErrorListener : ANTLRErrorListener {
         line: Int,
         charPositionInLine: Int,
         msg: String?,
-        e: RecognitionException?
+        e: RecognitionException?,
     ) {
     }
+
     fun reportAmbiguity(
         recognizer: Parser?,
         dfa: DFA?,
@@ -33,25 +34,27 @@ class BaseErrorListener : ANTLRErrorListener {
         stopIndex: Int,
         exact: Boolean,
         ambigAlts: BitSet?,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     ) {
     }
+
     fun reportAttemptingFullContext(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
         stopIndex: Int,
         conflictingAlts: BitSet?,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     ) {
     }
+
     fun reportContextSensitivity(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
         stopIndex: Int,
         prediction: Int,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     ) {
     }
 }

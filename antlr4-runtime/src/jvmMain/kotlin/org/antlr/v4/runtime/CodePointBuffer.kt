@@ -8,7 +8,6 @@ import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.IntBuffer
 
-
 /**
  * Wrapper for [ByteBuffer] / [CharBuffer] / [IntBuffer].
  *
@@ -19,12 +18,12 @@ class CodePointBuffer private constructor(
     val type: Type,
     byteBuffer: ByteBuffer,
     charBuffer: CharBuffer,
-    intBuffer: IntBuffer
+    intBuffer: IntBuffer,
 ) {
     enum class Type {
         BYTE,
         CHAR,
-        INT
+        INT,
     }
 
     private val byteBuffer: ByteBuffer
@@ -96,7 +95,9 @@ class CodePointBuffer private constructor(
         return intBuffer.array()
     }
 
-    class Builder private constructor(initialBufferSize: Int) {
+    class Builder private constructor(
+        initialBufferSize: Int,
+    ) {
         var type: Type
             private set
         private var byteBuffer: ByteBuffer?
@@ -110,17 +111,11 @@ class CodePointBuffer private constructor(
             prevHighSurrogate = -1
         }
 
-        fun getByteBuffer(): ByteBuffer? {
-            return byteBuffer
-        }
+        fun getByteBuffer(): ByteBuffer? = byteBuffer
 
-        fun getCharBuffer(): CharBuffer? {
-            return charBuffer
-        }
+        fun getCharBuffer(): CharBuffer? = charBuffer
 
-        fun getIntBuffer(): IntBuffer? {
-            return intBuffer
-        }
+        fun getIntBuffer(): IntBuffer? = intBuffer
 
         fun build(): CodePointBuffer {
             when (type) {
@@ -128,37 +123,47 @@ class CodePointBuffer private constructor(
                 org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> charBuffer.flip()
                 org.antlr.v4.runtime.CodePointBuffer.Type.INT -> intBuffer.flip()
             }
-            return org.antlr.v4.runtime.CodePointBuffer(type, byteBuffer, charBuffer, intBuffer)
+            return org.antlr.v4.runtime
+                .CodePointBuffer(type, byteBuffer, charBuffer, intBuffer)
         }
 
         fun ensureRemaining(remainingNeeded: Int) {
             when (type) {
-                org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> if (byteBuffer.remaining() < remainingNeeded) {
-                    val newCapacity: Int =
-                        org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(byteBuffer.capacity() + remainingNeeded)
-                    val newBuffer: ByteBuffer = ByteBuffer.allocate(newCapacity)
-                    byteBuffer.flip()
-                    newBuffer.put(byteBuffer)
-                    byteBuffer = newBuffer
-                }
+                org.antlr.v4.runtime.CodePointBuffer.Type.BYTE ->
+                    if (byteBuffer.remaining() < remainingNeeded) {
+                        val newCapacity: Int =
+                            org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(
+                                byteBuffer.capacity() + remainingNeeded,
+                            )
+                        val newBuffer: ByteBuffer = ByteBuffer.allocate(newCapacity)
+                        byteBuffer.flip()
+                        newBuffer.put(byteBuffer)
+                        byteBuffer = newBuffer
+                    }
 
-                org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> if (charBuffer.remaining() < remainingNeeded) {
-                    val newCapacity: Int =
-                        org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(charBuffer.capacity() + remainingNeeded)
-                    val newBuffer: CharBuffer = CharBuffer.allocate(newCapacity)
-                    charBuffer.flip()
-                    newBuffer.put(charBuffer)
-                    charBuffer = newBuffer
-                }
+                org.antlr.v4.runtime.CodePointBuffer.Type.CHAR ->
+                    if (charBuffer.remaining() < remainingNeeded) {
+                        val newCapacity: Int =
+                            org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(
+                                charBuffer.capacity() + remainingNeeded,
+                            )
+                        val newBuffer: CharBuffer = CharBuffer.allocate(newCapacity)
+                        charBuffer.flip()
+                        newBuffer.put(charBuffer)
+                        charBuffer = newBuffer
+                    }
 
-                org.antlr.v4.runtime.CodePointBuffer.Type.INT -> if (intBuffer.remaining() < remainingNeeded) {
-                    val newCapacity: Int =
-                        org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(intBuffer.capacity() + remainingNeeded)
-                    val newBuffer: IntBuffer = IntBuffer.allocate(newCapacity)
-                    intBuffer.flip()
-                    newBuffer.put(intBuffer)
-                    intBuffer = newBuffer
-                }
+                org.antlr.v4.runtime.CodePointBuffer.Type.INT ->
+                    if (intBuffer.remaining() < remainingNeeded) {
+                        val newCapacity: Int =
+                            org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(
+                                intBuffer.capacity() + remainingNeeded,
+                            )
+                        val newBuffer: IntBuffer = IntBuffer.allocate(newCapacity)
+                        intBuffer.flip()
+                        newBuffer.put(intBuffer)
+                        intBuffer = newBuffer
+                    }
             }
         }
 
@@ -340,35 +345,32 @@ class CodePointBuffer private constructor(
     }
 
     companion object {
-        fun withBytes(byteBuffer: ByteBuffer): CodePointBuffer {
-            return org.antlr.v4.runtime.CodePointBuffer(
+        fun withBytes(byteBuffer: ByteBuffer): CodePointBuffer =
+            org.antlr.v4.runtime.CodePointBuffer(
                 org.antlr.v4.runtime.CodePointBuffer.Type.BYTE,
                 byteBuffer,
                 null,
-                null
+                null,
             )
-        }
 
-        fun withChars(charBuffer: CharBuffer): CodePointBuffer {
-            return org.antlr.v4.runtime.CodePointBuffer(
+        fun withChars(charBuffer: CharBuffer): CodePointBuffer =
+            org.antlr.v4.runtime.CodePointBuffer(
                 org.antlr.v4.runtime.CodePointBuffer.Type.CHAR,
                 null,
                 charBuffer,
-                null
+                null,
             )
-        }
 
-        fun withInts(intBuffer: IntBuffer): CodePointBuffer {
-            return org.antlr.v4.runtime.CodePointBuffer(
+        fun withInts(intBuffer: IntBuffer): CodePointBuffer =
+            org.antlr.v4.runtime.CodePointBuffer(
                 org.antlr.v4.runtime.CodePointBuffer.Type.INT,
                 null,
                 null,
-                intBuffer
+                intBuffer,
             )
-        }
 
-        fun builder(initialBufferSize: Int): Builder {
-            return org.antlr.v4.runtime.CodePointBuffer.Builder(initialBufferSize)
-        }
+        fun builder(initialBufferSize: Int): Builder =
+            org.antlr.v4.runtime.CodePointBuffer
+                .Builder(initialBufferSize)
     }
 }

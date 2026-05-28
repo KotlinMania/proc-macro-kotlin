@@ -20,48 +20,48 @@ import org.antlr.v4.runtime.misc.MurmurHash
  */
 class LexerMoreAction
 /**
- * Constructs the singleton instance of the lexer `more` command.
- */
-private constructor() : LexerAction {
-    val actionType: LexerActionType
-        /**
-         * {@inheritDoc}
-         * @return This method returns [LexerActionType.MORE].
-         */
-        get() = LexerActionType.MORE
-    val isPositionDependent: Boolean
-        /**
-         * {@inheritDoc}
-         * @return This method returns `false`.
-         */
-        get() = false
-
-    /**
-     * {@inheritDoc}
-     *
-     *
-     * This action is implemented by calling [Lexer.more].
+     * Constructs the singleton instance of the lexer `more` command.
      */
-    override fun execute(lexer: Lexer) {
-        lexer.more()
-    }
-    override fun hashCode(): Int {
-        var hash: Int = MurmurHash.initialize()
-        hash = MurmurHash.update(hash, this.actionType.ordinal)
-        return MurmurHash.finish(hash, 1)
-    }
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-    override fun equals(obj: Any?): Boolean {
-        return obj === this
-    }
-    override fun toString(): String {
-        return "more"
-    }
+    private constructor() :
+    LexerAction {
+        val actionType: LexerActionType
+            /**
+             * {@inheritDoc}
+             * @return This method returns [LexerActionType.MORE].
+             */
+            get() = LexerActionType.MORE
+        val isPositionDependent: Boolean
+            /**
+             * {@inheritDoc}
+             * @return This method returns `false`.
+             */
+            get() = false
 
-    companion object {
         /**
-         * Provides a singleton instance of this parameterless lexer action.
+         * {@inheritDoc}
+         *
+         *
+         * This action is implemented by calling [Lexer.more].
          */
-        val INSTANCE: LexerMoreAction = org.antlr.v4.runtime.atn.LexerMoreAction()
+        override fun execute(lexer: Lexer) {
+            lexer.more()
+        }
+
+        override fun hashCode(): Int {
+            var hash: Int = MurmurHash.initialize()
+            hash = MurmurHash.update(hash, this.actionType.ordinal)
+            return MurmurHash.finish(hash, 1)
+        }
+
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        override fun equals(obj: Any?): Boolean = obj === this
+
+        override fun toString(): String = "more"
+
+        companion object {
+            /**
+             * Provides a singleton instance of this parameterless lexer action.
+             */
+            val INSTANCE: LexerMoreAction = LexerMoreAction()
+        }
     }
-}

@@ -6,17 +6,18 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
-import java.util.Arrays
 
-class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: Int) : TokenStream {
-    protected var tokenSource: TokenSource
+abstract class UnbufferedTokenStream<T : Token?>(
+    override var tokenSource: TokenSource,
+    bufferSize: Int,
+) : TokenStream {
 
     /**
      * A moving window buffer of the data being scanned. While there's a marker,
      * we keep adding to buffer. Otherwise, [consume()][.consume] resets so
      * we start filling at index 0 again.
      */
-    protected var tokens: Array<Token>
+    protected var tokens: Array<Token?>
 
     /**
      * The number of tokens currently in [tokens][.tokens].
@@ -68,54 +69,56 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
     constructor(tokenSource: TokenSource) : this(tokenSource, 256)
 
     init {
-        this.tokenSource = tokenSource
-        tokens = arrayOfNulls<Token>(bufferSize)
+        tokens = arrayOfNulls(bufferSize)
         n = 0
         fill(1) // prime the pump
     }
-    fun get(i: Int): Token { // get absolute index
+
+    override fun get(index: Int): Token { // get absolute index
         val bufferStartIndex = this.bufferStartIndex
-        if (i < bufferStartIndex || i >= bufferStartIndex + n) {
+        if (index < bufferStartIndex || index >= bufferStartIndex + n) {
             throw IndexOutOfBoundsException(
-                "get(" + i + ") outside buffer: " +
-                        bufferStartIndex + ".." + (bufferStartIndex + n)
+                "get(" + index + ") outside buffer: " +
+                    bufferStartIndex + ".." + (bufferStartIndex + n),
             )
         }
-        return tokens[i - bufferStartIndex]
+        return tokens[index - bufferStartIndex]!!
     }
-    fun LT(i: Int): Token? {
-        if (i == -1) {
+
+    override fun LT(k: Int): Token? {
+        if (k == -1) {
             return lastToken
         }
 
-        sync(i)
-        val index = p + i - 1
+        sync(k)
+        val index = p + k - 1
         if (index < 0) {
-            throw IndexOutOfBoundsException("LT(" + i + ") gives negative index")
+            throw IndexOutOfBoundsException("LT($k) gives negative index")
         }
 
         if (index >= n) {
-            assert(n > 0 && tokens[n - 1].type === Token.EOF)
+            assert(n > 0 && tokens[n - 1]!!.type == Token.EOF)
             return tokens[n - 1]
         }
 
         return tokens[index]
     }
-    fun LA(i: Int): Int {
-        return LT(i).type
-    }
-    fun getTokenSource(): TokenSource {
-        return tokenSource
-    }
-    val text: String?
+
+    override fun LA(i: Int): Int = LT(i)?.type ?: Token.INVALID_TYPE
+
+    fun getTokenSource(): TokenSource = tokenSource
+
+    override val text: String?
         get() = ""
-    fun getText(ctx: RuleContext): String? {
-        return getText(ctx.sourceInterval)
-    }
-    fun getText(start: Token, stop: Token): String? {
-        return getText(Interval.of(start.tokenIndex, stop.tokenIndex))
-    }
-    fun consume() {
+
+    fun getText(ctx: RuleContext): String = getText(ctx.sourceInterval)
+
+    fun getText(
+        start: Token,
+        stop: Token,
+    ): String = getText(Interval.of(start.tokenIndex, stop.tokenIndex))
+
+    override fun consume() {
         check(LA(1) != Token.EOF) { "cannot consume EOF" }
 
         // buf always has at least tokens[p==0] in this method due to ctor
@@ -151,24 +154,24 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
      */
     protected fun fill(n: Int): Int {
         for (i in 0..<n) {
-            if (this.n > 0 && tokens[this.n - 1].type === Token.EOF) {
+            if (this.n > 0 && tokens[this.n - 1]?.type === Token.EOF) {
                 return i
             }
 
-            val t: Token = tokenSource.nextToken()
+            val t: Token? = tokenSource.nextToken()
             add(t)
         }
 
         return n
     }
 
-    protected fun add(t: Token) {
+    protected fun add(t: Token?) {
         if (n >= tokens.size) {
             tokens = tokens.copyOf(tokens.size * 2)
         }
 
         if (t is WritableToken) {
-            (t as WritableToken).setTokenIndex(this.bufferStartIndex + n)
+            t.setTokenIndex(this.bufferStartIndex + n)
         }
 
         tokens[n++] = t
@@ -182,7 +185,7 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
      * protection against misuse where `seek()` is called on a mark or
      * `release()` is called in the wrong order.
      */
-    fun mark(): Int {
+    override fun mark(): Int {
         if (numMarkers == 0) {
             lastTokenBufferStart = lastToken
         }
@@ -191,7 +194,8 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
         numMarkers++
         return mark
     }
-    fun release(marker: Int) {
+
+    override fun release(marker: Int) {
         val expectedMark = -numMarkers
         check(marker == expectedMark) { "release() called with an invalid marker." }
 
@@ -200,18 +204,18 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
             if (p > 0) {
                 // Copy tokens[p]..tokens[n-1] to tokens[0]..tokens[(n-1)-p], reset ptrs
                 // p is last valid token; move nothing if p==n as we have no valid char
-                System.arraycopy(tokens, p, tokens, 0, n - p) // shift n-p tokens from p to 0
-                n = n - p
+                tokens.copyInto(tokens, 0, p, n) // shift n-p tokens from p to 0
+                n -= p
                 p = 0
             }
 
             lastTokenBufferStart = lastToken
         }
     }
-    fun index(): Int {
-        return currentTokenIndex
-    }
-    fun seek(index: Int) { // seek to absolute index
+
+    override fun index(): Int = currentTokenIndex
+
+    override fun seek(index: Int) { // seek to absolute index
         var index = index
         if (index == currentTokenIndex) {
             return
@@ -224,27 +228,28 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
 
         val bufferStartIndex = this.bufferStartIndex
         val i = index - bufferStartIndex
-        require(i >= 0) { "cannot seek to negative index " + index }
+        require(i >= 0) { "cannot seek to negative index $index" }
         if (i >= n) {
             throw UnsupportedOperationException(
                 "seek to index outside buffer: " +
-                        index + " not in " + bufferStartIndex + ".." + (bufferStartIndex + n)
+                    index + " not in " + bufferStartIndex + ".." + (bufferStartIndex + n),
             )
         }
 
         p = i
         currentTokenIndex = index
-        if (p == 0) {
-            lastToken = lastTokenBufferStart
+        lastToken = if (p == 0) {
+            lastTokenBufferStart
         } else {
-            lastToken = tokens[p - 1]
+            tokens[p - 1]
         }
     }
-    fun size(): Int {
-        throw UnsupportedOperationException("Unbuffered stream cannot know its size")
-    }
-    val sourceName: String
+
+    override fun size(): Int = throw UnsupportedOperationException("Unbuffered stream cannot know its size")
+
+    override val sourceName: String?
         get() = tokenSource.sourceName
+
     fun getText(interval: Interval): String {
         val bufferStartIndex = this.bufferStartIndex
         val bufferStopIndex = bufferStartIndex + tokens.size - 1
@@ -254,7 +259,7 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
         if (start < bufferStartIndex || stop > bufferStopIndex) {
             throw UnsupportedOperationException(
                 "interval " + interval + " not in token buffer window: " +
-                        bufferStartIndex + ".." + bufferStopIndex
+                    bufferStartIndex + ".." + bufferStopIndex,
             )
         }
 
@@ -263,8 +268,8 @@ class UnbufferedTokenStream<T : Token?>(tokenSource: TokenSource, bufferSize: In
 
         val buf: StringBuilder = StringBuilder()
         for (i in a..b) {
-            val t: Token = tokens[i]
-            buf.append(t.text)
+            val t: Token? = tokens[i]
+            buf.append(t?.text)
         }
 
         return buf.toString()

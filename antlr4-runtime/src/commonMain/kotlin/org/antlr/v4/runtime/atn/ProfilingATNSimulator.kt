@@ -15,12 +15,14 @@ import org.antlr.v4.runtime.misc.BitSet
 /**
  * @since 4.3
  */
-class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
-    parser,
-    parser.interpreter.atn,
-    parser.interpreter.decisionToDFA,
-    parser.interpreter.sharedContextCache
-) {
+class ProfilingATNSimulator(
+    parser: Parser,
+) : ParserATNSimulator(
+        parser,
+        parser.interpreter.atn,
+        parser.interpreter.decisionToDFA,
+        parser.interpreter.sharedContextCache,
+    ) {
     protected val decisions: Array<DecisionInfo>
     protected var numDecisions: Int
 
@@ -47,7 +49,12 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
         numDecisions = atn.decisionToState.size
         decisions = Array(numDecisions) { DecisionInfo(it) }
     }
-    fun adaptivePredict(input: TokenStream?, decision: Int, outerContext: ParserRuleContext?): Int {
+
+    fun adaptivePredict(
+        input: TokenStream?,
+        decision: Int,
+        outerContext: ParserRuleContext?,
+    ): Int {
         try {
             this._sllStopIndex = -1
             this._llStopIndex = -1
@@ -85,7 +92,11 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
             this.currentDecision = -1
         }
     }
-    protected fun getExistingTargetState(previousD: DFAState, t: Int): DFAState? {
+
+    protected fun getExistingTargetState(
+        previousD: DFAState,
+        t: Int,
+    ): DFAState? {
         // this method is called after each time the input position advances
         // during SLL prediction
         _sllStopIndex = _input.index()
@@ -95,7 +106,7 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
             decisions[currentDecision].SLL_DFATransitions++ // count only if we transition over a DFA state
             if (existingTargetState === ERROR) {
                 decisions[currentDecision].errors.add(
-                    ErrorInfo(currentDecision, previousD.configs, _input, _startIndex, _sllStopIndex, false)
+                    ErrorInfo(currentDecision, previousD.configs, _input, _startIndex, _sllStopIndex, false),
                 )
             }
         }
@@ -103,12 +114,22 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
         currentState = existingTargetState
         return existingTargetState
     }
-    protected fun computeTargetState(dfa: DFA?, previousD: DFAState?, t: Int): DFAState? {
+
+    protected fun computeTargetState(
+        dfa: DFA?,
+        previousD: DFAState?,
+        t: Int,
+    ): DFAState? {
         val state: DFAState? = super.computeTargetState(dfa, previousD, t)
         currentState = state
         return state
     }
-    protected fun computeReachSet(closure: ATNConfigSet?, t: Int, fullCtx: Boolean): ATNConfigSet? {
+
+    protected fun computeReachSet(
+        closure: ATNConfigSet?,
+        t: Int,
+        fullCtx: Boolean,
+    ): ATNConfigSet? {
         if (fullCtx) {
             // this method is called after each time the input position advances
             // during full context prediction
@@ -122,7 +143,7 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
             } else { // no reach on current lookahead symbol. ERROR.
                 // TODO: does not handle delayed errors per getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule()
                 decisions[currentDecision].errors.add(
-                    ErrorInfo(currentDecision, closure, _input, _startIndex, _llStopIndex, true)
+                    ErrorInfo(currentDecision, closure, _input, _startIndex, _llStopIndex, true),
                 )
             }
         } else {
@@ -130,35 +151,37 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
             if (reachConfigs != null) {
             } else { // no reach on current lookahead symbol. ERROR.
                 decisions[currentDecision].errors.add(
-                    ErrorInfo(currentDecision, closure, _input, _startIndex, _sllStopIndex, false)
+                    ErrorInfo(currentDecision, closure, _input, _startIndex, _sllStopIndex, false),
                 )
             }
         }
         return reachConfigs
     }
+
     protected fun evalSemanticContext(
         pred: SemanticContext?,
         parserCallStack: ParserRuleContext?,
         alt: Int,
-        fullCtx: Boolean
+        fullCtx: Boolean,
     ): Boolean {
         val result: Boolean = super.evalSemanticContext(pred, parserCallStack, alt, fullCtx)
         if (pred !is SemanticContext.PrecedencePredicate) {
             val fullContext = _llStopIndex >= 0
             val stopIndex = if (fullContext) _llStopIndex else _sllStopIndex
             decisions[currentDecision].predicateEvals.add(
-                PredicateEvalInfo(currentDecision, _input, _startIndex, stopIndex, pred, result, alt, fullCtx)
+                PredicateEvalInfo(currentDecision, _input, _startIndex, stopIndex, pred, result, alt, fullCtx),
             )
         }
 
         return result
     }
+
     protected fun reportAttemptingFullContext(
         dfa: DFA?,
         conflictingAlts: BitSet?,
         configs: ATNConfigSet,
         startIndex: Int,
-        stopIndex: Int
+        stopIndex: Int,
     ) {
         if (conflictingAlts != null) {
             conflictingAltResolvedBySLL = conflictingAlts.nextSetBit(0)
@@ -168,23 +191,30 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
         decisions[currentDecision].LL_Fallback++
         super.reportAttemptingFullContext(dfa, conflictingAlts, configs, startIndex, stopIndex)
     }
+
     protected fun reportContextSensitivity(
         dfa: DFA?,
         prediction: Int,
         configs: ATNConfigSet?,
         startIndex: Int,
-        stopIndex: Int
+        stopIndex: Int,
     ) {
         if (prediction != conflictingAltResolvedBySLL) {
             decisions[currentDecision].contextSensitivities.add(
-                ContextSensitivityInfo(currentDecision, configs, _input, startIndex, stopIndex)
+                ContextSensitivityInfo(currentDecision, configs, _input, startIndex, stopIndex),
             )
         }
         super.reportContextSensitivity(dfa, prediction, configs, startIndex, stopIndex)
     }
+
     protected fun reportAmbiguity(
-        dfa: DFA?, D: DFAState?, startIndex: Int, stopIndex: Int, exact: Boolean,
-        ambigAlts: BitSet?, configs: ATNConfigSet
+        dfa: DFA?,
+        D: DFAState?,
+        startIndex: Int,
+        stopIndex: Int,
+        exact: Boolean,
+        ambigAlts: BitSet?,
+        configs: ATNConfigSet,
     ) {
         val prediction: Int
         if (ambigAlts != null) {
@@ -199,14 +229,19 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
             // to different minimum alternatives we have also identified a
             // context sensitivity.
             decisions[currentDecision].contextSensitivities.add(
-                ContextSensitivityInfo(currentDecision, configs, _input, startIndex, stopIndex)
+                ContextSensitivityInfo(currentDecision, configs, _input, startIndex, stopIndex),
             )
         }
         decisions[currentDecision].ambiguities.add(
             AmbiguityInfo(
-                currentDecision, configs, ambigAlts,
-                _input, startIndex, stopIndex, configs.fullCtx
-            )
+                currentDecision,
+                configs,
+                ambigAlts,
+                _input,
+                startIndex,
+                stopIndex,
+                configs.fullCtx,
+            ),
         )
         super.reportAmbiguity(dfa, D, startIndex, stopIndex, exact, ambigAlts, configs)
     }
@@ -215,7 +250,5 @@ class ProfilingATNSimulator(parser: Parser) : ParserATNSimulator(
         // ---------------------------------------------------------------------
         get() = decisions
 
-    fun getCurrentState(): DFAState? {
-        return currentState
-    }
+    fun getCurrentState(): DFAState? = currentState
 }

@@ -88,7 +88,10 @@ open class IntList {
         return false
     }
 
-    fun set(index: Int, value: Int): Int {
+    fun set(
+        index: Int,
+        value: Int,
+    ): Int {
         if (index < 0 || index >= _size) {
             throw IndexOutOfBoundsException()
         }
@@ -106,7 +109,10 @@ open class IntList {
         return value
     }
 
-    fun removeRange(fromIndex: Int, toIndex: Int) {
+    fun removeRange(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
         if (fromIndex < 0 || toIndex < 0 || fromIndex > _size || toIndex > _size) {
             throw IndexOutOfBoundsException()
         }
@@ -120,9 +126,7 @@ open class IntList {
     val isEmpty: Boolean
         get() = _size == 0
 
-    override fun size(): Int {
-        return _size
-    }
+    override fun size(): Int = _size
 
     fun trimToSize() {
         if (_data.size == _size) {
@@ -146,7 +150,7 @@ open class IntList {
     }
 
     fun sort() {
-        .sort(_data, 0, _size)
+        _data.sort(0, _size)
     }
 
     /**
@@ -213,15 +217,15 @@ open class IntList {
     /**
      * Returns a string representation of this list.
      */
-    override fun toString(): String {
-        return toArray().contentToString()
-    }
+    override fun toString(): String = toArray().contentToString()
 
-    fun binarySearch(key: Int): Int {
-        return _data.binarySearch(key, 0, _size)
-    }
+    fun binarySearch(key: Int): Int = _data.binarySearch(key, 0, _size)
 
-    fun binarySearch(fromIndex: Int, toIndex: Int, key: Int): Int {
+    fun binarySearch(
+        fromIndex: Int,
+        toIndex: Int,
+        key: Int,
+    ): Int {
         if (fromIndex < 0 || toIndex < 0 || fromIndex > _size || toIndex > _size) {
             throw IndexOutOfBoundsException()
         }

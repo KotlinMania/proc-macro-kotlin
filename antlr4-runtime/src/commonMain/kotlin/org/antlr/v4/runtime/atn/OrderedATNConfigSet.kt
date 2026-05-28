@@ -13,7 +13,8 @@ import org.antlr.v4.runtime.misc.AnyEqualityComparator
  */
 class OrderedATNConfigSet : ATNConfigSet() {
     init {
-        this.configLookup = org.antlr.v4.runtime.atn.OrderedATNConfigSet.LexerConfigHashSet()
+        this.configLookup =
+            LexerConfigHashSet()
     }
 
     class LexerConfigHashSet : AbstractConfigHashSet(AnyEqualityComparator.INSTANCE)

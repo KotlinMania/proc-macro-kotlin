@@ -16,15 +16,22 @@ package org.antlr.v4.runtime.atn
  */
 object CodePointTransitions {
     /** Return new [AtomTransition]  */
-    fun createWithCodePoint(target: ATNState?, codePoint: Int): Transition {
-        return org.antlr.v4.runtime.atn.CodePointTransitions.createWithCodePointRange(target, codePoint, codePoint)
-    }
+    fun createWithCodePoint(
+        target: ATNState?,
+        codePoint: Int,
+    ): Transition =
+        org.antlr.v4.runtime.atn.CodePointTransitions
+            .createWithCodePointRange(target, codePoint, codePoint)
 
     /** Return new [AtomTransition] if range represents one atom else [SetTransition].  */
-    fun createWithCodePointRange(target: ATNState?, codePointFrom: Int, codePointTo: Int): Transition {
-        return if (codePointFrom == codePointTo)
+    fun createWithCodePointRange(
+        target: ATNState?,
+        codePointFrom: Int,
+        codePointTo: Int,
+    ): Transition =
+        if (codePointFrom == codePointTo) {
             AtomTransition(target, codePointFrom)
-        else
+        } else {
             RangeTransition(target, codePointFrom, codePointTo)
-    }
+        }
 }

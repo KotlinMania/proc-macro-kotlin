@@ -74,9 +74,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
     /**
      * {@inheritDoc}
      */
-    fun inErrorRecoveryMode(recognizer: Parser?): Boolean {
-        return errorRecoveryMode
-    }
+    fun inErrorRecoveryMode(recognizer: Parser?): Boolean = errorRecoveryMode
 
     /**
      * This method is called to leave error recovery mode after recovering from
@@ -122,13 +120,13 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      */
     fun reportError(
         recognizer: Parser,
-        e: RecognitionException
+        e: RecognitionException,
     ) {
         // if we've already reported an error and have not matched a token
         // yet successfully, don't report any errors.
         if (inErrorRecoveryMode(recognizer)) {
-//			println("...");
-            return  // don't report spurious errors
+// 			println("...");
+            return // don't report spurious errors
         }
         beginErrorCondition(recognizer)
         if (e is NoViableAltException) {
@@ -151,22 +149,26 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      * until we find one in the resynchronization set--loosely the set of tokens
      * that can follow the current rule.
      */
-    fun recover(recognizer: Parser, e: RecognitionException?) {
-//		println("recover in "+recognizer.getRuleInvocationStack()+
-//						   " index="+recognizer.inputStream!!.index()+
-//						   ", lastErrorIndex="+
-//						   lastErrorIndex+
-//						   ", states="+lastErrorStates);
-        if (lastErrorIndex == recognizer.inputStream!!.index() && lastErrorStates != null &&
+    fun recover(
+        recognizer: Parser,
+        e: RecognitionException?,
+    ) {
+// 		println("recover in "+recognizer.getRuleInvocationStack()+
+// 						   " index="+recognizer.inputStream!!.index()+
+// 						   ", lastErrorIndex="+
+// 						   lastErrorIndex+
+// 						   ", states="+lastErrorStates);
+        if (lastErrorIndex == recognizer.inputStream!!.index() &&
+            lastErrorStates != null &&
             lastErrorStates.contains(recognizer.state)
         ) {
             // uh oh, another error at same token index and previously-visited
             // state in ATN; must be a case where LT(1) is in the recovery
             // token set so nothing got consumed. Consume a single token
             // at least to prevent an infinite loop; this is a failsafe.
-//			println("seen error condition before index="+
-//							   lastErrorIndex+", states="+lastErrorStates);
-//			println("FAILSAFE consumes "+recognizer.tokenNames[recognizer.inputStream!!.LA(1)]);
+// 			println("seen error condition before index="+
+// 							   lastErrorIndex+", states="+lastErrorStates);
+// 			println("FAILSAFE consumes "+recognizer.tokenNames[recognizer.inputStream!!.LA(1)]);
             recognizer.consume()
         }
         lastErrorIndex = recognizer.inputStream!!.index()
@@ -189,7 +191,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      * <pre>
      * a : sync ( stuff sync )* ;
      * sync : {consume to what can follow sync} ;
-    </pre> *
+     </pre> *
      *
      * At the start of a sub rule upon error, [.sync] performs single
      * token deletion, if possible. If it can't do that, it bails on the current
@@ -216,7 +218,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      *
      * <pre>
      * classDef : 'class' ID '{' member* '}'
-    </pre> *
+     </pre> *
      *
      * input with an extra token between members would force the parser to
      * consume until it found the next class definition rather than the next
@@ -230,8 +232,9 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      */
     @kotlin.Throws(RecognitionException::class)
     fun sync(recognizer: Parser) {
-        val s: ATNState = recognizer.interpreter!!.atn.states.get(recognizer.state)
-        //		println("sync @ "+s.stateNumber+"="+s::class.getSimpleName());
+        val s: ATNState =
+            recognizer.interpreter!!.atn.states[recognizer.state]
+        // 		println("sync @ "+s.stateNumber+"="+s::class.getSimpleName());
         // If already recovering, don't try to sync
         if (inErrorRecoveryMode(recognizer)) {
             return
@@ -270,7 +273,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
             }
 
             ATNState.PLUS_LOOP_BACK, ATNState.STAR_LOOP_BACK -> {
-                //			println("at loop back: "+s::class.getSimpleName());
+                // 			println("at loop back: "+s::class.getSimpleName());
                 reportUnwantedToken(recognizer)
                 val expecting: IntervalSet = recognizer.expectedTokens
                 val whatFollowsLoopIterationOrRule: IntervalSet =
@@ -294,13 +297,16 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      */
     protected fun reportNoViableAlternative(
         recognizer: Parser,
-        e: NoViableAltException
+        e: NoViableAltException,
     ) {
         val tokens: TokenStream? = recognizer.inputStream
         val input: String
         if (tokens != null) {
-            if (e.startToken.type === Token.EOF) input = "<EOF>"
-            else input = tokens.getText(e.startToken, e.getOffendingToken())
+            if (e.startToken.type === Token.EOF) {
+                input = "<EOF>"
+            } else {
+                input = tokens.getText(e.startToken, e.getOffendingToken())
+            }
         } else {
             input = "<unknown input>"
         }
@@ -320,9 +326,10 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      */
     protected fun reportInputMismatch(
         recognizer: Parser,
-        e: InputMismatchException
+        e: InputMismatchException,
     ) {
-        val msg = "mismatched input " + getTokenErrorDisplay(e.getOffendingToken()) +
+        val msg =
+            "mismatched input " + getTokenErrorDisplay(e.getOffendingToken()) +
                 " expecting " + e.expectedTokens.toString(recognizer.vocabulary)
         recognizer.notifyErrorListeners(e.getOffendingToken(), msg, e)
     }
@@ -339,7 +346,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      */
     protected fun reportFailedPredicate(
         recognizer: Parser,
-        e: FailedPredicateException
+        e: FailedPredicateException,
     ) {
         val ruleName: String? = recognizer.ruleNames[recognizer._ctx.ruleIndex]
         val msg = "rule " + ruleName + " " + e.message
@@ -376,7 +383,8 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
         val t: Token? = recognizer.currentToken
         val tokenName = getTokenErrorDisplay(t)
         val expecting: IntervalSet = getExpectedTokens(recognizer)
-        val msg = "extraneous input " + tokenName + " expecting " +
+        val msg =
+            "extraneous input " + tokenName + " expecting " +
                 expecting.toString(recognizer.vocabulary)
         recognizer.notifyErrorListeners(t, msg, null)
     }
@@ -409,7 +417,8 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
 
         val t: Token? = recognizer.currentToken
         val expecting: IntervalSet = getExpectedTokens(recognizer)
-        val msg = "missing " + expecting.toString(recognizer.vocabulary) +
+        val msg =
+            "missing " + expecting.toString(recognizer.vocabulary) +
                 " at " + getTokenErrorDisplay(t)
 
         recognizer.notifyErrorListeners(t, msg, null)
@@ -459,7 +468,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      *
      * <pre>
      * stat  expr  atom
-    </pre> *
+     </pre> *
      *
      * and it will be trying to match the `')'` at this point in the
      * derivation:
@@ -467,7 +476,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      * <pre>
      * =&gt; ID '=' '(' INT ')' ('+' atom)* ';'
      * ^
-    </pre> *
+     </pre> *
      *
      * The attempt to match `')'` will fail when it sees `';'` and
      * call [.recoverInline]. To recover, it sees that `LA(1)==';'`
@@ -524,11 +533,14 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
         // if current token is consistent with what could come after current
         // ATN state, then we know we're missing a token; error recovery
         // is free to conjure up and insert the missing token
-        val currentState: ATNState = recognizer.interpreter!!.atn.states.get(recognizer.state)
+        val currentState: ATNState =
+            recognizer.interpreter!!
+                .atn.states
+                .get(recognizer.state)
         val next: ATNState? = currentState.transition(0).target
         val atn: ATN = recognizer.interpreter!!.atn
         val expectingAtLL2: IntervalSet = atn.nextTokens(next, recognizer._ctx)
-        //		println("LT(2) set="+expectingAtLL2.toString(recognizer.tokenNames));
+        // 		println("LT(2) set="+expectingAtLL2.toString(recognizer.tokenNames));
         if (expectingAtLL2.contains(currentSymbolType)) {
             reportMissingToken(recognizer)
             return true
@@ -566,7 +578,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
 							   ((TokenStream)recognizer.inputStream).LT(1)+
 							   " since "+((TokenStream)recognizer.inputStream).LT(2)+
 							   " is what we want");
-			*/
+             */
             recognizer.consume() // simply delete extra token
             // we want to return the token we're actually matching
             val matchedSymbol: Token? = recognizer.currentToken
@@ -603,8 +615,11 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
             expectedTokenType = expecting.getMinElement() // get any element
         }
         val tokenText: String?
-        if (expectedTokenType == Token.EOF) tokenText = "<missing EOF>"
-        else tokenText = "<missing " + recognizer.vocabulary.getDisplayName(expectedTokenType) + ">"
+        if (expectedTokenType == Token.EOF) {
+            tokenText = "<missing EOF>"
+        } else {
+            tokenText = "<missing " + recognizer.vocabulary.getDisplayName(expectedTokenType) + ">"
+        }
         var current: Token? = currentSymbol
         val lookback: Token? = recognizer.inputStream!!.LT(-1)
         if (current.type === Token.EOF && lookback != null) {
@@ -618,14 +633,11 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
             -1,
             -1,
             current.line,
-            current.charPositionInLine
+            current.charPositionInLine,
         )
     }
 
-
-    protected fun getExpectedTokens(recognizer: Parser): IntervalSet {
-        return recognizer.expectedTokens
-    }
+    protected fun getExpectedTokens(recognizer: Parser): IntervalSet = recognizer.expectedTokens
 
     /** How should a token be displayed in an error message? The default
      * is to display just the text, but during development you might
@@ -648,17 +660,12 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
         return escapeWSAndQuote(s)
     }
 
-    protected fun getSymbolText(symbol: Token): String {
-        return symbol.text
-    }
+    protected fun getSymbolText(symbol: Token): String = symbol.text
 
-    protected fun getSymbolType(symbol: Token): Int {
-        return symbol.type
-    }
-
+    protected fun getSymbolType(symbol: Token): Int = symbol.type
 
     protected fun escapeWSAndQuote(s: String): String? {
-//		if ( s==null ) return s;
+// 		if ( s==null ) return s;
         var s = s
         s = s.replace("\n", "\\n")
         s = s.replace("\r", "\\r")
@@ -667,97 +674,97 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
     }
 
     /*  Compute the error recovery set for the current rule.  During
-	 *  rule invocation, the parser pushes the set of tokens that can
-	 *  follow that rule reference on the stack; this amounts to
-	 *  computing FIRST of what follows the rule reference in the
-	 *  enclosing rule. See LinearApproximator.FIRST().
-	 *  This local follow set only includes tokens
-	 *  from within the rule; i.e., the FIRST computation done by
-	 *  ANTLR stops at the end of a rule.
-	 *
-	 *  EXAMPLE
-	 *
-	 *  When you find a "no viable alt exception", the input is not
-	 *  consistent with any of the alternatives for rule r.  The best
-	 *  thing to do is to consume tokens until you see something that
-	 *  can legally follow a call to r *or* any rule that called r.
-	 *  You don't want the exact set of viable next tokens because the
-	 *  input might just be missing a token--you might consume the
-	 *  rest of the input looking for one of the missing tokens.
-	 *
-	 *  Consider grammar:
-	 *
-	 *  a : '[' b ']'
-	 *    | '(' b ')'
-	 *    ;
-	 *  b : c '^' INT ;
-	 *  c : ID
-	 *    | INT
-	 *    ;
-	 *
-	 *  At each rule invocation, the set of tokens that could follow
-	 *  that rule is pushed on a stack.  Here are the various
-	 *  context-sensitive follow sets:
-	 *
-	 *  FOLLOW(b1_in_a) = FIRST(']') = ']'
-	 *  FOLLOW(b2_in_a) = FIRST(')') = ')'
-	 *  FOLLOW(c_in_b) = FIRST('^') = '^'
-	 *
-	 *  Upon erroneous input "[]", the call chain is
-	 *
-	 *  a -> b -> c
-	 *
-	 *  and, hence, the follow context stack is:
-	 *
-	 *  depth     follow set       start of rule execution
-	 *    0         <EOF>                    a (from main())
-	 *    1          ']'                     b
-	 *    2          '^'                     c
-	 *
-	 *  Notice that ')' is not included, because b would have to have
-	 *  been called from a different context in rule a for ')' to be
-	 *  included.
-	 *
-	 *  For error recovery, we cannot consider FOLLOW(c)
-	 *  (context-sensitive or otherwise).  We need the combined set of
-	 *  all context-sensitive FOLLOW sets--the set of all tokens that
-	 *  could follow any reference in the call chain.  We need to
-	 *  resync to one of those tokens.  Note that FOLLOW(c)='^' and if
-	 *  we resync'd to that token, we'd consume until EOF.  We need to
-	 *  sync to context-sensitive FOLLOWs for a, b, and c: {']','^'}.
-	 *  In this case, for input "[]", LA(1) is ']' and in the set, so we would
-	 *  not consume anything. After printing an error, rule c would
-	 *  return normally.  Rule b would not find the required '^' though.
-	 *  At this point, it gets a mismatched token error and throws an
-	 *  exception (since LA(1) is not in the viable following token
-	 *  set).  The rule exception handler tries to recover, but finds
-	 *  the same recovery set and doesn't consume anything.  Rule b
-	 *  exits normally returning to rule a.  Now it finds the ']' (and
-	 *  with the successful match exits errorRecovery mode).
-	 *
-	 *  So, you can see that the parser walks up the call chain looking
-	 *  for the token that was a member of the recovery set.
-	 *
-	 *  Errors are not generated in errorRecovery mode.
-	 *
-	 *  ANTLR's error recovery mechanism is based upon original ideas:
-	 *
-	 *  "Algorithms + Data Structures = Programs" by Niklaus Wirth
-	 *
-	 *  and
-	 *
-	 *  "A note on error recovery in recursive descent parsers":
-	 *  http://portal.acm.org/citation.cfm?id=947902.947905
-	 *
-	 *  Later, Josef Grosch had some good ideas:
-	 *
-	 *  "Efficient and Comfortable Error Recovery in Recursive Descent
-	 *  Parsers":
-	 *  ftp://www.cocolab.com/products/cocktail/doca4.ps/ell.ps.zip
-	 *
-	 *  Like Grosch I implement context-sensitive FOLLOW sets that are combined
-	 *  at run-time upon error to avoid overhead during parsing.
-	 */
+     *  rule invocation, the parser pushes the set of tokens that can
+     *  follow that rule reference on the stack; this amounts to
+     *  computing FIRST of what follows the rule reference in the
+     *  enclosing rule. See LinearApproximator.FIRST().
+     *  This local follow set only includes tokens
+     *  from within the rule; i.e., the FIRST computation done by
+     *  ANTLR stops at the end of a rule.
+     *
+     *  EXAMPLE
+     *
+     *  When you find a "no viable alt exception", the input is not
+     *  consistent with any of the alternatives for rule r.  The best
+     *  thing to do is to consume tokens until you see something that
+     *  can legally follow a call to r *or* any rule that called r.
+     *  You don't want the exact set of viable next tokens because the
+     *  input might just be missing a token--you might consume the
+     *  rest of the input looking for one of the missing tokens.
+     *
+     *  Consider grammar:
+     *
+     *  a : '[' b ']'
+     *    | '(' b ')'
+     *    ;
+     *  b : c '^' INT ;
+     *  c : ID
+     *    | INT
+     *    ;
+     *
+     *  At each rule invocation, the set of tokens that could follow
+     *  that rule is pushed on a stack.  Here are the various
+     *  context-sensitive follow sets:
+     *
+     *  FOLLOW(b1_in_a) = FIRST(']') = ']'
+     *  FOLLOW(b2_in_a) = FIRST(')') = ')'
+     *  FOLLOW(c_in_b) = FIRST('^') = '^'
+     *
+     *  Upon erroneous input "[]", the call chain is
+     *
+     *  a -> b -> c
+     *
+     *  and, hence, the follow context stack is:
+     *
+     *  depth     follow set       start of rule execution
+     *    0         <EOF>                    a (from main())
+     *    1          ']'                     b
+     *    2          '^'                     c
+     *
+     *  Notice that ')' is not included, because b would have to have
+     *  been called from a different context in rule a for ')' to be
+     *  included.
+     *
+     *  For error recovery, we cannot consider FOLLOW(c)
+     *  (context-sensitive or otherwise).  We need the combined set of
+     *  all context-sensitive FOLLOW sets--the set of all tokens that
+     *  could follow any reference in the call chain.  We need to
+     *  resync to one of those tokens.  Note that FOLLOW(c)='^' and if
+     *  we resync'd to that token, we'd consume until EOF.  We need to
+     *  sync to context-sensitive FOLLOWs for a, b, and c: {']','^'}.
+     *  In this case, for input "[]", LA(1) is ']' and in the set, so we would
+     *  not consume anything. After printing an error, rule c would
+     *  return normally.  Rule b would not find the required '^' though.
+     *  At this point, it gets a mismatched token error and throws an
+     *  exception (since LA(1) is not in the viable following token
+     *  set).  The rule exception handler tries to recover, but finds
+     *  the same recovery set and doesn't consume anything.  Rule b
+     *  exits normally returning to rule a.  Now it finds the ']' (and
+     *  with the successful match exits errorRecovery mode).
+     *
+     *  So, you can see that the parser walks up the call chain looking
+     *  for the token that was a member of the recovery set.
+     *
+     *  Errors are not generated in errorRecovery mode.
+     *
+     *  ANTLR's error recovery mechanism is based upon original ideas:
+     *
+     *  "Algorithms + Data Structures = Programs" by Niklaus Wirth
+     *
+     *  and
+     *
+     *  "A note on error recovery in recursive descent parsers":
+     *  http://portal.acm.org/citation.cfm?id=947902.947905
+     *
+     *  Later, Josef Grosch had some good ideas:
+     *
+     *  "Efficient and Comfortable Error Recovery in Recursive Descent
+     *  Parsers":
+     *  ftp://www.cocolab.com/products/cocktail/doca4.ps/ell.ps.zip
+     *
+     *  Like Grosch I implement context-sensitive FOLLOW sets that are combined
+     *  at run-time upon error to avoid overhead during parsing.
+     */
     protected fun getErrorRecoverySet(recognizer: Parser): IntervalSet {
         val atn: ATN = recognizer.interpreter!!.atn
         var ctx: RuleContext? = recognizer._ctx
@@ -771,17 +778,20 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
             ctx = ctx.parent
         }
         recoverSet.remove(Token.EPSILON)
-        //		println("recover set "+recoverSet.toString(recognizer.tokenNames));
+        // 		println("recover set "+recoverSet.toString(recognizer.tokenNames));
         return recoverSet
     }
 
     /** Consume tokens until one matches the given token set.  */
-    protected fun consumeUntil(recognizer: Parser, set: IntervalSet) {
-//		println("consumeUntil("+set.toString(recognizer.tokenNames)+")");
+    protected fun consumeUntil(
+        recognizer: Parser,
+        set: IntervalSet,
+    ) {
+// 		println("consumeUntil("+set.toString(recognizer.tokenNames)+")");
         var ttype: Int = recognizer.inputStream!!.LA(1)
         while (ttype != Token.EOF && !set.contains(ttype)) {
-            //println("consume during recover LA(1)="+getTokenNames()[input.LA(1)]);
-//			recognizer.inputStream!!.consume();
+            // println("consume during recover LA(1)="+getTokenNames()[input.LA(1)]);
+// 			recognizer.inputStream!!.consume();
             recognizer.consume()
             ttype = recognizer.inputStream!!.LA(1)
         }

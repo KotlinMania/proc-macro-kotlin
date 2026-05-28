@@ -7,5 +7,9 @@ package org.antlr.v4.runtime.misc
 
 interface EqualityComparator<T> {
     fun hashCode(obj: T): Int
-    fun equals(a: T?, b: T?): Boolean
+
+    fun equals(
+        a: T?,
+        b: T?,
+    ): Boolean
 }

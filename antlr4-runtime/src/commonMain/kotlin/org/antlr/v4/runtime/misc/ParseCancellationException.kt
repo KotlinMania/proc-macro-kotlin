@@ -5,7 +5,6 @@
  */
 package org.antlr.v4.runtime.misc
 
-
 /**
  * This exception is thrown to cancel a parsing operation. This exception does
  * not extend [RecognitionException], allowing it to bypass the standard

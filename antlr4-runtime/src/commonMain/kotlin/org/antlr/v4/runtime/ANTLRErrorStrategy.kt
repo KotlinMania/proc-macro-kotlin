@@ -67,7 +67,10 @@ interface ANTLRErrorStrategy {
      * the recognition exception
      */
     @kotlin.Throws(RecognitionException::class)
-    fun recover(recognizer: Parser?, e: RecognitionException?)
+    fun recover(
+        recognizer: Parser?,
+        e: RecognitionException?,
+    )
 
     /**
      * This method provides the error handler with an opportunity to handle
@@ -123,5 +126,8 @@ interface ANTLRErrorStrategy {
      * @param recognizer the parser instance
      * @param e the recognition exception to report
      */
-    fun reportError(recognizer: Parser?, e: RecognitionException?)
+    fun reportError(
+        recognizer: Parser?,
+        e: RecognitionException?,
+    )
 }

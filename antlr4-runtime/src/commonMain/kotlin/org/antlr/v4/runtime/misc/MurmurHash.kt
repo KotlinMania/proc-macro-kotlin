@@ -11,7 +11,10 @@ object MurmurHash {
     @kotlin.jvm.JvmOverloads
     fun initialize(seed: Int = DEFAULT_SEED): Int = seed
 
-    fun update(hash: Int, value: Int): Int {
+    fun update(
+        hash: Int,
+        value: Int,
+    ): Int {
         val c1 = -0x3361d2af
         val c2 = 0x1B873593
         val r1 = 15
@@ -30,9 +33,15 @@ object MurmurHash {
         return h
     }
 
-    fun update(hash: Int, value: Any?): Int = update(hash, value?.hashCode() ?: 0)
+    fun update(
+        hash: Int,
+        value: Any?,
+    ): Int = update(hash, value?.hashCode() ?: 0)
 
-    fun finish(hash: Int, numberOfWords: Int): Int {
+    fun finish(
+        hash: Int,
+        numberOfWords: Int,
+    ): Int {
         var h = hash xor (numberOfWords * 4)
         h = h xor (h ushr 16)
         h = h * -0x7a143595
@@ -42,7 +51,10 @@ object MurmurHash {
         return h
     }
 
-    fun <T> hashCode(data: Array<T>, seed: Int): Int {
+    fun <T> hashCode(
+        data: Array<T>,
+        seed: Int,
+    ): Int {
         var hash = initialize(seed)
         for (value in data) {
             hash = update(hash, value)

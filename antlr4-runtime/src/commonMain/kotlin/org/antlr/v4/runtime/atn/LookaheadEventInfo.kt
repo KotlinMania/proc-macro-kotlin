@@ -28,7 +28,8 @@ class LookaheadEventInfo
  * @param fullCtx `true` if the current lookahead is part of an LL
  * prediction; otherwise, `false` if the current lookahead is part of
  * an SLL prediction
- */(
+ */
+(
     decision: Int,
     configs: ATNConfigSet?,
     /** The alternative chosen by adaptivePredict(), not necessarily
@@ -37,6 +38,8 @@ class LookaheadEventInfo
      * and a (..)* loop.
      */
     var predictedAlt: Int,
-    input: TokenStream?, startIndex: Int, stopIndex: Int,
-    fullCtx: Boolean
+    input: TokenStream?,
+    startIndex: Int,
+    stopIndex: Int,
+    fullCtx: Boolean,
 ) : DecisionEventInfo(decision, configs, input, startIndex, stopIndex, fullCtx)

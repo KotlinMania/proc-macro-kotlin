@@ -39,7 +39,9 @@ class CommonTokenStream
  *
  * @param tokenSource The token source.
  */
-    (tokenSource: TokenSource?) : BufferedTokenStream(tokenSource) {
+(
+    tokenSource: TokenSource?,
+) : BufferedTokenStream(tokenSource) {
     /**
      * Specifies the channel to use for filtering tokens.
      *
@@ -63,9 +65,9 @@ class CommonTokenStream
     constructor(tokenSource: TokenSource?, channel: Int) : this(tokenSource) {
         this.channel = channel
     }
-    protected fun adjustSeekIndex(i: Int): Int {
-        return nextTokenOnChannel(i, channel)
-    }
+
+    protected fun adjustSeekIndex(i: Int): Int = nextTokenOnChannel(i, channel)
+
     protected fun LB(k: Int): Token? {
         if (k == 0 || (p - k) < 0) return null
 
@@ -80,8 +82,9 @@ class CommonTokenStream
         if (i < 0) return null
         return tokens.get(i)
     }
+
     fun LT(k: Int): Token? {
-        //println("enter LT("+k+")");
+        // println("enter LT("+k+")");
         lazyInit()
         if (k == 0) return null
         if (k < 0) return LB(-k)
@@ -95,7 +98,7 @@ class CommonTokenStream
             }
             n++
         }
-        //		if ( i>range ) range = i;
+        // 		if ( i>range ) range = i;
         return tokens.get(i)
     }
 
