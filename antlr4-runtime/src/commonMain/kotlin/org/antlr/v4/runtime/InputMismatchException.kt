@@ -9,7 +9,7 @@ package org.antlr.v4.runtime
  * when the current input does not match the expected token.
  */
 class InputMismatchException : RecognitionException {
-    constructor(recognizer: Parser) : super(recognizer, recognizer.inputStream, recognizer._ctx) {
+    constructor(recognizer: Parser?) : super(recognizer, recognizer.inputStream, recognizer._ctx) {
         this.setOffendingToken(recognizer.currentToken)
     }
 

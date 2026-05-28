@@ -32,7 +32,7 @@ package org.antlr.v4.runtime
  * such a rule will not be available as part of the token stream, regardless of
  * channel.we
  */
-abstract class CommonTokenStream
+class CommonTokenStream
 /**
  * Constructs a new [CommonTokenStream] using the specified token
  * source and the default token channel ([Token.DEFAULT_CHANNEL]).

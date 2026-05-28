@@ -37,17 +37,14 @@ import org.antlr.v4.runtime.misc.ParseCancellationException
  *
  * @see Parser.setErrorHandler
  */
-abstract class BailErrorStrategy : DefaultErrorStrategy() {
+class BailErrorStrategy : DefaultErrorStrategy() {
     /** Instead of recovering from exception `e`, re-throw it wrapped
      * in a [ParseCancellationException] so it is not caught by the
      * rule function catches.  Use [Exception.getCause] to get the
      * original [RecognitionException].
      */
-    override fun recover(
-        recognizer: Parser,
-        e: RecognitionException?,
-    ) {
-        var context: ParserRuleContext? = recognizer._ctx
+    override fun recover(recognizer: Parser?, e: RecognitionException?) {
+        var context: ParserRuleContext? = recognizer?._ctx
         while (context != null) {
             context.exception = e
             context = context.parent
@@ -60,9 +57,9 @@ abstract class BailErrorStrategy : DefaultErrorStrategy() {
      * successfully recovers, it won't throw an exception.
      */
     @kotlin.Throws(RecognitionException::class)
-    override fun recoverInline(recognizer: Parser): Token? {
-        val e: InputMismatchException = InputMismatchException(recognizer)
-        var context: ParserRuleContext? = recognizer._ctx
+    override fun recoverInline(recognizer: Parser?): Token? {
+        val e = InputMismatchException(recognizer)
+        var context: ParserRuleContext? = recognizer?._ctx
         while (context != null) {
             context.exception = e
             context = context.parent
@@ -72,6 +69,10 @@ abstract class BailErrorStrategy : DefaultErrorStrategy() {
     }
 
     /** Make sure we don't attempt to recover from problems in subrules.  */
-    override fun sync(recognizer: Parser) {
+    override fun sync(recognizer: Parser?) {
+    }
+
+    override fun reportError(recognizer: Parser?, e: RecognitionException?) {
+        throw ParseCancellationException(e)
     }
 }

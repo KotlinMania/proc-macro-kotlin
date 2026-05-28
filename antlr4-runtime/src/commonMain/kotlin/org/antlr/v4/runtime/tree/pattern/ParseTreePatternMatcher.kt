@@ -16,21 +16,15 @@ import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.RuleNode
 import org.antlr.v4.runtime.tree.TerminalNode
 
-class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
+open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
     class CannotInvokeStartRule(e: Throwable?) : RuntimeException(e)
     class StartRuleDoesNotConsumeFullPattern : RuntimeException()
 
-    private val lexer: Lexer
-    private val parser: Parser
+    private val parser: Parser = parser
 
     protected var start: String = "<"
     protected var stop: String = ">"
     protected var escape: String = "\\"
-
-    init {
-        this.lexer = lexer
-        this.parser = parser
-    }
 
     fun setDelimiters(start: String, stop: String, escapeLeft: String) {
         require(start.isNotEmpty()) { "start cannot be null or empty" }
@@ -75,7 +69,7 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
             tokens
         )
 
-        var tree: ParseTree? = null
+        var tree: ParseTree?
         try {
             parserInterp.errorHandler = BailErrorStrategy()
             tree = parserInterp.parse(patternRuleIndex)
@@ -104,65 +98,59 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
         patternTree: ParseTree,
         labels: MultiMap<String, ParseTree>
     ): ParseTree? {
-        requireNotNull(tree) { "tree cannot be null" }
-        requireNotNull(patternTree) { "patternTree cannot be null" }
 
         if (tree is TerminalNode && patternTree is TerminalNode) {
-            val t1 = tree
-            val t2 = patternTree
             var mismatchedNode: ParseTree? = null
 
-            if (t1.symbol?.type == t2.symbol?.type) {
-                val t2Symbol = t2.symbol
+            if (tree.symbol?.type == patternTree.symbol?.type) {
+                val t2Symbol = patternTree.symbol
                 if (t2Symbol is TokenTagToken) {
                     labels.map(t2Symbol.tokenName ?: "", tree)
                     if (t2Symbol.label != null) {
                         labels.map(t2Symbol.label, tree)
                     }
-                } else if (t1.text != t2.text) {
+                } else if (tree.text != patternTree.text) {
                     if (mismatchedNode == null) {
-                        mismatchedNode = t1
+                        mismatchedNode = tree
                     }
                 }
             } else {
                 if (mismatchedNode == null) {
-                    mismatchedNode = t1
+                    mismatchedNode = tree
                 }
             }
             return mismatchedNode
         }
 
         if (tree is ParserRuleContext && patternTree is ParserRuleContext) {
-            val r1 = tree
-            val r2 = patternTree
             var mismatchedNode: ParseTree? = null
 
-            val ruleTagToken = getRuleTagToken(r2)
+            val ruleTagToken = getRuleTagToken(patternTree)
             if (ruleTagToken != null) {
-                if (r1.ruleContext.ruleIndex == r2.ruleContext.ruleIndex) {
+                if (tree.ruleContext.ruleIndex == patternTree.ruleContext.ruleIndex) {
                     labels.map(ruleTagToken.ruleName, tree)
                     if (ruleTagToken.label != null) {
                         labels.map(ruleTagToken.label, tree)
                     }
                 } else {
                     if (mismatchedNode == null) {
-                        mismatchedNode = r1
+                        mismatchedNode = tree
                     }
                 }
                 return mismatchedNode
             }
 
-            if (r1.childCount != r2.childCount) {
+            if (tree.childCount != patternTree.childCount) {
                 if (mismatchedNode == null) {
-                    mismatchedNode = r1
+                    mismatchedNode = tree
                 }
                 return mismatchedNode
             }
 
-            val n = r1.childCount
+            val n = tree.childCount
             for (i in 0..<n) {
-                val child1 = r1.getChild(i) ?: continue
-                val child2 = r2.getChild(i) ?: continue
+                val child1 = tree.getChild(i) ?: continue
+                val child2 = patternTree.getChild(i) ?: continue
                 val childMatch = matchImpl(child1, child2, labels)
                 if (childMatch != null) {
                     return childMatch
@@ -176,9 +164,8 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
 
     protected fun getRuleTagToken(t: ParseTree?): RuleTagToken? {
         if (t is RuleNode) {
-            val r = t
-            if (r.childCount == 1 && r.getChild(0) is TerminalNode) {
-                val c = r.getChild(0) as TerminalNode
+            if (t.childCount == 1 && t.getChild(0) is TerminalNode) {
+                val c = t.getChild(0) as TerminalNode
                 val cSymbol = c.symbol
                 if (cSymbol is RuleTagToken) {
                     return cSymbol
@@ -194,19 +181,18 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
 
         for (chunk in chunks) {
             if (chunk is TagChunk) {
-                val tagChunk = chunk
-                if (tagChunk.getTag()[0].isUpperCase()) {
-                    val ttype = parser.getTokenType(tagChunk.getTag())
-                    require(ttype !== Token.INVALID_TYPE) { "Unknown token ${tagChunk.getTag()} in pattern: $pattern" }
-                    val t = TokenTagToken(tagChunk.getTag(), ttype, tagChunk.getLabel())
+                if (chunk.getTag()[0].isUpperCase()) {
+                    val ttype = parser.getTokenType(chunk.getTag())
+                    require(ttype !== Token.INVALID_TYPE) { "Unknown token ${chunk.getTag()} in pattern: $pattern" }
+                    val t = TokenTagToken(chunk.getTag(), ttype, chunk.getLabel())
                     tokens.add(t)
-                } else if (tagChunk.getTag()[0].isLowerCase()) {
-                    val ruleIndex = parser.getRuleIndex(tagChunk.getTag())
-                    require(ruleIndex != -1) { "Unknown rule ${tagChunk.getTag()} in pattern: $pattern" }
+                } else if (chunk.getTag()[0].isLowerCase()) {
+                    val ruleIndex = parser.getRuleIndex(chunk.getTag())
+                    require(ruleIndex != -1) { "Unknown rule ${chunk.getTag()} in pattern: $pattern" }
                     val ruleImaginaryTokenType = parser.aTNWithBypassAlts!!.ruleToTokenType[ruleIndex]
-                    tokens.add(RuleTagToken(tagChunk.getTag(), ruleImaginaryTokenType, tagChunk.getLabel()))
+                    tokens.add(RuleTagToken(chunk.getTag(), ruleImaginaryTokenType, chunk.getLabel()))
                 } else {
-                    throw IllegalArgumentException("invalid tag: ${tagChunk.getTag()} in pattern: $pattern")
+                    throw IllegalArgumentException("invalid tag: ${chunk.getTag()} in pattern: $pattern")
                 }
             } else {
                 val textChunk = chunk as TextChunk
@@ -231,11 +217,11 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
         val stops = mutableListOf<Int>()
 
         while (p < n) {
-            when {
-                p == pattern.indexOf(escape + start, p) -> p += escape.length + start.length
-                p == pattern.indexOf(escape + stop, p) -> p += escape.length + stop.length
-                p == pattern.indexOf(start, p) -> { starts.add(p); p += start.length }
-                p == pattern.indexOf(stop, p) -> { stops.add(p); p += stop.length }
+            when (p) {
+                pattern.indexOf(escape + start, p) -> p += escape.length + start.length
+                pattern.indexOf(escape + stop, p) -> p += escape.length + stop.length
+                pattern.indexOf(start, p) -> { starts.add(p); p += start.length }
+                pattern.indexOf(stop, p) -> { stops.add(p); p += stop.length }
                 else -> p++
             }
         }
@@ -283,12 +269,11 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
             }
         }
 
-        for (i in 0..<chunks.size) {
-            val c = chunks[i]
+        for ((i, element) in chunks.withIndex()) {
+            val c = element
             if (c is TextChunk) {
-                val tc = c
-                val unescaped = tc.getText().replace(escape, "")
-                if (unescaped.length < tc.getText().length) {
+                val unescaped = c.getText().replace(escape, "")
+                if (unescaped.length < c.getText().length) {
                     chunks[i] = TextChunk(unescaped)
                 }
             }
