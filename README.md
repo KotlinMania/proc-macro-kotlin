@@ -90,7 +90,7 @@ besides.
 | Token vocabulary | Rust-shaped | Rust-shaped (same surface) |
 | Source text accepted | Rust (via the fallback lexer) | Kotlin (via `KotlinLexer`) |
 | Span data | synthetic byte ranges in a process-wide source map | real `KtTokens` syntax-element spans |
-| Status | published / pre-publish maintenance | scaffolded |
+| Status | published / pre-publish maintenance | phase 2 in progress (Kotlin lexer next) |
 
 `proc-macro2-kotlin` continues to be the public API surface that
 downstream crates (`syn-kotlin`, `quote-kotlin`, the Kotlin ports of
@@ -101,46 +101,71 @@ downstream ports.
 
 ## Porting plan
 
-The order is: faithful Rust API first, weld in the Kotlin backend
-second. Concretely:
+The order is: faithful Rust API first, Kotlin tokenizer second, wire
+the two together third.
 
-1. **Pull the upstream `proc_macro` source into `tmp/`.** Target is
-   [`rust-lang/rust:library/proc_macro/src/`](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src),
-   shallow-cloned and pinned. The crate's `bridge` submodule (the FFI
-   layer that talks to `rustc`'s expansion process) does not port — it
-   has no Kotlin analog. Every other public type does.
-2. **Stand up the Gradle Multiplatform build.** Same target list as
-   sibling `*-kotlin` repos: macOS arm64, Linux x64, mingw-x64, iOS
-   arm64 / x64 / simulator-arm64, JS, Wasm-JS, Android. Same Kotlin/JS
-   security-hardening template from workspace `CLAUDE.md`.
-3. **Resolve the JetBrains KMP-parsing dependency.** Pin Maven
-   coordinates for `org.jetbrains.kotlin.kmp.lexer.*` (currently
-   `@ApiStatus.Experimental` in the kotlin/kotlin tree). Decide depend vs
-   vendor based on artifact availability on every target.
-4. **Port the public types bottom-up.** `Delimiter`, `Spacing`,
-   `Span`, `LexError`, `Ident`, `Punct`, `Literal`, `Group`, `TokenTree`,
-   `TokenStream`, `token_stream::IntoIter`. Each gets a `port-lint:
-   source` header pointing at its upstream `.rs` file. Bodies start as
-   the most faithful translation possible; backend wiring lands as a
-   second pass.
-5. **Weld in the Kotlin tokenizer.** `TokenStream::from_str` (`fromString`
-   in Kotlin) calls `KotlinLexer` and adapts its `SyntaxElementType`
-   output into the Rust-shaped `TokenTree` variants. `Span` carries real
-   text offsets. `Group`'s delimiters map `LBRACE`/`RBRACE`/`LPAR`/`RPAR`
-   /`LBRACKET`/`RBRACKET` to `Delimiter.Brace`/`Parenthesis`/`Bracket`.
-6. **Re-enable `proc-macro2-kotlin`'s wrapper layer.** Restore the
+1. **Pull the upstream `proc_macro` source into `tmp/`.** ✅ Done.
+   Upstream is
+   [`rust-lang/rust:library/proc_macro/src/`](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src).
+   The `bridge` submodule does not port (rustc FFI, no Kotlin analog).
+2. **Stand up the Gradle Multiplatform build.** ✅ Done. Full target
+   list including Swift Export + XCFramework.
+3. **Port the public types bottom-up.** ✅ Done. All 10 core types
+   (`Delimiter`, `Spacing`, `Span`, `LexError`, `Ident`, `Punct`,
+   `Literal`, `Group`, `TokenTree`, `TokenStream`, `IntoIter`) plus
+   `Quote.kt`, `ToTokens.kt`, `Diagnostic.kt`, `Escape.kt`, and the
+   `rustcore/` helpers.
+4. **Vendor the JetBrains `com.intellij.platform.syntax.*`
+   infrastructure.** ✅ Done. 102 files, ~9,764 lines. Provides the
+   `Lexer` interface, `SyntaxElementType`, `SyntaxTreeBuilderImpl`,
+   `MarkerPool`, fastutil collections, and the builder/production
+   infrastructure that a Kotlin tokenizer sits on top of.
+5. **Vendor the JetBrains KMP lexer.** 🔜 Next. JetBrains' own
+   `KotlinFlexLexer.kt` (1,723 lines, JFlex-generated) is pure Kotlin
+   multiplatform code — zero `java.*` imports, `CharSequence` buffer,
+   Kotlin stdlib surrogates only. It implements the `FlexLexer` interface
+   we've already vendored and produces `KtTokens.*`-typed output over the
+   `SyntaxElementType` infrastructure already in tree. The
+   [Kotlin spec ANTLR4 grammars](https://github.com/Kotlin/kotlin-spec/tree/release/grammar/src/main/antlr)
+   (`KotlinLexer.g4`, `KotlinParser.g4`, `UnicodeClasses.g4`) go under
+   `tmp/kotlin-spec/` as cross-reference. See `PROJECT_PLAN.md` for the
+   detailed vendoring order and adapter design.
+6. **Wire `KotlinLexer` into `TokenStream.fromString`.** The Compiler
+   variant tokenizes Kotlin source through the new lexer, maps `KtToken`
+   variants to `proc_macro`-shaped `TokenTree` variants, produces nested
+   `Group` tokens via delimiter matching, and sources `Span` data from
+   real byte offsets.
+7. **Re-enable `proc-macro2-kotlin`'s wrapper layer.** Restore the
    two-variant `WrapperTokenStream` / `WrapperSpan` / etc. that the
    in-flight `port/refaithful-divergent-translations` branch collapsed,
    with the Compiler arms now delegating here.
-7. **Publish to Maven Central** behind `proc-macro2-kotlin 0.2.0`'s
+8. **Publish to Maven Central** behind `proc-macro2-kotlin 0.2.0`'s
    release. The two ship together.
+
+### Why a hand-written lexer instead of ANTLR4
+
+The kotlinmania workspace already has its own LR(1) parser generator
+(`lalrpop-kotlin`, 71K lines, published v0.1.6) and a working example
+of a hand-written lexer feeding lalrpop-generated parse tables
+(`starlark-syntax-kotlin`, published v0.1.1). Depending on the ANTLR4
+runtime would add a foreign build tool and a non-kotlinmania runtime
+dependency to a critical-path infrastructure crate. Hand-writing the
+lexer against the `.g4` specification keeps the dependency graph
+self-contained, matches the proven pattern from `starlark-syntax-kotlin`,
+and gives us full control over how `KtToken` variants map to
+`proc_macro`-shaped `TokenTree` variants.
+
+A future Kotlin parser can be produced via `lalrpop-kotlin` by
+translating `KotlinParser.g4` into a `.lalrpop` grammar and generating
+LR(1) tables — no ANTLR4 needed at any point in the pipeline.
 
 ## Status
 
-Scaffold only. README, LICENSE, `.gitignore`. No source files yet, no
-Gradle build yet, no published artifact. The next commit lands the build
-template + workspace docs (AGENTS.md / CLAUDE.md / NEXT_ACTIONS.md) and
-the upstream `tmp/proc-macro/` fetch script.
+**Phase 2 in progress.** Rust `proc_macro` API surface is ported
+(14,248 lines of Kotlin). JetBrains `com.intellij.platform.syntax.*`
+infrastructure is vendored. No `KotlinLexer` / `KtTokens` yet — the
+Kotlin-source tokenizer is the next piece. See `PROJECT_PLAN.md` for
+the detailed action plan.
 
 ## License
 

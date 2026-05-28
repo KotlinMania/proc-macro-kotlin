@@ -66,3 +66,7 @@ DerivedData/
 *.xcuserstate
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+tmp/kotlin-spec/
+tmp/antlr4/
+tmp/jflex/
+tmp/jflex-skeleton/

@@ -207,6 +207,78 @@ public class Literal internal constructor(
          */
         private fun canonicalFloat(repr: String): String =
             if ('.' in repr) repr else "$repr.0"
+
+        // --- Kotlin-source factory methods (Compiler variant) ---
+
+        /**
+         * Constructs a [Literal] from a Kotlin string source representation
+         * (including surrounding quotes). Handles both regular strings
+         * and raw strings.
+         */
+        internal fun fromKotlinString(src: String): Literal {
+            return when {
+                src.startsWith("\"\"\"") && src.endsWith("\"\"\"") -> {
+                    val content = src.substring(3, src.length - 3)
+                    Literal(literalAt(LitKind.STR, content, suffix = null))
+                }
+                src.startsWith("\"") && src.endsWith("\"") -> {
+                    val content = src.substring(1, src.length - 1)
+                    Literal(literalAt(LitKind.STR, content, suffix = null))
+                }
+                else -> Literal(literalAt(LitKind.STR, src, suffix = null))
+            }
+        }
+
+        /**
+         * Constructs a [Literal] from a Kotlin character source representation
+         * (including surrounding single quotes).
+         */
+        internal fun fromKotlinChar(src: String): Literal {
+            val content = if (src.startsWith("'") && src.endsWith("'") && src.length >= 2) {
+                src.substring(1, src.length - 1)
+            } else {
+                src
+            }
+            return Literal(literalAt(LitKind.CHAR, content, suffix = null))
+        }
+
+        /**
+         * Constructs a [Literal] from a Kotlin integer source representation,
+         * stripping any Kotlin type suffix (L, u, UL, etc.).
+         */
+        internal fun fromKotlinInteger(src: String): Literal {
+            val (digits, suffix) = stripKotlinNumericSuffix(src)
+            return Literal(literalAt(LitKind.INTEGER, digits, suffix))
+        }
+
+        /**
+         * Constructs a [Literal] from a Kotlin floating-point source
+         * representation, stripping any Kotlin type suffix (f, F).
+         */
+        internal fun fromKotlinFloat(src: String): Literal {
+            val (digits, suffix) = stripKotlinNumericSuffix(src)
+            return Literal(literalAt(LitKind.FLOAT, digits, suffix))
+        }
+
+        /**
+         * Splits a Kotlin numeric literal into its digit portion and optional
+         * suffix. Kotlin integer suffixes: L, u, UL, uL. Kotlin float
+         * suffixes: f, F. Underscore separators within the digits are
+         * preserved as-is in the symbol.
+         */
+        private fun stripKotlinNumericSuffix(src: String): Pair<String, String?> {
+            val lower = src.lowercase()
+            val suffixMatch = kotlinNumericSuffix.find(lower)
+            if (suffixMatch != null) {
+                val suffixStart = suffixMatch.range.first
+                if (suffixStart > 0) {
+                    return src.substring(0, suffixStart) to src.substring(suffixStart)
+                }
+            }
+            return src to null
+        }
+
+        private val kotlinNumericSuffix = Regex("""[luf]+$""")
     }
 
     // ----- instance methods -----
