@@ -57,7 +57,7 @@ abstract class AbstractParseTreeVisitor<T> : ParseTreeVisitor<T?> {
      * The default implementation returns the result of
      * [defaultResult][.defaultResult].
      */
-    fun visitTerminal(node: TerminalNode?): T? {
+    override fun visitTerminal(node: TerminalNode?): T? {
         return defaultResult()
     }
 

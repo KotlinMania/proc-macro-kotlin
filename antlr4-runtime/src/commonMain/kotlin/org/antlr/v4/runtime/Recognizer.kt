@@ -79,6 +79,12 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
         return Token.INVALID_TYPE
     }
 
+    fun getRuleIndex(ruleName: String): Int {
+        val ruleIndex: Int? = this.ruleIndexMap[ruleName]
+        if (ruleIndex != null) return ruleIndex
+        return -1
+    }
+
     val serializedATN: String
         get() = throw UnsupportedOperationException("there is no serialized ATN")
 

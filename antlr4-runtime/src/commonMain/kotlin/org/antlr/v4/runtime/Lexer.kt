@@ -230,12 +230,12 @@ abstract class Lexer : Recognizer<Int, LexerATNSimulator>, TokenSource {
         emit(eof)
         return eof
     }
-    var line: Int
+    open var line: Int
         get() = interpreter!!.line
         set(line) {
             interpreter!!.setLine(line)
         }
-    var charPositionInLine: Int
+    open var charPositionInLine: Int
         get() = interpreter!!.charPositionInLine
         set(charPositionInLine) {
             interpreter!!.setCharPositionInLine(charPositionInLine)
