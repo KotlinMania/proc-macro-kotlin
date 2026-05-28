@@ -37,13 +37,41 @@ Includes: `SyntaxElementType`, `SyntaxElementTypeSet`, `SyntaxTreeBuilderImpl`,
 `CharArrayUtilKmp`, `StringUtilKmp`, `FlexAdapter`, `FlexLexer`,
 and the full builder/production infrastructure.
 
+### Phase 2b — JetBrains KMP lexer vendored (complete)
+
+9 files, ~2,386 lines vendored from the JetBrains Kotlin compiler's
+`multiplatform-parsing` module:
+
+| File | Lines | Role |
+|---|---|---|
+| `KotlinLexer.kt` | 11 | `FlexAdapter` wrapper around `KotlinFlexLexer` |
+| `KotlinFlexLexer.kt` | 1,689 | JFlex-generated Kotlin-language tokenizer |
+| `KtTokens.kt` | 465 | Full token vocabulary (keywords, operators, literals) |
+| `KDocTokens.kt` | 41 | KDoc comment token types |
+| `KDocKnownTag.kt` | 47 | Known KDoc tag names |
+| `SyntaxElementTypesWithIds.kt` | 37 | ID allocation base class |
+| `Stack.kt` | 29 | Simple stack utility |
+| `StringUtil.kt` | 42 | String utilities |
+| `ApiStatus.kt` | 20 | Stub annotations (`@Experimental`, etc.) |
+
+### Phase 2c — KotlinLexer wired into TokenStream (complete)
+
+`KtTokenAdapter` converts JetBrains `SyntaxElementType` tokens into
+`proc_macro`-shaped `TokenTree` variants:
+
+- Whitespace and comments are filtered
+- String template token runs collapse into atomic `Literal`s
+- Multi-char operators (`->`, `==`, `::`, etc.) decompose into `Punct`
+  chains with correct `JOINT`/`ALONE` spacing
+- Delimiter pairs (`()`, `{}`, `[]`) nest into `Group` with `TokenStream`
+- Kotlin keywords map to `Ident` (proc_macro treats keywords as idents)
+- `Literal` gains `fromKotlinString/Char/Integer/Float` factory methods
+
+`TokenStream.fromString()` now calls `KtTokenAdapter.tokenize(lexer, src)`
+instead of throwing. All macosArm64Test targets pass.
+
 ### What has NOT landed yet
 
-- **No `KotlinLexer` / `KtTokens`.** The JetBrains vendor layer provides the
-  *infrastructure* that a lexer sits on (`Lexer` interface, `FlexAdapter`,
-  `SyntaxElementType`, `SyntaxTreeBuilderImpl`), but the actual
-  Kotlin-language tokenizer that produces `KtTokens`-typed output has not
-  been vendored or written.
 - **No `KotlinParser`.** No Kotlin-syntax parser exists here yet.
 - **No Compiler-variant wiring into `proc-macro2-kotlin`.** `TokenStream`
   currently only operates in Fallback mode (Rust-source tokenization via
