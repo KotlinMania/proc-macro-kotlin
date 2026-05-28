@@ -658,3 +658,116 @@ to produce `KotlinFlexLexer.kt`.
 
 Fully ported. Needs KMP adaptation (remove JVM `Reflection`, `XMLWriter`)
 and a Gradle build. Complements `lalrpop-kotlin` for LR parsing.
+
+---
+
+## ANTLR4 KMP adaptation: complete Java dependency audit
+
+Every `java.*` import in the 141 `.kt` files of the ANTL4 runtime
+(`tmp/antlr4/runtime/Java/src/`) has been cataloged. There are 55
+distinct `java.*` imports. The 33 `.java` files in `tree/` use only
+`java.util.*` plus two `java.io.*` imports in `xpath/XPath.java`.
+
+### Direct stdlib swaps (41 imports, mechanical replacement)
+
+| Java import | Uses | Kotlin replacement |
+|---|---|---|
+| `java.util.ArrayList` | 20 | `ArrayList` / `mutableListOf()` |
+| `java.util.Arrays` | 16 | `kotlin.collections.*` array extensions |
+| `java.util.Collections` | 7 | `kotlin.collections.*` |
+| `java.util.HashMap` | 8 | `HashMap` / `mutableMapOf()` |
+| `java.util.HashSet` | 6 | `HashSet` / `mutableSetOf()` |
+| `java.util.LinkedHashMap` | 4 | `LinkedHashMap` / `linkedMapOf()` |
+| `java.util.Locale` | 6 | `kotlin.text` lowercase/uppercase |
+| `java.util.NoSuchElementException` | 1 | `NoSuchElementException` |
+| `java.util.Comparator` | 1 | `Comparator` |
+| `java.util.Deque` | 1 | `ArrayDeque` |
+| `java.util.ArrayDeque` | 1 | `ArrayDeque` |
+| `java.util.LinkedList` | 1 | `ArrayDeque` |
+| `java.util.LinkedHashSet` | 1 | `LinkedHashSet` / `linkedSetOf()` |
+| `java.util.Objects` | 1 | `kotlin.*` |
+| `java.util.EmptyStackException` | 1 | `NoSuchElementException` or custom |
+| `java.io.IOException` | 6 | `IOException` |
+| `java.io.Serializable` | 2 | `Serializable` or drop |
+| `java.lang.annotation.*` | 3 | Kotlin annotations |
+| `java.util.concurrent.atomic.AtomicInteger` | 1 | `kotlin.concurrent.atomics` |
+| `java.util.concurrent.CopyOnWriteArrayList` | 1 | thread-safe list |
+| `java.util.concurrent.CancellationException` | 1 | `CancellationException` |
+| `java.util.WeakHashMap` | 1 | `WeakReference`-based map |
+
+### kotlinmania replacements (2 imports, specific packages)
+
+| Java import | Uses | kotlinmania package | Replacement |
+|---|---|---|---|
+| `java.util.BitSet` | 10 | Already in-tree: `com.intellij.platform.syntax.impl.util.BitSet` + `MutableBitSet` | JetBrains' own `LongArray`-backed `BitSet` is already vendored in `src/commonMain/`. Use directly or extract to shared package. |
+| `java.util.IdentityHashMap` | 1 | `starlarkmap-kotlin` | `Equivalent`-based `UnorderedMap` with identity comparison: `Equivalent<PredictionContext> { this === it }` |
+
+### km-io replacements (17 imports, I/O and NIO)
+
+| Java import | Uses | km-io replacement |
+|---|---|---|
+| `java.io.InputStream` | 3 | `km-io` `RawSource` |
+| `java.io.Reader` | 3 | `km-io` `Source` |
+| `java.io.InputStreamReader` | 3 | `km-io` decoding source |
+| `java.io.BufferedReader` | 1 | `km-io` buffered source |
+| `java.io.BufferedWriter` | 1 | `km-io` buffered sink |
+| `java.io.File` | 1 | `km-io` or `okio` `Path` |
+| `java.io.FileReader` | 1 | `km-io` file source |
+| `java.io.FileWriter` | 1 | `km-io` file sink |
+| `java.io.FileInputStream` | 1 | `km-io` file source |
+| `java.io.FileOutputStream` | 1 | `km-io` file sink |
+| `java.io.InvalidClassException` | 1 | Custom `InvalidClassException` |
+| `java.io.PrintStream` | 1 | `kotlin.io` / `print()` |
+| `java.io.OutputStreamWriter` | 1 | `km-io` writer sink |
+| `java.nio.ByteBuffer` | 2 | `km-io` `Buffer` |
+| `java.nio.CharBuffer` | 2 | `km-io` `Buffer` |
+| `java.nio.IntBuffer` | 1 | `km-io` `Buffer` or custom |
+| `java.nio.charset.*` | 7 | Kotlin stdlib charset handling |
+| `java.nio.channels.*` | 2 | `km-io` channels |
+| `java.nio.file.*` | 3 | `km-io` or `okio` `Path` |
+
+### Remove entirely (2 imports)
+
+| Java import | Uses | Replacement |
+|---|---|---|
+| `java.security.AccessController` + `PrivilegedAction` | 1 | Replace `AccessController.doPrivileged { System.getenv(name) }` with plain `System.getenv(name)` wrapped in try/catch |
+| `java.awt.font.FontRenderContext` | 1 | GUI-only, not needed for KMP runtime |
+
+### Other (2 imports)
+
+| Java import | Uses | Replacement |
+|---|---|---|
+| `java.lang.reflect.Method` | 1 | `kotlin.reflect.KFunction` or JVM-only `expect/actual` |
+| `java.text.SimpleDateFormat` + `java.util.Date` | 2 | `kotlinx-datetime` or custom format |
+
+### Key architectural discovery: JetBrains BitSet is already in-tree
+
+The `com.intellij.platform.syntax.impl.util` package (already vendored
+in our `src/commonMain/`) contains a `LongArray`-backed `BitSet` and
+`MutableBitSet` — the same design pattern ANTLR4 needs. The ANTLR4
+`BitSet` usage is limited to:
+- `ATNConfigSet.kt`: `conflictingAlts: BitSet?` and `alts: BitSet`
+- `PredictionMode.kt`: several `BitSet`-returning helper methods
+- `LL1Analyzer.kt`, `ParserATNSimulator.kt`, `ProfilingATNSimulator.kt`: `BitSet` for looksets
+
+These are all membership-testing bit sets over small integer ranges.
+The JetBrains `BitSet(IntList)` constructor (from a list of set bits)
+and `contains(Int)` method provide exactly the API needed. The
+`MutableBitSet` provides `add(Int)` and `remove(Int)` for mutation.
+
+**No new `BitSet` implementation is needed.** The JetBrains one is
+already KMP-compatible and already in our source tree.
+
+### The `tree/` Java files: clean batch-convert targets
+
+All 33 `.java` files in `tree/` use only:
+- `java.util.ArrayList`, `java.util.Arrays`, `java.util.Collections`,
+  `java.util.List`, `java.util.Map` (standard collection types)
+- `java.io.IOException`, `java.io.StringReader` (in `XPath.java` only)
+- ANTLR4's own `org.antlr.v4.runtime.*` types (already Kotlin)
+
+These are mechanical conversions — JetBrains' batch converter handles
+them with near-zero manual cleanup. The `xpath/XPathLexer.java` is an
+ANTLR-generated lexer; once the runtime is KMP, it can be regenerated
+in Kotlin using the ANTLR4 tool with the same approach used for the
+Kotlin spec grammars.
