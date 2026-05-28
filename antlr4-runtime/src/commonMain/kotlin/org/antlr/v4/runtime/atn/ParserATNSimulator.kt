@@ -271,7 +271,7 @@ import org.antlr.v4.runtime.misc.Pair
  * both SLL and LL parsing. Erroneous input will therefore require 2 passes over
  * the input.
  */
-class ParserATNSimulator(
+open class ParserATNSimulator(
     parser: Parser?, atn: ATN?,
     decisionToDFA: Array<DFA>,
     sharedContextCache: PredictionContextCache?

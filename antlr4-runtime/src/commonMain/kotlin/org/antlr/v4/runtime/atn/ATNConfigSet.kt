@@ -10,7 +10,7 @@ import org.antlr.v4.runtime.misc.Array2DHashSet
 import org.antlr.v4.runtime.misc.DoubleKeyMap
 import org.antlr.v4.runtime.misc.BitSet
 
-class ATNConfigSet @kotlin.jvm.JvmOverloads constructor(
+open class ATNConfigSet @kotlin.jvm.JvmOverloads constructor(
     val fullCtx: Boolean = true
 ) : MutableSet<ATNConfig> {
 

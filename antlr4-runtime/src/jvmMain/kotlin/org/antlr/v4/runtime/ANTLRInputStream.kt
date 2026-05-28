@@ -22,7 +22,7 @@ import java.util.Arrays
  */
 @Deprecated
 @Deprecated("as of 4.7 Please use {@link CharStreams} interface.")
-class ANTLRInputStream : CharStream {
+open class ANTLRInputStream : CharStream {
     /** The data being scanned  */
     protected var data: CharArray
 

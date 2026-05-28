@@ -8,7 +8,7 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.IntervalSet
 
-class SetTransition(target: ATNState, set: IntervalSet?) : Transition(target) {
+open class SetTransition(target: ATNState, set: IntervalSet?) : Transition(target) {
     val set: IntervalSet = set ?: IntervalSet.of(Token.INVALID_TYPE)
 
     override val serializationType: Int

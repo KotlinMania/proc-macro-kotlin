@@ -7,7 +7,7 @@ package org.antlr.v4.runtime.misc
 
 import kotlin.math.floor
 
-class Array2DHashSet<T> @kotlin.jvm.JvmOverloads constructor(
+open class Array2DHashSet<T> @kotlin.jvm.JvmOverloads constructor(
     comparator: AbstractEqualityComparator<in T> = AnyEqualityComparator.INSTANCE as AbstractEqualityComparator<in T>,
     initialCapacity: Int = INITIAL_CAPACITY,
     initialBucketCapacity: Int = INITIAL_BUCKET_CAPACITY

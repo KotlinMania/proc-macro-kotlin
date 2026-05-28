@@ -9,7 +9,7 @@ import org.antlr.v4.runtime.Vocabulary
 import org.antlr.v4.runtime.VocabularyImpl
 
 /** A DFA walker that knows how to dump them to serialized strings.  */
-class DFASerializer(dfa: DFA, vocabulary: Vocabulary) {
+open class DFASerializer(dfa: DFA, vocabulary: Vocabulary) {
     private val dfa: DFA
 
     private val vocabulary: Vocabulary

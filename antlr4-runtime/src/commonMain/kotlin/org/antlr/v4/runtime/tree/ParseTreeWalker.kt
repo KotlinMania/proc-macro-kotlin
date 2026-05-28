@@ -7,7 +7,7 @@ package org.antlr.v4.runtime.tree
 
 import org.antlr.v4.runtime.ParserRuleContext
 
-class ParseTreeWalker {
+open class ParseTreeWalker {
     /**
      * Performs a walk on the given parse tree starting at the root and going down recursively
      * with depth-first search. On each node, [enterRule] is called before

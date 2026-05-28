@@ -9,7 +9,7 @@ package org.antlr.v4.runtime.misc
  *
  * @author Sam Harwell
  */
-class IntList {
+open class IntList {
     private var _data: IntArray
 
     private var _size = 0

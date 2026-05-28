@@ -4,7 +4,6 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
-    plugins { kotlin("multiplatform") version "2.3.21" }
 }
 
 plugins { id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0" }
@@ -17,3 +16,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "proc-macro-kotlin"
+include("antlr4-runtime")

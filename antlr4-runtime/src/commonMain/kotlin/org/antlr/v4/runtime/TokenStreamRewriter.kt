@@ -93,7 +93,7 @@ import org.antlr.v4.runtime.misc.Interval
  */
 class TokenStreamRewriter(tokens: TokenStream) {
     // Define the rewrite operation hierarchy
-    inner class RewriteOperation {
+    inner open class RewriteOperation {
         /** What index into rewrites List are we?  */
         var instructionIndex: Int = 0
 
@@ -125,7 +125,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
         }
     }
 
-    internal inner class InsertBeforeOp(index: Int, text: Any?) : RewriteOperation(index, text) {
+    internal inner open class InsertBeforeOp(index: Int, text: Any?) : RewriteOperation(index, text) {
         override fun execute(buf: StringBuilder): Int {
             buf.append(text)
             if (tokens.get(index).type !== Token.EOF) {
@@ -518,10 +518,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
                 getKindOfOps<T?>(rewrites, org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp::class.java, i)
             for (prevIop in prevInserts) {
                 if (prevIop!!.index == iop.index) {
-                    if (org.antlr.v4.runtime.TokenStreamRewriter.InsertAfterOp is prevIop)) {
+                    if (prevIop is org.antlr.v4.runtime.TokenStreamRewriter.InsertAfterOp) {
                         iop.text = catOpText(prevIop.text, iop.text)
                         rewrites.set(prevIop.instructionIndex, null)
-                    } else if (org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp is prevIop)) { // combine objects
+                    } else if (prevIop is org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp) { // combine objects
                         // convert to strings...we're in process of toString'ing
                         // whole token buffer so no lazy eval issue with any templates
                         iop.text = catOpText(iop.text, prevIop.text)
@@ -543,7 +543,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
             }
         }
         // println("rewrites after="+rewrites);
-        val m: MutableMap<Int, RewriteOperation> = HashMap()()
+        val m: MutableMap<Int, RewriteOperation> = HashMap()
         for (i in 0..<rewrites.size) {
             val op = rewrites.get(i)
             if (op == null) continue  // ignore deleted ops

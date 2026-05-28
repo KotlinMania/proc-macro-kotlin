@@ -1,23 +1,14 @@
 package org.antlr.v4.runtime.misc
 
-class MultiMap<K, V> : LinkedHashMap<K, MutableList<V>>() {
+class MultiMap<K, V> {
+    val data: MutableMap<K, MutableList<V>> = LinkedHashMap()
+
     fun map(key: K, value: V) {
-        var elementsForKey = get(key)
-        if (elementsForKey == null) {
-            elementsForKey = ArrayList()
-            super.put(key, elementsForKey)
-        }
-        elementsForKey.add(value)
+        data.getOrPut(key) { ArrayList() }.add(value)
     }
 
     val pairs: List<Pair<K, V>>
-        get() {
-            val pairs = mutableListOf<Pair<K, V>>()
-            for (key in keys) {
-                for (value in this[key]!!) {
-                    pairs.add(Pair(key, value))
-                }
-            }
-            return pairs
-        }
+        get() = data.flatMap { (key, values) -> values.map { value -> Pair(key, value) } }
+
+    operator fun get(key: K): MutableList<V>? = data[key]
 }

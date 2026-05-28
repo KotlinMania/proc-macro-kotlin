@@ -5,26 +5,27 @@
  */
 package org.antlr.v4.runtime.misc
 
-class OrderedHashSet<T> : LinkedHashSet<T>() {
-    protected var elements: ArrayList<T> = ArrayList()
+class OrderedHashSet<T> : MutableSet<T> {
+    private val backingSet: MutableSet<T> = LinkedHashSet()
+    private val elements: MutableList<T> = ArrayList()
 
     fun get(i: Int): T = elements[i]
 
     fun set(i: Int, value: T): T {
         val oldElement = elements[i]
         elements[i] = value
-        super.remove(oldElement)
-        super.add(value)
+        backingSet.remove(oldElement)
+        backingSet.add(value)
         return oldElement
     }
 
     fun remove(i: Int): Boolean {
         val o = elements.removeAt(i)
-        return super.remove(o)
+        return backingSet.remove(o)
     }
 
     override fun add(element: T): Boolean {
-        val result = super.add(element)
+        val result = backingSet.add(element)
         if (result) elements.add(element)
         return result
     }
@@ -33,7 +34,7 @@ class OrderedHashSet<T> : LinkedHashSet<T>() {
 
     override fun clear() {
         elements.clear()
-        super.clear()
+        backingSet.clear()
     }
 
     override fun hashCode(): Int = elements.hashCode()
@@ -50,4 +51,37 @@ class OrderedHashSet<T> : LinkedHashSet<T>() {
     override fun toArray(): Array<Any> = elements.toTypedArray()
 
     override fun toString(): String = elements.toString()
+
+    override val size: Int get() = backingSet.size
+
+    override fun isEmpty(): Boolean = backingSet.isEmpty()
+
+    override fun contains(element: T): Boolean = backingSet.contains(element)
+
+    override fun containsAll(elements: Collection<T>): Boolean = backingSet.containsAll(elements)
+
+    override fun addAll(elements: Collection<T>): Boolean {
+        var changed = false
+        for (element in elements) {
+            if (add(element)) changed = true
+        }
+        return changed
+    }
+
+    override fun retainAll(elements: Collection<T>): Boolean {
+        val toRemove = this.elements.filter { it !in elements }
+        return removeAll(toRemove)
+    }
+
+    override fun removeAll(elements: Collection<T>): Boolean {
+        var changed = false
+        for (element in elements) {
+            if (backingSet.contains(element)) {
+                this.elements.remove(element)
+                backingSet.remove(element)
+                changed = true
+            }
+        }
+        return changed
+    }
 }
