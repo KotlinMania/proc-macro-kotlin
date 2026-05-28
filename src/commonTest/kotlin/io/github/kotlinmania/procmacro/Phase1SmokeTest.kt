@@ -426,12 +426,19 @@ class TokenStreamTest {
         assertEquals("(x , y)", stream.toString())
     }
 
+
     @Test
-    fun fromStringPhase1Stubs() {
-        val result = TokenStream.fromString("anything")
-        assertTrue(result.isFailure)
-        val ex = result.exceptionOrNull()
-        assertTrue(ex is LexErrorThrown)
+    fun fromStringParsesKotlinSource() {
+        val result = TokenStream.fromString("fun hello() {}")
+        assertTrue(result.isSuccess, "Expected fromString to succeed for valid Kotlin source")
+        val stream = result.getOrThrow()
+        assertFalse(stream.isEmpty(), "Expected non-empty token stream")
+    }
+
+    @Test
+    fun fromStringFailsOnUnbalancedDelimiters() {
+        val result = TokenStream.fromString("( unclosed")
+        assertTrue(result.isFailure, "Expected fromString to fail for unbalanced delimiters")
     }
 
     @Test

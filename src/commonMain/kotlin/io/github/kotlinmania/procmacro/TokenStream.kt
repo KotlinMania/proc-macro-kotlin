@@ -34,21 +34,13 @@ public class TokenStream internal constructor(
          * characters not existing in the language. All tokens in the
          * parsed stream get [Span.callSite] spans.
          *
-         * Phase-1 stub throws [LexError]. Phase 3 wires this to the
-         * vendored
-         * [`KotlinLexer`][org.jetbrains.kotlin.kmp.lexer.KotlinLexer] so
-         * lexing real Kotlin source produces proper token trees.
+         * Uses the vendored
+         * [`KotlinLexer`][org.jetbrains.kotlin.kmp.lexer.KotlinLexer]
+         * to tokenize Kotlin source via [KtTokenAdapter].
          */
         public fun fromString(src: String): Result<TokenStream> {
-            return Result.failure(
-                LexErrorThrown(
-                    LexError(
-                        "TokenStream.fromString is not implemented yet; " +
-                            "the KotlinLexer backend is wired in during phase 3 " +
-                            "of the proc-macro-kotlin port (see DESIGN.md).",
-                    ),
-                ),
-            )
+            val lexer = org.jetbrains.kotlin.kmp.lexer.KotlinLexer()
+            return KtTokenAdapter.tokenize(lexer, src)
         }
 
         /**
@@ -125,11 +117,6 @@ public class TokenStream internal constructor(
      * losslessly convertible back into the same token stream (modulo
      * spans), except for possibly [TokenTree.Group]s with [Delimiter.NONE]
      * delimiters and negative numeric literals.
-     *
-     * Phase-1 implementation produces a space-separated rendering of the
-     * contained token trees with delimiter pairs around groups. Phase 3
-     * may refine the whitespace strategy once KotlinLexer roundtripping
-     * is exercised.
      */
     override fun toString(): String = buildString {
         var previous: TokenTree? = null
@@ -194,7 +181,7 @@ private fun StringBuilder.appendGroup(group: Group) {
 
 /**
  * Returns `true` if a separator (single space) should be inserted after
- * the given [TokenTree] when rendering for the phase-1
+ * the given [TokenTree] when rendering for
  * [TokenStream.toString]. The heuristic mirrors what `proc_macro2`'s
  * fallback Display does: insert a separator unless the token is
  * [TokenTree.Punct] with [Spacing.JOINT] spacing.
