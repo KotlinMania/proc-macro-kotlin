@@ -886,3 +886,45 @@ The JFlex core (57 `.kt` files, 12,991 lines) is already Kotlin. The
 The LALR(1)/LR(1) generator core is **fully Kotlin** (100+ `.kt` files).
 Only 2 `.java` files remain — both test specification classes in
 `spec/`, not part of the generator itself.
+
+---
+
+## Unicode Java files: JFlex `core/unicode/` (7 files, 1,737 lines)
+
+These are the last Java source files in the JFlex code generator (not
+counting `Main.java` at 408 lines). They handle Unicode character
+class partitioning — the data structures that JFlex uses to build
+DFA transitions over Unicode ranges.
+
+| File | Lines | Java deps | KMP path |
+|---|---|---|---|
+| `IntCharSet.java` | 625 | `ArrayList`, `Iterator`, `List`, `Objects`, `PrimitiveIterator` | Direct stdlib swap (already has Kotlin `Interval` imports) |
+| `CharClasses.java` | 473 | `ArrayList`, `Comparator`, `Iterator`, `List`, `Objects` | Direct stdlib swap |
+| `UnicodeProperties.java` | 473 | `HashMap`, `Locale`, `Map`, `Set`, `regex.Matcher`, `regex.Pattern` | `HashMap`→stdlib, `Locale`→`Locale.US`, `regex`→Kotlin stdlib `Regex` |
+| `CharClassInterval.java` | 54 | None | Pure data class, trivial conversion |
+| `IntCharSetComparator.java` | 56 | `Comparator` | `Comparator` in stdlib |
+| `CMapBlock.java` | 45 | None | Pure data class |
+| `ILexScan.java` | 11 | None | Interface, trivial conversion |
+
+**Total Java deps across these 7 files:** 13 distinct `java.*` imports,
+all with direct Kotlin equivalents. The only slightly non-trivial one
+is `java.util.regex.Pattern`/`Matcher` → Kotlin `Regex`/`MatchResult`,
+used in `UnicodeProperties.java` for parsing Unicode version strings.
+The `static import` of `java.lang.Math.max/min` also maps directly to
+Kotlin `kotlin.math.max/min`.
+
+Once these 7 files convert to Kotlin, **JFlex's core generator is
+fully Kotlin** — only `Main.java` (408 lines, the CLI entry point)
+remains.
+
+### Full Java inventory across all tmp/ trees
+
+| Tree | Java files | Lines | Status |
+|---|---|---|---|
+| `tmp/antlr4/` | 2 | 435 + test | `UnicodeDataTemplateController.java` (build tool) + 1 test |
+| `tmp/jflex/jflex/src/main/` | 8 | 2,145 | 7 unicode + Main.java |
+| `tmp/jflex/third_party/cup2/` | 2 | 1,717 | 2 test spec files |
+| `tmp/jflex/examples/` | ~10 | — | Example files (cup-java, simple, etc.) |
+| `tmp/kmp-parser/` | 0 | — | Fully Kotlin |
+| `tmp/kotlin-spec/` | 0 | — | Grammar files only |
+| `tmp/proc-macro/` | 0 | — | Rust source |
