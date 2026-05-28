@@ -4,7 +4,6 @@
  * can be found in the LICENSE.txt file in the project root.
  */
 package org.antlr.v4.runtime.tree
-import java.util.IdentityHashMap
 
 
 /**
@@ -24,7 +23,7 @@ import java.util.IdentityHashMap
  * in your event methods.
  */
 class ParseTreeProperty<V> {
-    protected var annotations: Map<ParseTree?, V?> = IdentityHashMap<ParseTree?, V?>()
+    protected var annotations: MutableMap<ParseTree?, V?> = HashMap<ParseTree?, V?>()
 
     fun get(node: ParseTree?): V? {
         return annotations.get(node)

@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.LexerNoViableAltException
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.Vocabulary
 import org.antlr.v4.runtime.VocabularyImpl
+import org.antlr.v4.runtime.IntStream
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.atn.ATNType
 import org.antlr.v4.runtime.misc.Interval
@@ -18,7 +19,7 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
         get() = Companion.ruleNames
 
     @Suppress("DEPRECATION")
-    @get:Deprecated
+    @get:Deprecated("Use vocabulary instead")
     override val tokenNames: Array<String>
         get() = Companion.tokenNames
 
@@ -57,7 +58,7 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
                     val s = matchString()
                     t = CommonToken(STRING, s)
                 }
-                CharStream.EOF -> return CommonToken(EOF, "<EOF>")
+                IntStream.EOF -> return CommonToken(EOF, "<EOF>")
                 else -> {
                     if (isNameStartChar(_input!!.LA(1))) {
                         val id = matchID()
@@ -74,7 +75,7 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
         return t
     }
 
-    override fun consume() {
+    fun consume() {
         val curChar = _input!!.LA(1)
         if (curChar == '\n'.code) {
             line++
@@ -104,9 +105,9 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
         return _input!!.getText(Interval.of(start, _input!!.index() - 1)) ?: ""
     }
 
-    fun isNameChar(c: Int): Boolean = c != CharStream.EOF && (c.toChar().isLetterOrDigit() || c.toChar() == '_')
+    fun isNameChar(c: Int): Boolean = c != IntStream.EOF && (c.toChar().isLetterOrDigit() || c.toChar() == '_')
 
-    fun isNameStartChar(c: Int): Boolean = c != CharStream.EOF && (c.toChar().isLetter() || c.toChar() == '_')
+    fun isNameStartChar(c: Int): Boolean = c != IntStream.EOF && (c.toChar().isLetter() || c.toChar() == '_')
 
     companion object {
         const val TOKEN_REF: Int = 1

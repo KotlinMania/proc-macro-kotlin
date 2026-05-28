@@ -95,7 +95,7 @@ abstract class Lexer :
     /** Return a token from this source; i.e., match a token on the char
      * stream.
      */
-    fun nextToken(): Token {
+    open fun nextToken(): Token {
         checkNotNull(_input) { "nextToken requires a non-null input stream." }
 
         // Mark start location in char stream so unbuffered streams are
@@ -176,11 +176,11 @@ abstract class Lexer :
         return _mode
     }
 
-    fun setTokenFactory(factory: TokenFactory<*>) {
-        this._factory = factory
+    override fun setTokenFactory(factory: TokenFactory<*>?) {
+        this._factory = factory ?: CommonTokenFactory.DEFAULT
     }
 
-    val tokenFactory: TokenFactory<out Token?>
+    override val tokenFactory: TokenFactory<*>?
         get() = _factory
 
     /** Set the char stream and reset the lexer  */
@@ -317,7 +317,7 @@ abstract class Lexer :
             return tokens
         }
 
-    fun recover(e: LexerNoViableAltException?) {
+    open fun recover(e: LexerNoViableAltException?) {
         if (_input.LA(1) !== IntStream.EOF) {
             // skip a char and try again
             interpreter!!.consume(_input)

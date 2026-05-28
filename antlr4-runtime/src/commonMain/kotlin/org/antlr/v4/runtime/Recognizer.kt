@@ -13,6 +13,14 @@ import org.antlr.v4.runtime.misc.Utils
 abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     private val _listeners: MutableList<ANTLRErrorListener> = mutableListOf(ConsoleErrorListener.INSTANCE)
 
+    protected var _errHandler: ANTLRErrorStrategy = DefaultErrorStrategy()
+
+    var errorHandler: ANTLRErrorStrategy
+        get() = _errHandler
+        set(handler) {
+            _errHandler = handler
+        }
+
     /**
      * Get the ATN interpreter used by the recognizer for prediction.
      */

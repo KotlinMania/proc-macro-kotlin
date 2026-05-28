@@ -51,7 +51,14 @@ class OrderedHashSet<T> : MutableSet<T> {
 
     fun elements(): List<T> = elements
 
-    override fun toArray(): Array<Any> = elements.toTypedArray()
+    @Suppress("UNCHECKED_CAST")
+    fun toArray(): Array<Any> {
+        val result = arrayOfNulls<Any>(elements.size)
+        for (i in elements.indices) {
+            result[i] = elements[i]
+        }
+        return result as Array<Any>
+    }
 
     override fun toString(): String = elements.toString()
 

@@ -1,6 +1,6 @@
 package org.antlr.v4.runtime.tree.pattern
 
-internal class TagChunk(label: String?, tag: String) : Chunk() {
+class TagChunk(label: String?, tag: String) : Chunk() {
     val tag: String
     val label: String?
 

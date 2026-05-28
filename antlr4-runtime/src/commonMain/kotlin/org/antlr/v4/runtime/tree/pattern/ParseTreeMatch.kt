@@ -48,10 +48,7 @@ class ParseTreeMatch(
     fun getTree(): ParseTree = tree
 
     override fun toString(): String {
-        return String.format(
-            "Match %s; found %d labels",
-            if (succeeded()) "succeeded" else "failed",
-            getLabels().data.size
-        )
+        val status = if (succeeded()) "succeeded" else "failed"
+        return "Match $status; found ${getLabels().data.size} labels"
     }
 }

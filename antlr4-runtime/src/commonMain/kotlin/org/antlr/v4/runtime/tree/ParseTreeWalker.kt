@@ -16,7 +16,7 @@ open class ParseTreeWalker {
      * @param listener The listener used by the walker to process grammar rules
      * @param t The parse tree to be walked on
      */
-    fun walk(listener: ParseTreeListener, t: ParseTree?) {
+    open fun walk(listener: ParseTreeListener, t: ParseTree?) {
         if (t is ErrorNode) {
             listener.visitErrorNode(t as ErrorNode?)
             return

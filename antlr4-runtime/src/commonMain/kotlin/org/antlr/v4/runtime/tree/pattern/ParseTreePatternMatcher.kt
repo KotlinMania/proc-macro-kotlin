@@ -47,7 +47,7 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
 
     fun matches(tree: ParseTree, pattern: ParseTreePattern): Boolean {
         val labels = MultiMap<String, ParseTree>()
-        val mismatchedNode = matchImpl(tree, pattern.getPatternTree(), labels)
+        val mismatchedNode = matchImpl(tree, pattern.getPatternTree()!!, labels)
         return mismatchedNode == null
     }
 
@@ -58,7 +58,7 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
 
     fun match(tree: ParseTree, pattern: ParseTreePattern): ParseTreeMatch {
         val labels = MultiMap<String, ParseTree>()
-        val mismatchedNode = matchImpl(tree, pattern.getPatternTree(), labels)
+        val mismatchedNode = matchImpl(tree, pattern.getPatternTree()!!, labels)
         return ParseTreeMatch(tree, pattern, labels, mismatchedNode)
     }
 
@@ -68,22 +68,23 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
         val tokens = CommonTokenStream(tokenSrc)
 
         val parserInterp = ParserInterpreter(
-            parser.getGrammarFileName(),
-            parser.getVocabulary(),
-            listOf(*parser.getRuleNames()),
+            parser.grammarFileName,
+            parser.vocabulary,
+            listOf(*(parser.ruleNames ?: emptyArray())),
             parser.aTNWithBypassAlts!!,
             tokens
         )
 
         var tree: ParseTree? = null
         try {
-            parserInterp.setErrorHandler(BailErrorStrategy())
+            parserInterp.errorHandler = BailErrorStrategy()
             tree = parserInterp.parse(patternRuleIndex)
-        } catch (e: ParseCancellationException) {
-            throw e.cause as RecognitionException
         } catch (re: RecognitionException) {
             throw re
         } catch (e: Exception) {
+            if (e is ParseCancellationException) {
+                throw (e.cause as RecognitionException)
+            }
             throw CannotInvokeStartRule(e)
         }
 
@@ -111,14 +112,14 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
             val t2 = patternTree
             var mismatchedNode: ParseTree? = null
 
-            if (t1.getSymbol().type == t2.getSymbol().type) {
-                if (t2.getSymbol() is TokenTagToken) {
-                    val tokenTagToken = t2.getSymbol() as TokenTagToken
-                    labels.map(tokenTagToken.getTokenName(), tree)
-                    if (tokenTagToken.getLabel() != null) {
-                        labels.map(tokenTagToken.getLabel(), tree)
+            if (t1.symbol?.type == t2.symbol?.type) {
+                val t2Symbol = t2.symbol
+                if (t2Symbol is TokenTagToken) {
+                    labels.map(t2Symbol.tokenName ?: "", tree)
+                    if (t2Symbol.label != null) {
+                        labels.map(t2Symbol.label, tree)
                     }
-                } else if (t1.getText() != t2.getText()) {
+                } else if (t1.text != t2.text) {
                     if (mismatchedNode == null) {
                         mismatchedNode = t1
                     }
@@ -138,10 +139,10 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
 
             val ruleTagToken = getRuleTagToken(r2)
             if (ruleTagToken != null) {
-                if (r1.getRuleContext().ruleIndex == r2.getRuleContext().ruleIndex) {
-                    labels.map(ruleTagToken.getRuleName(), tree)
-                    if (ruleTagToken.getLabel() != null) {
-                        labels.map(ruleTagToken.getLabel(), tree)
+                if (r1.ruleContext.ruleIndex == r2.ruleContext.ruleIndex) {
+                    labels.map(ruleTagToken.ruleName, tree)
+                    if (ruleTagToken.label != null) {
+                        labels.map(ruleTagToken.label, tree)
                     }
                 } else {
                     if (mismatchedNode == null) {
@@ -160,7 +161,9 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
 
             val n = r1.childCount
             for (i in 0..<n) {
-                val childMatch = matchImpl(r1.getChild(i), r2.getChild(i), labels)
+                val child1 = r1.getChild(i) ?: continue
+                val child2 = r2.getChild(i) ?: continue
+                val childMatch = matchImpl(child1, child2, labels)
                 if (childMatch != null) {
                     return childMatch
                 }
@@ -176,8 +179,9 @@ class ParseTreePatternMatcher(lexer: Lexer, parser: Parser) {
             val r = t
             if (r.childCount == 1 && r.getChild(0) is TerminalNode) {
                 val c = r.getChild(0) as TerminalNode
-                if (c.getSymbol() is RuleTagToken) {
-                    return c.getSymbol() as RuleTagToken
+                val cSymbol = c.symbol
+                if (cSymbol is RuleTagToken) {
+                    return cSymbol
                 }
             }
         }

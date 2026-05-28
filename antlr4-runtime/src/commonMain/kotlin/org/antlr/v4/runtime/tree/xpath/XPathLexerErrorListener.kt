@@ -6,12 +6,12 @@ import org.antlr.v4.runtime.Recognizer
 
 object XPathLexerErrorListener : BaseErrorListener() {
     override fun syntaxError(
-        recognizer: Recognizer<*, *>,
+        recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,
-        msg: String,
-        e: RecognitionException?
+        msg: String?,
+        e: RecognitionException?,
     ) {
     }
 }

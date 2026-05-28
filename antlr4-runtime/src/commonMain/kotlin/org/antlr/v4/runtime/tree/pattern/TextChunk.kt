@@ -1,6 +1,6 @@
 package org.antlr.v4.runtime.tree.pattern
 
-internal class TextChunk(text: String) : Chunk() {
+class TextChunk(text: String) : Chunk() {
     val text: String
 
     init {

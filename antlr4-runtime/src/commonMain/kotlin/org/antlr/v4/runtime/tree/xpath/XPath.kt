@@ -16,7 +16,7 @@ open class XPath(protected var parser: Parser, path: String) {
         const val NOT: String = "!"
         const val TOKEN_EXT: String = "//"
 
-        fun findAll(tree: ParseTree?, xpath: String, parser: Parser): Collection<ParseTree> {
+        fun findAll(tree: ParseTree?, xpath: String, parser: Parser): Collection<ParseTree?> {
             val p = XPath(parser, xpath)
             return p.evaluate(tree!!)
         }
@@ -34,7 +34,7 @@ open class XPath(protected var parser: Parser, path: String) {
             }
         }
         lexer.removeErrorListeners()
-        lexer.addErrorListener(XPathLexerErrorListener.INSTANCE)
+        lexer.addErrorListener(XPathLexerErrorListener)
         val tokenStream = CommonTokenStream(lexer)
         try {
             tokenStream.fill()
@@ -50,12 +50,12 @@ open class XPath(protected var parser: Parser, path: String) {
         var i = 0
         loop@ while (i < n) {
             val el = tokens[i]
-            when (el.type) {
+            when (el?.type) {
                 XPathLexer.ROOT, XPathLexer.ANYWHERE -> {
                     val anywhere = el.type == XPathLexer.ANYWHERE
                     i++
                     var next = tokens[i]
-                    val invert = next.type == XPathLexer.BANG
+                    val invert = next?.type == XPathLexer.BANG
                     if (invert) {
                         i++
                         next = tokens[i]
@@ -69,24 +69,29 @@ open class XPath(protected var parser: Parser, path: String) {
                     elements.add(getXPathElement(el, false))
                     i++
                 }
-                Token.EOF -> break@loop
-                else -> throw IllegalArgumentException("Unknown path element $el")
+                Token.EOF -> {
+                    break@loop
+                }
+                else -> {
+                    throw IllegalArgumentException("Unknown path element $el")
+                }
             }
         }
         return elements.toTypedArray()
     }
 
-    protected fun getXPathElement(wordToken: Token, anywhere: Boolean): XPathElement {
-        require(wordToken.type != Token.EOF) { "Missing path element at end of path" }
-        val word = wordToken.text ?: throw IllegalArgumentException("Null token text")
+    protected fun getXPathElement(wordToken: Token?, anywhere: Boolean): XPathElement {
+        val token = wordToken ?: throw IllegalArgumentException("Null token")
+        require(token.type != Token.EOF) { "Missing path element at end of path" }
+        val word = token.text ?: throw IllegalArgumentException("Null token text")
         val ttype = parser.getTokenType(word)
         val ruleIndex = parser.getRuleIndex(word)
-        return when (wordToken.type) {
+        return when (token.type) {
             XPathLexer.WILDCARD -> if (anywhere) XPathWildcardAnywhereElement() else XPathWildcardElement()
             XPathLexer.TOKEN_REF, XPathLexer.STRING -> {
                 if (ttype == Token.INVALID_TYPE) {
                     throw IllegalArgumentException(
-                        "$word at index ${wordToken.startIndex} isn't a valid token name"
+                        "$word at index ${token.startIndex} isn't a valid token name"
                     )
                 }
                 if (anywhere) XPathTokenAnywhereElement(word, ttype) else XPathTokenElement(word, ttype)
@@ -94,7 +99,7 @@ open class XPath(protected var parser: Parser, path: String) {
             else -> {
                 if (ruleIndex == -1) {
                     throw IllegalArgumentException(
-                        "$word at index ${wordToken.startIndex} isn't a valid rule name"
+                        "$word at index ${token.startIndex} isn't a valid rule name"
                     )
                 }
                 if (anywhere) XPathRuleAnywhereElement(word, ruleIndex) else XPathRuleElement(word, ruleIndex)
@@ -102,15 +107,15 @@ open class XPath(protected var parser: Parser, path: String) {
         }
     }
 
-    fun evaluate(t: ParseTree?): Collection<ParseTree> {
+    fun evaluate(t: ParseTree?): Collection<ParseTree?> {
         val dummyRoot = ParserRuleContext()
         dummyRoot.children = mutableListOf(t!!)
-        var work: MutableCollection<ParseTree> = mutableListOf(dummyRoot)
+        var work: MutableCollection<ParseTree?> = mutableListOf(dummyRoot)
         var i = 0
         while (i < elements.size) {
-            val next: MutableCollection<ParseTree> = linkedSetOf()
+            val next: MutableCollection<ParseTree?> = linkedSetOf()
             for (node in work) {
-                if (node.childCount > 0) {
+                if (node != null && node.childCount > 0) {
                     val matching = elements[i].evaluate(node)
                     next.addAll(matching)
                 }

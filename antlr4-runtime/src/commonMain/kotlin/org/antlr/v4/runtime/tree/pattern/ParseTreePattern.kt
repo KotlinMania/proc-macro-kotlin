@@ -21,19 +21,19 @@ class ParseTreePattern(
         this.patternTree = patternTree
     }
 
-    fun match(tree: ParseTree?): ParseTreeMatch =
-        matcher.match(tree, this)
+    fun match(tree: ParseTree?): ParseTreeMatch = matcher.match(tree!!, this)
 
-    fun matches(tree: ParseTree?): Boolean =
-        matcher.match(tree, this).succeeded()
+    fun matches(tree: ParseTree?): Boolean = matcher.matches(tree!!, this)
 
     fun findAll(tree: ParseTree?, xpath: String?): List<ParseTreeMatch> {
-        val subtrees = XPath.findAll(tree, xpath, matcher.getParser())
+        val subtrees = XPath.findAll(tree, xpath ?: "", matcher.getParser())
         val matches = mutableListOf<ParseTreeMatch>()
         for (t in subtrees) {
-            val match = match(t)
-            if (match.succeeded()) {
-                matches.add(match)
+            if (t != null) {
+                val match = match(t)
+                if (match.succeeded()) {
+                    matches.add(match)
+                }
             }
         }
         return matches

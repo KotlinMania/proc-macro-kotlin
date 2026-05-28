@@ -11,7 +11,6 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.util.BitSet
 
 object Utils {
     // Seriously: why isn't this built in to java? ugh!

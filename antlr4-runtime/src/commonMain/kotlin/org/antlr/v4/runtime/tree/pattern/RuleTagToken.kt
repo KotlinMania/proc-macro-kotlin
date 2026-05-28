@@ -18,7 +18,7 @@ class RuleTagToken(ruleName: String, bypassTokenType: Int, label: String?) : Tok
         this.label = label
     }
 
-    override val channel: Int get() = DEFAULT_CHANNEL
+    override val channel: Int get() = Token.DEFAULT_CHANNEL
 
     override val text: String?
         get() {

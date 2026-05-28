@@ -7,14 +7,14 @@ package org.antlr.v4.runtime.misc
 
 import kotlin.math.floor
 
-class FlexibleHashMap<K, V>
+abstract class FlexibleHashMap<K, V>
     @kotlin.jvm.JvmOverloads
     constructor(
         comparator: AbstractEqualityComparator<in K> = AnyEqualityComparator.INSTANCE as AbstractEqualityComparator<in K>,
         initialCapacity: Int = INITIAL_CAPACITY,
         initialBucketCapacity: Int = INITIAL_BUCKET_CAPACITY,
     ) : MutableMap<K, V> {
-        class Entry<K, V>(
+        abstract class Entry<K, V>(
             override val key: K,
             override var value: V,
         ) : MutableMap.MutableEntry<K, V> {
@@ -46,7 +46,7 @@ class FlexibleHashMap<K, V>
             return hash and (buckets.size - 1)
         }
 
-        override fun get(key: Any?): V? {
+        fun get(key: Any?): V? {
             @Suppress("UNCHECKED_CAST")
             val typedKey = key as? K ?: return null
             val b = getBucket(typedKey)
@@ -81,7 +81,7 @@ class FlexibleHashMap<K, V>
             return null
         }
 
-        override fun remove(key: Any?): V? = throw UnsupportedOperationException()
+        override fun remove(key: K): V? = throw UnsupportedOperationException()
 
         override fun putAll(from: Map<out K, V>) = throw UnsupportedOperationException()
 
@@ -101,7 +101,7 @@ class FlexibleHashMap<K, V>
         override val entries: MutableSet<MutableMap.MutableEntry<K, V>>
             get() = throw UnsupportedOperationException()
 
-        override fun containsKey(key: Any): Boolean = get(key) != null
+        fun containsKey(key: Any): Boolean = get(key) != null
 
         override fun containsValue(value: V): Boolean = throw UnsupportedOperationException()
 
