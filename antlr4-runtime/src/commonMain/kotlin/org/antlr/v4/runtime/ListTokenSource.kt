@@ -95,7 +95,7 @@ class ListTokenSource(
             } else if (tokens.size > 0) {
                 // have to calculate the result from the line/column of the previous
                 // token, along with the text of the token.
-                val lastToken: Token = tokens.get(tokens.size - 1)
+                val lastToken: Token = tokens.get(tokens.size - 1)!!
                 val tokenText: String? = lastToken.text
                 if (tokenText != null) {
                     val lastNewLine: Int = tokenText.lastIndexOf('\n')
@@ -143,7 +143,7 @@ class ListTokenSource(
             return eofToken
         }
 
-        val t: Token = tokens.get(i)
+        val t: Token = tokens.get(i)!!
         if (i == tokens.size - 1 && t.type === Token.EOF) {
             eofToken = t
         }
@@ -164,7 +164,7 @@ class ListTokenSource(
             } else if (tokens.size > 0) {
                 // have to calculate the result from the line/column of the previous
                 // token, along with the text of the token.
-                val lastToken: Token = tokens.get(tokens.size - 1)
+                val lastToken: Token = tokens.get(tokens.size - 1)!!
                 var line: Int = lastToken.line
 
                 val tokenText: String? = lastToken.text

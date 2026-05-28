@@ -169,7 +169,7 @@ abstract class SemanticContext {
 
             if (!differs) return this
 
-            if (operands.isEmpty) return Empty.Instance
+            if (operands.isEmpty()) return Empty.Instance
 
             var result: SemanticContext = operands[0]
             for (i in 1 until operands.size) {
@@ -234,7 +234,7 @@ abstract class SemanticContext {
 
             if (!differs) return this
 
-            if (operands.isEmpty) return null
+            if (operands.isEmpty()) return null
 
             var result: SemanticContext = operands[0]
             for (i in 1 until operands.size) {

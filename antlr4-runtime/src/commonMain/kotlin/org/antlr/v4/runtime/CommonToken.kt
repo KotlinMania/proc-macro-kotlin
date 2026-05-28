@@ -152,7 +152,7 @@ class CommonToken :
 
         val input: CharStream? = this.inputStream
         if (input == null) return null
-        val n: Int = input.size
+        val n: Int = input.size()
         if (this.startIndex < n && this.stopIndex < n) {
             return input.getText(Interval.of(this.startIndex, this.stopIndex))
         } else {

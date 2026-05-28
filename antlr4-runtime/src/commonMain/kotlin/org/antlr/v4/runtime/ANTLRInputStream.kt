@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval

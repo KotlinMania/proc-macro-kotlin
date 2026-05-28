@@ -3,6 +3,8 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.CharStream
@@ -130,7 +132,7 @@ class LexerATNSimulator(
         val startState: ATNState = atn.modeToStartState.get(mode)
 
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
-            System.out.format("matchATN mode %d start: %s\n", mode, startState)
+            println("matchATN mode $mode start: $startState")
         }
 
         val old_mode = mode
@@ -147,7 +149,7 @@ class LexerATNSimulator(
         val predict = execATN(input, next)
 
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
-            System.out.format("DFA after matchATN: %s\n", decisionToDFA[old_mode].toLexerString())
+            println("DFA after matchATN: ${decisionToDFA[old_mode].toLexerString()}")
         }
 
         return predict
@@ -159,7 +161,7 @@ class LexerATNSimulator(
     ): Int {
         // println("enter exec index "+input.index()+" from "+ds0.configs);
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
-            System.out.format("start state closure=%s\n", ds0.configs)
+            println("start state closure=${ds0.configs}")
         }
 
         if (ds0.isAcceptState) {
@@ -173,7 +175,7 @@ class LexerATNSimulator(
 
         while (true) { // while more work
             if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
-                System.out.format("execATN loop starting closure: %s\n", s.configs)
+                println("execATN loop starting closure: ${s.configs}")
             }
 
             // As we move src->trg, src->trg, we keep track of the previous trg to
@@ -280,7 +282,7 @@ class LexerATNSimulator(
         // Fill reach starting from closure, following t transitions
         getReachableConfigSet(input, s.configs, reach, t)
 
-        if (reach.isEmpty) { // we got nowhere on t from s
+        if (reach.isEmpty()) { // we got nowhere on t from s
             if (!reach.hasSemanticContext) {
                 // we got nowhere on t, don't throw out this knowledge; it'd
                 // cause a failover from DFA later.
@@ -342,7 +344,7 @@ class LexerATNSimulator(
             }
 
             if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
-                System.out.format("testing %s at %s\n", getTokenName(t), c.toString(recog, true))
+                println("testing ${getTokenName(t)} at ${c.toString(recog, true)}")
             }
 
             val n: Int = c.state.numberOfTransitions
@@ -384,7 +386,7 @@ class LexerATNSimulator(
         charPos: Int,
     ) {
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
-            System.out.format("ACTION %s\n", lexerActionExecutor)
+            println("ACTION $lexerActionExecutor")
         }
 
         // seek to after last char in token
@@ -448,13 +450,11 @@ class LexerATNSimulator(
         if (config.state is RuleStopState) {
             if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
                 if (recog != null) {
-                    System.out.format(
-                        "closure at %s rule stop %s\n",
-                        recog.ruleNames[config.state.ruleIndex],
-                        config,
+                    println(
+                        "closure at ${recog.ruleNames[config.state.ruleIndex]} rule stop $config",
                     )
                 } else {
-                    System.out.format("closure at rule stop %s\n", config)
+                    println("closure at rule stop $config")
                 }
             }
 
@@ -469,7 +469,7 @@ class LexerATNSimulator(
             }
 
             if (config.context != null && !config.context.isEmpty) {
-                for (i in 0..<config.context.size) {
+                for (i in 0..<config.context.size()) {
                     if (config.context.getReturnState(i) !== PredictionContext.EMPTY_RETURN_STATE) {
                         val newContext: PredictionContext? = config.context.getParent(i) // "pop" return state
                         val returnState: ATNState? = atn.states.get(config.context.getReturnState(i))

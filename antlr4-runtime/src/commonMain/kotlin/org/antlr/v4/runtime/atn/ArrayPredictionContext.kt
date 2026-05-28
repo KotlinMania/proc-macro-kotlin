@@ -3,6 +3,8 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime.atn
 
 class ArrayPredictionContext(

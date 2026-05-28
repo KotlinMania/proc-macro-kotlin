@@ -3,6 +3,8 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.Token
@@ -137,10 +139,7 @@ class ATNSerializer(
 
                     else -> {
                         val message: String? =
-                            String.format(
-                                "The specified lexer action type %s is not valid.",
-                                action.actionType,
-                            )
+                            "The specified lexer action type ${action.actionType} is not valid."
                         throw IllegalArgumentException(message)
                     }
                 }
@@ -278,15 +277,15 @@ class ATNSerializer(
     }
 
     private fun addPrecedenceStates() {
-        data.add(precedenceStates.size)
-        for (i in 0..<precedenceStates.size) {
+        data.add(precedenceStates.size())
+        for (i in 0..<precedenceStates.size()) {
             data.add(precedenceStates.get(i))
         }
     }
 
     private fun addNonGreedyStates() {
-        data.add(nonGreedyStates.size)
-        for (i in 0..<nonGreedyStates.size) {
+        data.add(nonGreedyStates.size())
+        for (i in 0..<nonGreedyStates.size()) {
             data.add(nonGreedyStates.get(i))
         }
     }

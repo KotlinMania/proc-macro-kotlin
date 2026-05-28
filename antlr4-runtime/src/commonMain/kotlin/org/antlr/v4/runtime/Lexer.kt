@@ -105,7 +105,7 @@ abstract class Lexer :
             outer@ while (true) {
                 if (_hitEOF) {
                     emitEOF()
-                    return _token
+                    return _token!!
                 }
 
                 _token = null
@@ -136,7 +136,7 @@ abstract class Lexer :
                     }
                 } while (this.type == org.antlr.v4.runtime.Lexer.Companion.MORE)
                 if (_token == null) emit()
-                return _token
+                return _token!!
             }
         } finally {
             // make sure we release marker after match or

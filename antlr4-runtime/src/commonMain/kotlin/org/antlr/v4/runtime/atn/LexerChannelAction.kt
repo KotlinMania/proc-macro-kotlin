@@ -69,5 +69,5 @@ class LexerChannelAction
         return channel == obj.channel
     }
 
-    override fun toString(): String = String.format("channel(%d)", channel)
+    override fun toString(): String = "channel($channel)"
 }

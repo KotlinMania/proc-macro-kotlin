@@ -3,6 +3,8 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.ParserRuleContext
@@ -92,16 +94,16 @@ abstract class PredictionContext protected constructor(
             localBuffer.append("[")
             while (!p.isEmpty && p !== stop) {
                 var index = 0
-                if (p.size > 0) {
+                if (p.size() > 0) {
                     var bits = 1
-                    while ((1 shl bits) < p.size) {
+                    while ((1 shl bits) < p.size()) {
                         bits++
                     }
 
                     val mask = (1 shl bits) - 1
                     index = (perm shr offset) and mask
-                    last = last and (index >= p.size - 1)
-                    if (index >= p.size) {
+                    last = last and (index >= p.size() - 1)
+                    if (index >= p.size()) {
                         perm++
                         continue@outer
                     }
@@ -674,14 +676,14 @@ abstract class PredictionContext protected constructor(
 
             for (current in nodes) {
                 if (current === EmptyPredictionContext.Instance) continue
-                for (i in 0..<current!!.size) {
+                for (i in 0..<current!!.size()) {
                     if (current.getParent(i) == null) continue
                     val s: String? = current.id.toString()
                     buf.append("  s").append(s)
                     buf.append("->")
                     buf.append("s")
                     buf.append(current.getParent(i).id)
-                    if (current.size > 1) {
+                    if (current.size() > 1) {
                         buf.append(" [label=\"parent[" + i + "]\"];\n")
                     } else {
                         buf.append(";\n")
@@ -715,8 +717,8 @@ abstract class PredictionContext protected constructor(
             }
 
             var changed = false
-            var parents = arrayOfNulls<PredictionContext>(context.size)
-            var i = 0
+var parents = arrayOfNulls<PredictionContext>(context.size())
+                    var i = 0
             while (i < parents.size) {
                 val parent: PredictionContext? =
                     org.antlr.v4.runtime.atn.PredictionContext.Companion.getCachedContext(
@@ -726,8 +728,8 @@ abstract class PredictionContext protected constructor(
                     )
                 if (changed || parent !== context.getParent(i)) {
                     if (!changed) {
-                        parents = arrayOfNulls<PredictionContext>(context.size)
-                        for (j in 0..<context.size) {
+                        parents = arrayOfNulls<PredictionContext>(context.size())
+                        for (j in 0..<context.size()) {
                             parents[j] = context.getParent(j)
                         }
 
@@ -801,7 +803,7 @@ abstract class PredictionContext protected constructor(
             if (context == null || visited.containsKey(context)) return
             visited.put(context, context)
             nodes.add(context)
-            for (i in 0..<context.size) {
+            for (i in 0..<context.size()) {
                 org.antlr.v4.runtime.atn.PredictionContext.Companion.getAllContextNodes_(
                     context.getParent(i),
                     nodes,

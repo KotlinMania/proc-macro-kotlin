@@ -3,6 +3,8 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.*
@@ -943,7 +945,7 @@ open class ParserATNSimulator(
          * multiple alternatives are viable.
          */
         if (skippedStopStates != null && (!fullCtx || !PredictionMode.hasConfigInRuleStopState(reach))) {
-            assert(!skippedStopStates.isEmpty)
+            assert(!skippedStopStates.isEmpty())
             for (c in skippedStopStates) {
                 reach.add(c, mergeCache)
             }
@@ -953,7 +955,7 @@ open class ParserATNSimulator(
             println("computeReachSet " + closure + " -> " + reach)
         }
 
-        if (reach.isEmpty) return null
+        if (reach.isEmpty()) return null
         return reach
     }
 
@@ -1404,7 +1406,7 @@ open class ParserATNSimulator(
                 alts.add(c.alt)
             }
         }
-        if (alts.size === 0) return ATN.INVALID_ALT_NUMBER
+        if (alts.size() === 0) return ATN.INVALID_ALT_NUMBER
         return alts.getMinElement()
     }
 
@@ -1574,7 +1576,7 @@ open class ParserATNSimulator(
             // We hit rule end. If we have context info, use it
             // run thru all possible stack tops in ctx
             if (!config.context.isEmpty) {
-                for (i in 0..<config.context.size) {
+                for (i in 0..<config.context.size()) {
                     if (config.context.getReturnState(i) === PredictionContext.EMPTY_RETURN_STATE) {
                         if (fullCtx) {
                             configs.add(ATNConfig(config, config.state, EmptyPredictionContext.Instance), mergeCache)
@@ -1851,7 +1853,7 @@ open class ParserATNSimulator(
 
         // Require all return states to return back to the same rule
         // that p is in.
-        val numCtxs: Int = config.context.size
+        val numCtxs: Int = config.context.size()
         for (i in 0..<numCtxs) { // for each stack context
             val returnState: ATNState = atn.states.get(config.context.getReturnState(i))
             if (returnState.ruleIndex !== p.ruleIndex) return false
@@ -2074,7 +2076,7 @@ open class ParserATNSimulator(
             )
         }
 
-        val returnState: ATNState = t.followState
+        val returnState: ATNState = t.followState!!
         val newContext: PredictionContext? =
             SingletonPredictionContext.create(config.context, returnState.stateNumber)
         return ATNConfig(config, t.target, newContext)
@@ -2413,7 +2415,7 @@ open class ParserATNSimulator(
 
         fun getSafeEnv(envName: String?): String? =
             try {
-                System.getenv(envName)
+                null
             } catch (_: SecurityException) {
                 null
             }

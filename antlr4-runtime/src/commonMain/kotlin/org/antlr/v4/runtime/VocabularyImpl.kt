@@ -153,7 +153,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
                     continue
                 }
 
-                if (!tokenName.isEmpty) {
+                if (!tokenName.isEmpty()) {
                     val firstChar: Char = tokenName.charAt(0)
                     if (firstChar == '\'') {
                         symbolicNames[i] = null

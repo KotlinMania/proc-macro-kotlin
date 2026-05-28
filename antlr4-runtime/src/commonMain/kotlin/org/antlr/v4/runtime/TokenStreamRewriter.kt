@@ -266,7 +266,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
     }
 
     fun replace(programName: String?, from: Int, to: Int, text: Any?) {
-        require(!(from > to || from < 0 || to < 0 || to >= tokens.size)) { "replace: range invalid: " + from + ".." + to + "(size=" + tokens.size + ")" }
+        require(!(from > to || from < 0 || to < 0 || to >= tokens.size())) { "replace: range invalid: " + from + ".." + to + "(size=" + tokens.size() + ")" }
         val op: RewriteOperation = org.antlr.v4.runtime.TokenStreamRewriter.ReplaceOp(from, to, text)
         val rewrites = getProgram(programName)
         op.instructionIndex = rewrites.size
@@ -342,14 +342,14 @@ class TokenStreamRewriter(tokens: TokenStream) {
          */
         get() = getText(
             org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME,
-            Interval.of(0, tokens.size - 1)
-        )
+Interval.of(0, tokens.size() - 1)
+    )
 
     /** Return the text from the original tokens altered per the
      * instructions given to this rewriter in programName.
      */
     fun getText(programName: String?): String {
-        return getText(programName, Interval.of(0, tokens.size - 1))
+        return getText(programName, Interval.of(0, tokens.size() - 1))
     }
 
     /** Return the text associated with the tokens in the interval from the
@@ -371,10 +371,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
         var stop: Int = interval.b
 
         // ensure start/end are in range
-        if (stop > tokens.size - 1) stop = tokens.size - 1
+        if (stop > tokens.size() - 1) stop = tokens.size() - 1
         if (start < 0) start = 0
 
-        if (rewrites == null || rewrites.isEmpty) {
+        if (rewrites == null || rewrites.isEmpty()) {
             return tokens.getText(interval) // no instructions to execute
         }
         val buf: StringBuilder = StringBuilder()
@@ -384,10 +384,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
 
         // Walk buffer, executing instructions and emitting tokens
         var i = start
-        while (i <= stop && i < tokens.size) {
+        while (i <= stop && i < tokens.size()) {
             val op = indexToOp.get(i)
             indexToOp.remove(i) // remove so any left have index size-1
-            val t: Token = tokens.get(i)
+            val t: Token = tokens.get(i)!!
             if (op == null) {
                 // no operation at that index, just dump token
                 if (t.type !== Token.EOF) buf.append(t.text)
@@ -400,11 +400,11 @@ class TokenStreamRewriter(tokens: TokenStream) {
         // include stuff after end if it's last index in buffer
         // So, if they did an insertAfter(lastValidIndex, "foo"), include
         // foo if end==lastValidIndex.
-        if (stop == tokens.size - 1) {
+        if (stop == tokens.size() - 1) {
             // Scan any remaining operations after last token
             // should be included (they will be inserts).
             for (op in indexToOp.values()) {
-                if (op.index >= tokens.size - 1) buf.append(op.text)
+                if (op.index >= tokens.size() - 1) buf.append(op.text)
             }
         }
         return buf.toString()

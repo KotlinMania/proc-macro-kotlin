@@ -52,7 +52,7 @@ class LL1Analyzer(
             )
             // Wipe out lookahead for this alternative if we found nothing
             // or we had a predicate when we !seeThruPreds
-            if (look[alt].size === 0 || look[alt].contains(org.antlr.v4.runtime.atn.LL1Analyzer.Companion.HIT_PRED)) {
+            if (look[alt].size() === 0 || look[alt].contains(org.antlr.v4.runtime.atn.LL1Analyzer.Companion.HIT_PRED)) {
                 look[alt] = null
             }
         }
@@ -190,7 +190,7 @@ class LL1Analyzer(
                 val removed: Boolean = calledRuleStack.get(s.ruleIndex)
                 try {
                     calledRuleStack.clear(s.ruleIndex)
-                    for (i in 0..<ctx.size) {
+                    for (i in 0..<ctx.size()) {
                         val returnState: ATNState = atn.states.get(ctx.getReturnState(i))
                         // 					    println("popping back to "+retState);
                         _LOOK(

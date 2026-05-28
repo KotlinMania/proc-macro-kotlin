@@ -40,11 +40,7 @@ class ATNDeserializer
             val version = data[p++]
             if (version != org.antlr.v4.runtime.atn.ATNDeserializer.Companion.SERIALIZED_VERSION) {
                 val reason: String? =
-                    String.format(
-                        "Could not deserialize ATN with version %d (expected %d).",
-                        version,
-                        org.antlr.v4.runtime.atn.ATNDeserializer.Companion.SERIALIZED_VERSION,
-                    )
+                    "Could not deserialize ATN with version $version (expected ${org.antlr.v4.runtime.atn.ATNDeserializer.Companion.SERIALIZED_VERSION})."
                 throw UnsupportedOperationException(InvalidClassException(ATN::class.qualifiedName, reason))
             }
 
@@ -538,7 +534,7 @@ class ATNDeserializer
                 ATNState.LOOP_END -> s = LoopEndState()
                 else -> {
                     val message: String? =
-                        String.format("The specified state type %d is not valid.", type)
+                        "The specified state type $type is not valid."
                     throw IllegalArgumentException(message)
                 }
             }
@@ -570,10 +566,7 @@ class ATNDeserializer
                 TYPE -> return LexerTypeAction(data1)
 
                 else -> throw IllegalArgumentException(
-                    String.format(
-                        "The specified lexer action type %s is not valid.",
-                        type,
-                    ),
+                    "The specified lexer action type $type is not valid.",
                 )
             }
         }
@@ -614,8 +607,8 @@ class ATNDeserializer
              * into the runtime). Used only for Java Target.
              */
             fun encodeIntsWith16BitWords(data: IntList): IntList {
-                val data16: IntList = IntList((data.size * 1.5) as Int)
-                for (i in 0..<data.size) {
+                val data16: IntList = IntList((data.size() * 1.5) as Int)
+                for (i in 0..<data.size()) {
                     var v: Int = data.get(i)
                     if (v == -1) { // use two max uint16 for -1
                         data16.add(0xFFFF)

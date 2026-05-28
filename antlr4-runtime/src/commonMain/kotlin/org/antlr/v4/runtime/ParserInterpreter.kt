@@ -123,7 +123,6 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
                 decisionToDFA,
                 sharedContextCache
             )
-        )
     }
     override fun reset() {
         super.reset()
@@ -255,7 +254,7 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
             Transition.PRECEDENCE -> if (!precpred(_ctx, (transition as PrecedencePredicateTransition).precedence)) {
                 throw FailedPredicateException(
                     this,
-                    String.format("precpred(_ctx, %d)", (transition as PrecedencePredicateTransition).precedence)
+                    "precpred(_ctx, ${(transition as PrecedencePredicateTransition).precedence})"
                 )
             }
 
@@ -370,7 +369,7 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
             // no input consumed, better add an error node
             if (e is InputMismatchException) {
                 val ime: InputMismatchException? = e as InputMismatchException?
-                val tok: Token = e.getOffendingToken()
+                val tok: Token = e.getOffendingToken()!!
                 var expectedTokenType: Int = Token.INVALID_TYPE
                 if (!ime.expectedTokens.isNil()) {
                     expectedTokenType = ime.expectedTokens.getMinElement() // get any element
@@ -385,7 +384,7 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
                     )
                 _ctx.addErrorNode(createErrorNode(_ctx, errToken))
             } else { // NoViableAlt
-                val tok: Token = e.getOffendingToken()
+                val tok: Token = e.getOffendingToken()!!
                 val errToken: Token? =
                     getTokenFactory().create(
                         Pair<TokenSource?, CharStream?>(tok.tokenSource, tok.tokenSource.inputStream),
@@ -400,7 +399,7 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
     }
 
     protected fun recoverInline(): Token {
-        return _errHandler.recoverInline(this)
+        return _errHandler.recoverInline(this)!!
     }
 
     /** Return the root of the parse, which can be useful if the parser

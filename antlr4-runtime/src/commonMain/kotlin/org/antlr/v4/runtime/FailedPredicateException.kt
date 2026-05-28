@@ -60,7 +60,7 @@ class FailedPredicateException(
                 return message
             }
 
-            return String.format("failed predicate: {%s}?", predicate)
+            return "failed predicate: {$predicate}?"
         }
     }
 }

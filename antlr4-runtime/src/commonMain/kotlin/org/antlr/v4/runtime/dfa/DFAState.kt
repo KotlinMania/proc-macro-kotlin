@@ -50,7 +50,7 @@ class DFAState {
             if (configs != null) {
                 for (c in configs) alts.add(c.alt)
             }
-            if (alts.isEmpty) return null
+            if (alts.isEmpty()) return null
             return alts
         }
 

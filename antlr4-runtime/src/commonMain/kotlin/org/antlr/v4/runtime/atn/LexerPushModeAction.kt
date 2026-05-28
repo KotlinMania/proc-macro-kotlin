@@ -69,5 +69,5 @@ class LexerPushModeAction
         return mode == obj.mode
     }
 
-    override fun toString(): String = String.format("pushMode(%d)", mode)
+    override fun toString(): String = "pushMode($mode)"
 }

@@ -30,15 +30,11 @@ class LexerNoViableAltException(
 
     fun toString(): String {
         var symbol: String? = ""
-        if (startIndex >= 0 && startIndex < this.inputStream.size) {
+        if (startIndex >= 0 && startIndex < this.inputStream.size()) {
             symbol = this.inputStream.getText(Interval.of(startIndex, startIndex))
             symbol = Utils.escapeWhitespace(symbol, false)
         }
 
-        return String.format(
-            "%s('%s')",
-            org.antlr.v4.runtime.LexerNoViableAltException::class.simpleName!!,
-            symbol,
-        )
+        return "${org.antlr.v4.runtime.LexerNoViableAltException::class.simpleName!!}('$symbol')"
     }
 }

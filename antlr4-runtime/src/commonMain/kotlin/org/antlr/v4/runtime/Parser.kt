@@ -71,6 +71,28 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
 
 
 
+    /** The input stream (set via constructor or setInputStream). */
+    protected var _input: TokenStream? = null
+
+    /** Match current input symbol. */
+    protected abstract fun consume()
+
+    /** Create error node during recovery. */
+    protected abstract fun createErrorNode(ctx: ParserRuleContext?, t: Token): ErrorNode?
+
+    /** Serialized ATN for bypass-alts cache. */
+    protected abstract fun getSerializedATN(): String?
+
+    /** Trace flag. */
+    protected var isTrace: Boolean = false
+
+    /** Bypass alts ATN cache (lazy, unsynchronized). */
+    private var bypassAltsAtnCache: ATN? = null
+
+    /** Current input token. */
+    val currentToken: Token
+        get() = _input!!.LT(1)!!
+
     protected val _precedenceStack: IntStack
 
     init {
@@ -341,7 +363,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
     fun removeParseListener(listener: ParseTreeListener?) {
         if (_parseListeners != null) {
             if (_parseListeners.remove(listener)) {
-                if (_parseListeners!!.isEmpty) {
+                if (_parseListeners!!.isEmpty()) {
                     _parseListeners = null
                 }
             }
@@ -390,6 +412,30 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         _input!!.tokenSource.setTokenFactory(factory)
     }
 
+    override fun setInputStream(input: IntStream?) {
+        _input = input as? TokenStream
+    }
+
+    override val inputStream: IntStream?
+        get() = _input
+
+    /**
+     * Notify error listeners of a syntax error.
+     */
+    fun notifyErrorListeners(msg: String) {
+        notifyErrorListeners(currentToken, msg, null)
+    }
+
+    /**
+     * Notify error listeners of a syntax error with a specific token and exception.
+     */
+    fun notifyErrorListeners(offendingToken: Token?, msg: String?, e: RecognitionException?) {
+        numberOfSyntaxErrors++
+        val line = offendingToken?.line ?: 0
+        val charPositionInLine = offendingToken?.charPositionInLine ?: 0
+        errorListenerDispatch.syntaxError(this, offendingToken, line, charPositionInLine, msg, e)
+    }
+
     /**
      * The ATN with bypass alternatives is expensive to create so we create it
      * lazily.
@@ -404,14 +450,11 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
                 throw UnsupportedOperationException("The current parser does not support an ATN with bypass alternatives.")
             }
 
-            synchronized(this) {
-                if (bypassAltsAtnCache != null) {
-                    return bypassAltsAtnCache
-                }
+            if (bypassAltsAtnCache == null) {
                 val deserializationOptions: ATNDeserializationOptions = ATNDeserializationOptions()
                 deserializationOptions.setGenerateRuleBypassTransitions(true)
                 bypassAltsAtnCache = ATNDeserializer(deserializationOptions).deserialize(serializedAtn.toCharArray())
-                return bypassAltsAtnCache
             }
+            return bypassAltsAtnCache
         }
 }

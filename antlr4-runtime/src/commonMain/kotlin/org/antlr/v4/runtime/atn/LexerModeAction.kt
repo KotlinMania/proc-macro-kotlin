@@ -69,5 +69,5 @@ class LexerModeAction
         return mode == obj.mode
     }
 
-    override fun toString(): String = String.format("mode(%d)", mode)
+    override fun toString(): String = "mode($mode)"
 }

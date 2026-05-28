@@ -622,19 +622,20 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
         }
         var current: Token? = currentSymbol
         val lookback: Token? = recognizer.inputStream!!.LT(-1)
-        if (current.type === Token.EOF && lookback != null) {
+        if (current!!.type === Token.EOF && lookback != null) {
             current = lookback
         }
+        val safeCurrent: Token = current!!
         return recognizer.tokenFactory.create(
-            Pair<TokenSource?, CharStream?>(current.tokenSource, current.tokenSource.inputStream),
+            Pair<TokenSource?, CharStream?>(safeCurrent.tokenSource, safeCurrent.tokenSource.inputStream),
             expectedTokenType,
             tokenText,
             Token.DEFAULT_CHANNEL,
             -1,
             -1,
-            current.line,
-            current.charPositionInLine,
-        )
+            safeCurrent.line,
+            safeCurrent.charPositionInLine,
+        )!!
     }
 
     protected fun getExpectedTokens(recognizer: Parser): IntervalSet = recognizer.expectedTokens

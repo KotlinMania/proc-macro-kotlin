@@ -57,10 +57,10 @@ abstract class ATNState {
         index: Int,
         e: Transition,
     ) {
-        if (transitions.isEmpty) {
+        if (transitions.isEmpty()) {
             epsilonOnlyTransitions = e.isEpsilon
         } else if (epsilonOnlyTransitions != e.isEpsilon) {
-            System.err.println("ATN state $stateNumber has both epsilon and non-epsilon transitions.")
+            println("ATN state $stateNumber has both epsilon and non-epsilon transitions.")
             epsilonOnlyTransitions = false
         }
 

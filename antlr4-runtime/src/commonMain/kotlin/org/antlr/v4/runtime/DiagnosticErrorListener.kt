@@ -63,11 +63,10 @@ class DiagnosticErrorListener
                 return
             }
 
-            val format = "reportAmbiguity d=%s: ambigAlts=%s, input='%s'"
             val decision = getDecisionDescription(recognizer, dfa)
             val conflictingAlts: BitSet? = getConflictingAlts(ambigAlts, configs)
             val text: String? = recognizer.tokenStream.getText(Interval.of(startIndex, stopIndex))
-            val message: String? = String.format(format, decision, conflictingAlts, text)
+            val message: String? = "reportAmbiguity d=$decision: ambigAlts=$conflictingAlts, input='$text'"
             recognizer.notifyErrorListeners(message)
         }
 
@@ -79,10 +78,9 @@ class DiagnosticErrorListener
             conflictingAlts: BitSet?,
             configs: ATNConfigSet?,
         ) {
-            val format = "reportAttemptingFullContext d=%s, input='%s'"
             val decision = getDecisionDescription(recognizer, dfa)
             val text: String? = recognizer.tokenStream.getText(Interval.of(startIndex, stopIndex))
-            val message: String? = String.format(format, decision, text)
+            val message: String? = "reportAttemptingFullContext d=$decision, input='$text'"
             recognizer.notifyErrorListeners(message)
         }
 
@@ -94,10 +92,9 @@ class DiagnosticErrorListener
             prediction: Int,
             configs: ATNConfigSet?,
         ) {
-            val format = "reportContextSensitivity d=%s, input='%s'"
             val decision = getDecisionDescription(recognizer, dfa)
             val text: String? = recognizer.tokenStream.getText(Interval.of(startIndex, stopIndex))
-            val message: String? = String.format(format, decision, text)
+            val message: String? = "reportContextSensitivity d=$decision, input='$text'"
             recognizer.notifyErrorListeners(message)
         }
 
@@ -114,11 +111,11 @@ class DiagnosticErrorListener
             }
 
             val ruleName = ruleNames[ruleIndex]
-            if (ruleName == null || ruleName.isEmpty) {
+            if (ruleName == null || ruleName.isEmpty()) {
                 return decision.toString()
             }
 
-            return String.format("%d (%s)", decision, ruleName)
+            return "$decision ($ruleName)"
         }
 
         /**

@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.dfa.DFAState
 import org.antlr.v4.runtime.misc.BitSet
+import kotlin.system.getTimeNanos
 
 /**
  * @since 4.3
@@ -59,9 +60,9 @@ class ProfilingATNSimulator(
             this._sllStopIndex = -1
             this._llStopIndex = -1
             this.currentDecision = decision
-            val start: Long = System.nanoTime() // expensive but useful info
+            val start: Long = kotlin.system.getTimeNanos()
             val alt: Int = super.adaptivePredict(input, decision, outerContext)
-            val stop: Long = System.nanoTime()
+            val stop: Long = kotlin.system.getTimeNanos()
             decisions[decision].timeInPrediction += (stop - start)
             decisions[decision].invocations++
 

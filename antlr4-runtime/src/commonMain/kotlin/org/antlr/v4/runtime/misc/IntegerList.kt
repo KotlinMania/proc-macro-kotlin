@@ -3,6 +3,8 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package org.antlr.v4.runtime.misc
 
 /**
@@ -50,13 +52,13 @@ open class IntList {
 
     override fun addAll(array: IntArray) {
         ensureCapacity(_size + array.size)
-        System.arraycopy(array, 0, _data, _size, array.size)
+        array.copyInto(_data, _size, 0, array.size)
         _size += array.size
     }
 
     override fun addAll(list: IntList) {
         ensureCapacity(_size + list._size)
-        System.arraycopy(list._data, 0, _data, _size, list._size)
+        list._data.copyInto(_data, _size, 0, list._size)
         _size += list._size
     }
 
@@ -103,7 +105,7 @@ open class IntList {
 
     fun removeAt(index: Int): Int {
         val value = get(index)
-        System.arraycopy(_data, index + 1, _data, index, _size - index - 1)
+        _data.copyInto(_data, index, index + 1, _size)
         _data[_size - 1] = 0
         _size--
         return value
@@ -118,7 +120,7 @@ open class IntList {
         }
         require(fromIndex <= toIndex)
 
-        System.arraycopy(_data, toIndex, _data, fromIndex, _size - toIndex)
+        _data.copyInto(_data, fromIndex, toIndex, _size)
         _data.fill(0, _size - (toIndex - fromIndex), _size)
         _size -= (toIndex - fromIndex)
     }

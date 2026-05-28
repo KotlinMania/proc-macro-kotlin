@@ -140,7 +140,7 @@ open class ATNConfigSet
 
         fun optimizeConfigs(interpreter: ATNSimulator) {
             check(!readonly) { "This set is readonly" }
-            if (configLookup!!.isEmpty) return
+            if (configLookup!!.isEmpty()) return
             for (config in configs) {
                 config.context = interpreter.getCachedContext(config.context)
             }
@@ -172,7 +172,7 @@ open class ATNConfigSet
         override val size: Int
             get() = configs.size
 
-        override fun isEmpty(): Boolean = configs.isEmpty
+        override fun isEmpty(): Boolean = configs.isEmpty()
 
         override fun contains(element: ATNConfig): Boolean {
             if (configLookup == null) throw UnsupportedOperationException("This method is not implemented for readonly sets.")

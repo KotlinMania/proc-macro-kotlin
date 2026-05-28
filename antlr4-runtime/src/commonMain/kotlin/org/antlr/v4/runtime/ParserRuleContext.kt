@@ -218,7 +218,7 @@ class ParserRuleContext : RuleContext {
         for (o in children) {
             if (o is TerminalNode) {
                 val tnode: TerminalNode = o as TerminalNode
-                val symbol: Token = tnode.symbol
+                val symbol: Token = tnode.symbol!!
                 if (symbol.type === ttype) {
                     j++
                     if (j == i) {
@@ -240,7 +240,7 @@ class ParserRuleContext : RuleContext {
         for (o in children) {
             if (o is TerminalNode) {
                 val tnode: TerminalNode = o as TerminalNode
-                val symbol: Token = tnode.symbol
+                val symbol: Token = tnode.symbol!!
                 if (symbol.type === ttype) {
                     if (tokens == null) {
                         tokens = ArrayList()()

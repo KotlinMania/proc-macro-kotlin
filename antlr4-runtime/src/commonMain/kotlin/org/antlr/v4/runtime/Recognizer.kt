@@ -43,26 +43,24 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     val tokenTypeMap: Map<String, Int>
         get() {
             val vocabulary: Vocabulary = this.vocabulary
-            synchronized(Companion.tokenTypeMapCache) {
-                var result: Map<String, Int>? = Companion.tokenTypeMapCache[vocabulary]
-                if (result == null) {
-                    val mutableResult = mutableMapOf<String, Int>()
-                    for (i in 0..this.atn.maxTokenType) {
-                        val literalName: String? = vocabulary.getLiteralName(i)
-                        if (literalName != null) {
-                            mutableResult[literalName] = i
-                        }
-                        val symbolicName: String? = vocabulary.getSymbolicName(i)
-                        if (symbolicName != null) {
-                            mutableResult[symbolicName] = i
-                        }
+            var result: Map<String, Int>? = Companion.tokenTypeMapCache[vocabulary]
+            if (result == null) {
+                val mutableResult = mutableMapOf<String, Int>()
+                for (i in 0..this.atn.maxTokenType) {
+                    val literalName: String? = vocabulary.getLiteralName(i)
+                    if (literalName != null) {
+                        mutableResult[literalName] = i
                     }
-                    mutableResult["EOF"] = Token.EOF
-                    result = mutableResult.toMap()
-                    Companion.tokenTypeMapCache[vocabulary] = result!!
+                    val symbolicName: String? = vocabulary.getSymbolicName(i)
+                    if (symbolicName != null) {
+                        mutableResult[symbolicName] = i
+                    }
                 }
-                return result!!
+                mutableResult["EOF"] = Token.EOF
+                result = mutableResult.toMap()
+                Companion.tokenTypeMapCache[vocabulary] = result!!
             }
+            return result!!
         }
 
     val ruleIndexMap: Map<String, Int>
@@ -71,14 +69,12 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
             if (ruleNames == null) {
                 throw UnsupportedOperationException("The current recognizer does not provide a list of rule names.")
             }
-            synchronized(Companion.ruleIndexMapCache) {
-                var result: Map<String, Int>? = Companion.ruleIndexMapCache[ruleNames]
-                if (result == null) {
-                    result = ruleNames.mapIndexed { i, name -> name to i }.toMap()
-                    Companion.ruleIndexMapCache[ruleNames] = result!!
-                }
-                return result!!
+            var result: Map<String, Int>? = Companion.ruleIndexMapCache[ruleNames]
+            if (result == null) {
+                result = ruleNames.mapIndexed { i, name -> name to i }.toMap()
+                Companion.ruleIndexMapCache[ruleNames] = result!!
             }
+            return result!!
         }
 
     fun getTokenType(tokenName: String): Int {

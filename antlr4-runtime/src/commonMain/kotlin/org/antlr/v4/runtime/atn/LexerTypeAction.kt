@@ -68,5 +68,5 @@ class LexerTypeAction
         return type == obj.type
     }
 
-    override fun toString(): String = String.format("type(%d)", type)
+    override fun toString(): String = "type($type)"
 }
