@@ -274,7 +274,7 @@ import org.antlr.v4.runtime.misc.Pair
  */
 open class ParserATNSimulator(
     parser: Parser?,
-    atn: ATN?,
+    atn: ATN,
     decisionToDFA: Array<DFA>,
     sharedContextCache: PredictionContextCache?,
 ) : ATNSimulator(atn, sharedContextCache) {
@@ -303,7 +303,7 @@ open class ParserATNSimulator(
 
     /** Testing only!  */
     constructor(
-        atn: ATN?,
+        atn: ATN,
         decisionToDFA: Array<DFA>,
         sharedContextCache: PredictionContextCache?,
     ) : this(null, atn, decisionToDFA, sharedContextCache)

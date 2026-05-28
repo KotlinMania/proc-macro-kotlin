@@ -22,13 +22,13 @@ import org.antlr.v4.runtime.misc.Interval
  * [Token.HIDDEN_CHANNEL], use a filtering token stream such a
  * [CommonTokenStream].
  */
-class BufferedTokenStream(
-    tokenSource: TokenSource,
+open class BufferedTokenStream(
+    tokenSource: TokenSource?,
 ) : TokenStream {
     /**
      * The [TokenSource] from which tokens for this stream are fetched.
      */
-    protected var tokenSource: TokenSource
+    override protected var tokenSource: TokenSource
 
     /**
      * A collection of all tokens fetched from the token source. The list is
@@ -75,11 +75,11 @@ class BufferedTokenStream(
 
     fun getTokenSource(): TokenSource = tokenSource
 
-    fun index(): Int = p
+    override fun index(): Int = p
 
-    fun mark(): Int = 0
+    override fun mark(): Int = 0
 
-    fun release(marker: Int) {
+    override fun release(marker: Int) {
         // no resources to release
     }
 
@@ -95,14 +95,14 @@ class BufferedTokenStream(
         seek(0)
     }
 
-    fun seek(index: Int) {
+    override fun seek(index: Int) {
         lazyInit()
         p = adjustSeekIndex(index)
     }
 
     override fun size(): Int = tokens.size
 
-    fun consume() {
+    override fun consume() {
         val skipEofCheck: Boolean
         if (p >= 0) {
             if (fetchedEOF) {
@@ -167,7 +167,7 @@ class BufferedTokenStream(
         return n
     }
 
-    fun get(i: Int): Token {
+    override fun get(i: Int): Token {
         if (i < 0 || i >= tokens.size) {
             throw IndexOutOfBoundsException("token index " + i + " out of range 0.." + (tokens.size - 1))
         }
@@ -192,14 +192,14 @@ class BufferedTokenStream(
         return subset
     }
 
-    fun LA(i: Int): Int = LT(i).type
+    override fun LA(i: Int): Int = LT(i).type
 
-    protected fun LB(k: Int): Token? {
+    protected open fun LB(k: Int): Token? {
         if ((p - k) < 0) return null
         return tokens.get(p - k)
     }
 
-    fun LT(k: Int): Token? {
+    override fun LT(k: Int): Token? {
         lazyInit()
         if (k == 0) return null
         if (k < 0) return LB(-k)
@@ -228,7 +228,7 @@ class BufferedTokenStream(
      * @param i The target token index.
      * @return The adjusted target token index.
      */
-    protected fun adjustSeekIndex(i: Int): Int = i
+    protected open fun adjustSeekIndex(i: Int): Int = i
 
     protected fun lazyInit() {
         if (p == -1) {
@@ -446,13 +446,13 @@ class BufferedTokenStream(
         return hidden
     }
 
-    val sourceName: String
+    override val sourceName: String
         get() = tokenSource.sourceName
-    val text: String?
+    override val text: String?
         /** Get the text of all tokens in this buffer.  */
         get() = getText(Interval.of(0, size() - 1))
 
-    fun getText(interval: Interval): String? {
+    override fun getText(interval: Interval): String? {
         val start: Int = interval.a
         var stop: Int = interval.b
         if (start < 0 || stop < 0) return ""

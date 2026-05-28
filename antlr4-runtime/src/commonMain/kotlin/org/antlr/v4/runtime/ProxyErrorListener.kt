@@ -26,7 +26,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
 
         this.delegates = delegates
     }
-    fun syntaxError(
+    override fun syntaxError(
         recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,
         line: Int,
@@ -38,7 +38,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
             listener.syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e)
         }
     }
-    fun reportAmbiguity(
+    override fun reportAmbiguity(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
@@ -51,7 +51,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
             listener.reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
         }
     }
-    fun reportAttemptingFullContext(
+    override fun reportAttemptingFullContext(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
@@ -63,7 +63,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
             listener.reportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
         }
     }
-    fun reportContextSensitivity(
+    override fun reportContextSensitivity(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,

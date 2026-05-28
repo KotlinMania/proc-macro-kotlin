@@ -13,7 +13,7 @@ class LexerATNConfig : ATNConfig {
     private val passedThroughNonGreedyDecision: Boolean
 
     constructor(
-        state: ATNState,
+        state: ATNState?,
         alt: Int,
         context: PredictionContext?,
     ) : super(state, alt, context, SemanticContext.Empty.Instance) {
@@ -47,7 +47,7 @@ class LexerATNConfig : ATNConfig {
 
     constructor(
         c: LexerATNConfig,
-        state: ATNState,
+        state: ATNState?,
         context: PredictionContext?,
     ) : super(c, state, context, c.semanticContext) {
         this.lexerActionExecutor = c.lexerActionExecutor

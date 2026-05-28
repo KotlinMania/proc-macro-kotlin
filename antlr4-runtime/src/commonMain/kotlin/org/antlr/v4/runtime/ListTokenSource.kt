@@ -83,7 +83,7 @@ class ListTokenSource(
         this.sourceName = sourceName
     }
 
-    val charPositionInLine: Int
+    override val charPositionInLine: Int
         /**
          * {@inheritDoc}
          */
@@ -115,7 +115,7 @@ class ListTokenSource(
     /**
      * {@inheritDoc}
      */
-    fun nextToken(): Token? {
+    override fun nextToken(): Token? {
         if (i >= tokens.size) {
             if (eofToken == null) {
                 var start = -1
@@ -152,7 +152,7 @@ class ListTokenSource(
         return t
     }
 
-    val line: Int
+    override val line: Int
         /**
          * {@inheritDoc}
          */
@@ -184,7 +184,7 @@ class ListTokenSource(
             // position in the input
             return 1
         }
-    val inputStream: CharStream?
+    override val inputStream: CharStream?
         /**
          * {@inheritDoc}
          */
@@ -204,7 +204,7 @@ class ListTokenSource(
     /**
      * {@inheritDoc}
      */
-    fun getSourceName(): String? {
+    override fun getSourceName(): String? {
         if (sourceName != null) {
             return sourceName
         }
@@ -224,7 +224,7 @@ class ListTokenSource(
         this._factory = factory
     }
 
-    val tokenFactory: TokenFactory<*>
+    override val tokenFactory: TokenFactory<*>
         /**
          * {@inheritDoc}
          */

@@ -8,10 +8,10 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.dfa.DFAState
 
 abstract class ATNSimulator(
-    atn: ATN?,
+    atn: ATN,
     sharedContextCache: PredictionContextCache?,
 ) {
-    val atn: ATN?
+    val atn: ATN
 
     /** The context cache maps all PredictionContext objects that are equals()
      * to a single cached copy. This cache is shared across all contexts
@@ -55,7 +55,7 @@ abstract class ATNSimulator(
      *
      * @since 4.3
      */
-    fun clearDFA(): Unit = throw UnsupportedOperationException("This ATN simulator does not support clearing the DFA.")
+    open fun clearDFA(): Unit = throw UnsupportedOperationException("This ATN simulator does not support clearing the DFA.")
 
     fun getSharedContextCache(): PredictionContextCache? = sharedContextCache
 

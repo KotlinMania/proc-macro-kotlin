@@ -12,7 +12,7 @@ import org.antlr.v4.runtime.atn.DecisionState
 import org.antlr.v4.runtime.atn.StarLoopEntryState
 
 class DFA(
-    atnStartState: DecisionState,
+    atnStartState: DecisionState?,
     decision: Int,
 ) {
     val states: MutableMap<DFAState, DFAState> = HashMap()

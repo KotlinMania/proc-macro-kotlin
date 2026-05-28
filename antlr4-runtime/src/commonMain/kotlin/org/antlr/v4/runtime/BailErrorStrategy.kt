@@ -43,7 +43,7 @@ class BailErrorStrategy : DefaultErrorStrategy() {
      * rule function catches.  Use [Exception.getCause] to get the
      * original [RecognitionException].
      */
-    fun recover(
+    override fun recover(
         recognizer: Parser,
         e: RecognitionException?,
     ) {
@@ -60,7 +60,7 @@ class BailErrorStrategy : DefaultErrorStrategy() {
      * successfully recovers, it won't throw an exception.
      */
     @kotlin.Throws(RecognitionException::class)
-    fun recoverInline(recognizer: Parser): Token? {
+    override fun recoverInline(recognizer: Parser): Token? {
         val e: InputMismatchException = InputMismatchException(recognizer)
         var context: ParserRuleContext? = recognizer.context
         while (context != null) {
@@ -72,6 +72,6 @@ class BailErrorStrategy : DefaultErrorStrategy() {
     }
 
     /** Make sure we don't attempt to recover from problems in subrules.  */
-    fun sync(recognizer: Parser?) {
+    override fun sync(recognizer: Parser?) {
     }
 }

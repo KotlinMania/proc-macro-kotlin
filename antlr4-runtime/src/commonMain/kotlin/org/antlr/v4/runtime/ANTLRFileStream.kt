@@ -15,7 +15,7 @@ import org.antlr.v4.runtime.misc.Utils
 
 @Deprecated("as of 4.7 Please use {@link CharStreams} interface.")
 class ANTLRFileStream(
-    var sourceName: String?,
+    override var sourceName: String?,
     encoding: String?,
 ) : ANTLRInputStream() {
     constructor(fileName: String?) : this(fileName, null)

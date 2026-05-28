@@ -26,20 +26,20 @@ import org.antlr.v4.runtime.tree.TerminalNodeImpl
 
 /** This is all the parsing support code essentially; most of it is error recovery stuff.  */
 abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulator>() {
-    inner class TraceListener : ParseTreeListener {
+    abstract inner class TraceListener : ParseTreeListener {
         override fun enterEveryRule(ctx: ParserRuleContext) {
             println(
-                "enter   " + ruleNames[ctx.ruleIndex] +
+                "enter   " + ruleNames?.get(ctx.ruleIndex) +
                         ", LT(1)=" + _input!!.LT(1).text
             )
         }
         fun visitTerminal(node: TerminalNode) {
             println(
                 "consume " + node.symbol + " rule " +
-                        ruleNames[_ctx!!.ruleIndex]
+                        ruleNames?.get(_ctx!!.ruleIndex)
             )
         }
-        fun visitErrorNode(node: ErrorNode?) {
+        override fun visitErrorNode(node: ErrorNode?) {
         }
         override fun exitEveryRule(ctx: ParserRuleContext) {
             println(
@@ -49,12 +49,12 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         }
     }
 
-    class TrimToSizeListener : ParseTreeListener {
-        fun enterEveryRule(ctx: ParserRuleContext?) {
+    abstract class TrimToSizeListener : ParseTreeListener {
+        override fun enterEveryRule(ctx: ParserRuleContext?) {
         }
-        fun visitTerminal(node: TerminalNode?) {
+        override fun visitTerminal(node: TerminalNode?) {
         }
-        fun visitErrorNode(node: ErrorNode?) {
+        override fun visitErrorNode(node: ErrorNode?) {
         }
         override fun exitEveryRule(ctx: ParserRuleContext) {
             if (ctx.children is ArrayList) {
@@ -63,7 +63,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         }
 
         companion object {
-            val INSTANCE: TrimToSizeListener = org.antlr.v4.runtime.Parser.TrimToSizeListener()
+            val INSTANCE: TrimToSizeListener = TrimToSizeListener()
         }
     }
 
@@ -404,11 +404,11 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             listener.exitEveryRule(_ctx)
         }
     }
-    val tokenFactory: TokenFactory<*>
+    override val tokenFactory: TokenFactory<*>
         get() = _input!!.tokenSource.tokenFactory
 
     /** Tell our token source and error strategy about a new way to create tokens.  */
-    fun setTokenFactory(factory: TokenFactory<*>?) {
+    override fun setTokenFactory(factory: TokenFactory<*>?) {
         _input!!.tokenSource.setTokenFactory(factory)
     }
 

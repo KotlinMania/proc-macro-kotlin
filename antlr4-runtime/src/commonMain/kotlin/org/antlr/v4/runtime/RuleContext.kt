@@ -62,12 +62,11 @@ import org.antlr.v4.runtime.tree.Trees
  *
  * @see ParserRuleContext
  */
-class RuleContext : RuleNode {
+open class RuleContext : RuleNode {
     /** @since 4.7. {@see ParseTree#setParent} comment
      */
     /** What context invoked this rule?  */
-    @set:Override
-    var parent: RuleContext? = null
+    override var parent: RuleContext? = null
 
     /** What state invoked the rule associated with this context?
      * The "return address" is the followState of invokingState
@@ -99,14 +98,14 @@ class RuleContext : RuleNode {
          * current context.
          */
         get() = invokingState == -1
-    val sourceInterval: Interval
+    override val sourceInterval: Interval
         // satisfy the ParseTree / SyntaxTree interface
         get() = Interval.INVALID
-    val ruleContext: RuleContext
+    override val ruleContext: RuleContext
         get() = this
-    val payload: RuleContext
+    override val payload: RuleContext
         get() = this
-    val text: String?
+    override val text: String?
         /** Return the combined text of all child nodes. This method only considers
          * tokens which have been added to the parse tree.
          *
@@ -151,10 +150,10 @@ class RuleContext : RuleNode {
          * @since 4.5.3
          */
         set(altNumber) {}
-    fun getChild(i: Int): ParseTree? {
+    override fun getChild(i: Int): ParseTree? {
         return null
     }
-    val childCount: Int
+    override val childCount: Int
         get() = 0
     fun <T> accept(visitor: ParseTreeVisitor<out T?>): T? {
         return visitor.visitChildren(this)
@@ -164,20 +163,20 @@ class RuleContext : RuleNode {
      * (root child1 .. childN). Print just a node if this is a leaf.
      * We have to know the recognizer so we can get rule names.
      */
-    fun toStringTree(recog: Parser?): String {
+    override fun toStringTree(recog: Parser?): String {
         return Trees.toStringTree(this, recog)
     }
 
     /** Print out a whole tree, not just a node, in LISP format
      * (root child1 .. childN). Print just a node if this is a leaf.
      */
-    fun toStringTree(ruleNames: List<String?>?): String {
+    override fun toStringTree(ruleNames: List<String?>?): String {
         return Trees.toStringTree(this, ruleNames)
     }
     fun toStringTree(): String {
         return toStringTree(null as List<String?>?)
     }
-    fun toString(): String {
+    override fun toString(): String {
         return toString(null as List<String?>?, null as RuleContext?)
     }
 

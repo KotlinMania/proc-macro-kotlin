@@ -113,13 +113,13 @@ class TokenStreamRewriter(tokens: TokenStream) {
         /** Execute the rewrite operation by possibly adding to the buffer.
          * Return the index of the next token to operate on.
          */
-        fun execute(buf: StringBuilder?): Int {
+        open fun execute(buf: StringBuilder): Int {
             return index
         }
-        override fun toString(): String? {
-            var opName: String = getClass().getName()
-            val `$index`: Int = opName.indexOf('$')
-            opName = opName.substring(`$index` + 1, opName.size)
+        override fun toString(): String {
+            var opName: String = this::class.simpleName ?: "RewriteOperation"
+            val dollarIndex: Int = opName.indexOf("$")
+            opName = opName.substring(dollarIndex + 1, opName.length)
             return "<" + opName + "@" + tokens.get(index) +
                     ":\"" + text + "\">"
         }
@@ -128,8 +128,9 @@ class TokenStreamRewriter(tokens: TokenStream) {
     internal inner open class InsertBeforeOp(index: Int, text: Any?) : RewriteOperation(index, text) {
         override fun execute(buf: StringBuilder): Int {
             buf.append(text)
-            if (tokens.get(index).type !== Token.EOF) {
-                buf.append(tokens.get(index).text)
+            val token = tokens.get(index)
+            if (token != null && token.type !== Token.EOF) {
+                buf.append(token.text)
             }
             return index + 1
         }
@@ -151,7 +152,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
             }
             return lastIndex + 1
         }
-        public override fun toString(): String? {
+        public override fun toString(): String {
             if (text == null) {
                 return "<DeleteOp@" + tokens.get(index) +
                         ".." + tokens.get(lastIndex) + ">"
@@ -168,7 +169,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
      * I'm calling these things "programs."
      * Maps String (name)  rewrite (List)
      */
-    protected val programs: MutableMap<String, MutableList<RewriteOperation>>
+    protected val programs: MutableMap<String, MutableList<RewriteOperation?>>
 
     /** Map String (program name)  Int index  */
     protected val lastRewriteTokenIndexes: MutableMap<String, Int>
@@ -177,8 +178,8 @@ class TokenStreamRewriter(tokens: TokenStream) {
         this.tokens = tokens
         programs = HashMap()
         programs.put(
-            org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME,
-            ArrayList<RewriteOperation>(org.antlr.v4.runtime.TokenStreamRewriter.Companion.PROGRAM_INIT_SIZE)
+            DEFAULT_PROGRAM_NAME,
+            ArrayList<RewriteOperation?>(PROGRAM_INIT_SIZE)
         )
         lastRewriteTokenIndexes = HashMap()
     }
@@ -187,93 +188,93 @@ class TokenStreamRewriter(tokens: TokenStream) {
         get() = tokens
 
     fun rollback(instructionIndex: Int) {
-        rollback(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, instructionIndex)
+        rollback(DEFAULT_PROGRAM_NAME, instructionIndex)
     }
 
     /** Rollback the instruction stream for a program so that
      * the indicated instruction (via instructionIndex) is no
      * longer in the stream. UNTESTED!
      */
-    fun rollback(programName: String?, instructionIndex: Int) {
+    fun rollback(programName: String, instructionIndex: Int) {
         val `is` = programs.get(programName)
         if (`is` != null) {
             programs.put(
                 programName,
-                `is`.subList(org.antlr.v4.runtime.TokenStreamRewriter.Companion.MIN_TOKEN_INDEX, instructionIndex)
+                `is`.subList(MIN_TOKEN_INDEX, instructionIndex).toMutableList()
             )
         }
     }
 
     /** Reset the program so that no instructions exist  */
     @kotlin.jvm.JvmOverloads
-    fun deleteProgram(programName: String? = org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME) {
-        rollback(programName, org.antlr.v4.runtime.TokenStreamRewriter.Companion.MIN_TOKEN_INDEX)
+    fun deleteProgram(programName: String = DEFAULT_PROGRAM_NAME) {
+        rollback(programName, MIN_TOKEN_INDEX)
     }
 
     fun insertAfter(t: Token, text: Any?) {
-        insertAfter(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, t, text)
+        insertAfter(DEFAULT_PROGRAM_NAME, t, text)
     }
 
     fun insertAfter(index: Int, text: Any?) {
-        insertAfter(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, index, text)
+        insertAfter(DEFAULT_PROGRAM_NAME, index, text)
     }
 
-    fun insertAfter(programName: String?, t: Token, text: Any?) {
+    fun insertAfter(programName: String, t: Token, text: Any?) {
         insertAfter(programName, t.tokenIndex, text)
     }
 
-    fun insertAfter(programName: String?, index: Int, text: Any?) {
+    fun insertAfter(programName: String, index: Int, text: Any?) {
         // to insert after, just insert before next index (even if past end)
-        val op: RewriteOperation = org.antlr.v4.runtime.TokenStreamRewriter.InsertAfterOp(index, text)
+        val op: RewriteOperation = InsertAfterOp(index, text)
         val rewrites = getProgram(programName)
         op.instructionIndex = rewrites.size
         rewrites.add(op)
     }
 
     fun insertBefore(t: Token, text: Any?) {
-        insertBefore(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, t, text)
+        insertBefore(DEFAULT_PROGRAM_NAME, t, text)
     }
 
     fun insertBefore(index: Int, text: Any?) {
-        insertBefore(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, index, text)
+        insertBefore(DEFAULT_PROGRAM_NAME, index, text)
     }
 
-    fun insertBefore(programName: String?, t: Token, text: Any?) {
+    fun insertBefore(programName: String, t: Token, text: Any?) {
         insertBefore(programName, t.tokenIndex, text)
     }
 
-    fun insertBefore(programName: String?, index: Int, text: Any?) {
-        val op: RewriteOperation = org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp(index, text)
+    fun insertBefore(programName: String, index: Int, text: Any?) {
+        val op: RewriteOperation = InsertBeforeOp(index, text)
         val rewrites = getProgram(programName)
         op.instructionIndex = rewrites.size
         rewrites.add(op)
     }
 
     fun replace(index: Int, text: Any?) {
-        replace(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, index, index, text)
+        replace(DEFAULT_PROGRAM_NAME, index, index, text)
     }
 
     fun replace(from: Int, to: Int, text: Any?) {
-        replace(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, from, to, text)
+        replace(DEFAULT_PROGRAM_NAME, from, to, text)
     }
 
     fun replace(indexT: Token, text: Any?) {
-        replace(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, indexT, indexT, text)
+        replace(DEFAULT_PROGRAM_NAME, indexT, indexT, text)
     }
 
     fun replace(from: Token, to: Token, text: Any?) {
-        replace(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, from, to, text)
+        replace(DEFAULT_PROGRAM_NAME, from, to, text)
     }
 
-    fun replace(programName: String?, from: Int, to: Int, text: Any?) {
+    fun replace(programName: String, from: Int, to: Int, text: Any?) {
         require(!(from > to || from < 0 || to < 0 || to >= tokens.size())) { "replace: range invalid: " + from + ".." + to + "(size=" + tokens.size() + ")" }
-        val op: RewriteOperation = org.antlr.v4.runtime.TokenStreamRewriter.ReplaceOp(from, to, text)
+        val op: RewriteOperation = ReplaceOp(from, to, text)
         val rewrites = getProgram(programName)
         op.instructionIndex = rewrites.size
         rewrites.add(op)
     }
 
-    fun replace(programName: String?, from: Token, to: Token, text: Any?) {
+    fun replace(programName: String, from: Token, to: Token, text: Any?) {
         replace(
             programName,
             from.tokenIndex,
@@ -283,45 +284,45 @@ class TokenStreamRewriter(tokens: TokenStream) {
     }
 
     fun delete(index: Int) {
-        delete(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, index, index)
+        delete(DEFAULT_PROGRAM_NAME, index, index)
     }
 
     fun delete(from: Int, to: Int) {
-        delete(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, from, to)
+        delete(DEFAULT_PROGRAM_NAME, from, to)
     }
 
     fun delete(indexT: Token) {
-        delete(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, indexT, indexT)
+        delete(DEFAULT_PROGRAM_NAME, indexT, indexT)
     }
 
     fun delete(from: Token, to: Token) {
-        delete(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, from, to)
+        delete(DEFAULT_PROGRAM_NAME, from, to)
     }
 
-    fun delete(programName: String?, from: Int, to: Int) {
+    fun delete(programName: String, from: Int, to: Int) {
         replace(programName, from, to, null)
     }
 
-    fun delete(programName: String?, from: Token, to: Token) {
+    fun delete(programName: String, from: Token, to: Token) {
         replace(programName, from, to, null)
     }
 
     val lastRewriteTokenIndex: Int
-        get() = getLastRewriteTokenIndex(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME)
+        get() = getLastRewriteTokenIndex(DEFAULT_PROGRAM_NAME)
 
-    protected fun getLastRewriteTokenIndex(programName: String?): Int {
-        val I: Int = lastRewriteTokenIndexes.get(programName)
+    protected fun getLastRewriteTokenIndex(programName: String): Int {
+        val I: Int? = lastRewriteTokenIndexes.get(programName)
         if (I == null) {
             return -1
         }
         return I
     }
 
-    protected fun setLastRewriteTokenIndex(programName: String?, i: Int) {
+    protected fun setLastRewriteTokenIndex(programName: String, i: Int) {
         lastRewriteTokenIndexes[programName] = i
     }
 
-    protected fun getProgram(name: String): MutableList<RewriteOperation> {
+    protected fun getProgram(name: String): MutableList<RewriteOperation?> {
         var `is` = programs.get(name)
         if (`is` == null) {
             `is` = initializeProgram(name)
@@ -329,7 +330,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
         return `is`
     }
 
-    private fun initializeProgram(name: String): MutableList<RewriteOperation> {
+    private fun initializeProgram(name: String): MutableList<RewriteOperation?> {
         val `is`: MutableList<RewriteOperation> =
             ArrayList<RewriteOperation>(org.antlr.v4.runtime.TokenStreamRewriter.Companion.PROGRAM_INIT_SIZE)
         programs[name] = `is`
@@ -337,35 +338,20 @@ class TokenStreamRewriter(tokens: TokenStream) {
     }
 
     val text: String
-        /** Return the text from the original tokens altered per the
-         * instructions given to this rewriter.
-         */
         get() = getText(
-            org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME,
-Interval.of(0, tokens.size() - 1)
-    )
+            DEFAULT_PROGRAM_NAME,
+            Interval.of(0, tokens.size() - 1)
+        )
 
-    /** Return the text from the original tokens altered per the
-     * instructions given to this rewriter in programName.
-     */
-    fun getText(programName: String?): String {
+    fun getText(programName: String): String {
         return getText(programName, Interval.of(0, tokens.size() - 1))
     }
 
-    /** Return the text associated with the tokens in the interval from the
-     * original token stream but with the alterations given to this rewriter.
-     * The interval refers to the indexes in the original token stream.
-     * We do not alter the token stream in any way, so the indexes
-     * and intervals are still consistent. Includes any operations done
-     * to the first and last token in the interval. So, if you did an
-     * insertBefore on the first token, you would get that insertion.
-     * The same is true if you do an insertAfter the stop token.
-     */
     fun getText(interval: Interval): String {
-        return getText(org.antlr.v4.runtime.TokenStreamRewriter.Companion.DEFAULT_PROGRAM_NAME, interval)
+        return getText(DEFAULT_PROGRAM_NAME, interval)
     }
 
-    fun getText(programName: String?, interval: Interval): String {
+    fun getText(programName: String, interval: Interval): String {
         val rewrites = programs.get(programName)
         var start: Int = interval.a
         var stop: Int = interval.b
@@ -375,12 +361,12 @@ Interval.of(0, tokens.size() - 1)
         if (start < 0) start = 0
 
         if (rewrites == null || rewrites.isEmpty()) {
-            return tokens.getText(interval) // no instructions to execute
+            return tokens.getText(interval) ?: ""
         }
         val buf: StringBuilder = StringBuilder()
 
         // First, optimize instruction stream
-        val indexToOp: Map<Int?, RewriteOperation?> = reduceToSingleOperationPerIndex(rewrites)
+        val indexToOp: MutableMap<Int, RewriteOperation> = reduceToSingleOperationPerIndex(rewrites)
 
         // Walk buffer, executing instructions and emitting tokens
         var i = start
@@ -403,7 +389,7 @@ Interval.of(0, tokens.size() - 1)
         if (stop == tokens.size() - 1) {
             // Scan any remaining operations after last token
             // should be included (they will be inserts).
-            for (op in indexToOp.values()) {
+            for (op in indexToOp.values) {
                 if (op.index >= tokens.size() - 1) buf.append(op.text)
             }
         }
@@ -459,101 +445,81 @@ Interval.of(0, tokens.size() - 1)
      *
      * Return a map from token index to operation.
      */
-    protected fun reduceToSingleOperationPerIndex(rewrites: List<RewriteOperation?>): Map<Int?, RewriteOperation?> {
-//		println("rewrites="+rewrites);
-
+    protected fun reduceToSingleOperationPerIndex(rewrites: MutableList<RewriteOperation?>): MutableMap<Int, RewriteOperation> {
         // WALK REPLACES
-
         for (i in 0..<rewrites.size) {
             val op = rewrites.get(i)
             if (op == null) continue
             if (op !is ReplaceOp) continue
-            val rop = rewrites.get(i) as ReplaceOp
+            val rop = op
             // Wipe prior inserts within range
-            val inserts: List<out InsertBeforeOp?> =
-                getKindOfOps<T?>(rewrites, org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp::class.java, i)
+            val inserts: List<InsertBeforeOp> =
+                getKindOfOps<InsertBeforeOp>(rewrites, i)
             for (iop in inserts) {
-                if (iop!!.index == rop.index) {
-                    // E.g., insert before 2, delete 2..2; update replace
-                    // text to include insert before, kill insert
-                    rewrites.set(iop.instructionIndex, null)
+                if (iop.index == rop.index) {
+                    rewrites[iop.instructionIndex] = null
                     rop.text = iop.text.toString() + (if (rop.text != null) rop.text.toString() else "")
                 } else if (iop.index > rop.index && iop.index <= rop.lastIndex) {
-                    // delete insert as it's a no-op.
-                    rewrites.set(iop.instructionIndex, null)
+                    rewrites[iop.instructionIndex] = null
                 }
             }
             // Drop any prior replaces contained within
-            val prevReplaces: List<out ReplaceOp?> =
-                getKindOfOps<T?>(rewrites, org.antlr.v4.runtime.TokenStreamRewriter.ReplaceOp::class.java, i)
+            val prevReplaces: List<ReplaceOp> =
+                getKindOfOps<ReplaceOp>(rewrites, i)
             for (prevRop in prevReplaces) {
-                if (prevRop!!.index >= rop.index && prevRop.lastIndex <= rop.lastIndex) {
-                    // delete replace as it's a no-op.
-                    rewrites.set(prevRop.instructionIndex, null)
+                if (prevRop.index >= rop.index && prevRop.lastIndex <= rop.lastIndex) {
+                    rewrites[prevRop.instructionIndex] = null as RewriteOperation
                     continue
                 }
-                // throw exception unless disjoint or identical
                 val disjoint =
                     prevRop.lastIndex < rop.index || prevRop.index > rop.lastIndex
-                // Delete special case of replace (text==null):
-                // D.i-j.u D.x-y.v	| boundaries overlap	combine to max(min)..max(right)
                 if (prevRop.text == null && rop.text == null && !disjoint) {
-                    //println("overlapping deletes: "+prevRop+", "+rop);
-                    rewrites.set(prevRop.instructionIndex, null) // kill first delete
+                    rewrites[prevRop.instructionIndex] = null as RewriteOperation
                     rop.index = minOf(prevRop.index, rop.index)
                     rop.lastIndex = maxOf(prevRop.lastIndex, rop.lastIndex)
                     println("new rop " + rop)
                 } else require(disjoint) { "replace op boundaries of " + rop + " overlap with previous " + prevRop }
             }
         }
-
         // WALK INSERTS
         for (i in 0..<rewrites.size) {
-            val op = rewrites.get(i)
+            val op = rewrites[i]
             if (op == null) continue
             if (op !is InsertBeforeOp) continue
-            val iop = rewrites.get(i) as InsertBeforeOp
-            // combine current insert with prior if any at same index
-            val prevInserts: List<out InsertBeforeOp?> =
-                getKindOfOps<T?>(rewrites, org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp::class.java, i)
+            val iop = op
+            val prevInserts: List<InsertBeforeOp> =
+                getKindOfOps<InsertBeforeOp>(rewrites, i)
             for (prevIop in prevInserts) {
-                if (prevIop!!.index == iop.index) {
-                    if (prevIop is org.antlr.v4.runtime.TokenStreamRewriter.InsertAfterOp) {
+                if (prevIop.index == iop.index) {
+                    if (prevIop is InsertAfterOp) {
                         iop.text = catOpText(prevIop.text, iop.text)
-                        rewrites.set(prevIop.instructionIndex, null)
-                    } else if (prevIop is org.antlr.v4.runtime.TokenStreamRewriter.InsertBeforeOp) { // combine objects
-                        // convert to strings...we're in process of toString'ing
-                        // whole token buffer so no lazy eval issue with any templates
+                        rewrites[prevIop.instructionIndex] = null as RewriteOperation
+                    } else if (prevIop is InsertBeforeOp) {
                         iop.text = catOpText(iop.text, prevIop.text)
-                        // delete redundant prior insert
-                        rewrites.set(prevIop.instructionIndex, null)
+                        rewrites[prevIop.instructionIndex] = null as RewriteOperation
                     }
                 }
             }
-            // look for replaces where iop.index is in range; error
-            val prevReplaces: List<out ReplaceOp?> =
-                getKindOfOps<T?>(rewrites, org.antlr.v4.runtime.TokenStreamRewriter.ReplaceOp::class.java, i)
+            val prevReplaces: List<ReplaceOp> =
+                getKindOfOps<ReplaceOp>(rewrites, i)
             for (rop in prevReplaces) {
-                if (iop.index == rop!!.index) {
+                if (iop.index == rop.index) {
                     rop.text = catOpText(iop.text, rop.text)
-                    rewrites.set(i, null) // delete current insert
+                    rewrites[i] = null
                     continue
                 }
                 require(!(iop.index >= rop.index && iop.index <= rop.lastIndex)) { "insert op " + iop + " within boundaries of previous " + rop }
             }
         }
-        // println("rewrites after="+rewrites);
         val m: MutableMap<Int, RewriteOperation> = HashMap()
         for (i in 0..<rewrites.size) {
-            val op = rewrites.get(i)
-            if (op == null) continue  // ignore deleted ops
-
-            if (m.get(op.index) != null) {
+            val op = rewrites[i]
+            if (op == null) continue
+            if (m[op.index] != null) {
                 throw Error("should only be one op per index")
             }
             m[op.index] = op
         }
-        //println("index to op: "+m);
         return m
     }
 
@@ -566,23 +532,16 @@ Interval.of(0, tokens.size() - 1)
     }
 
     /** Get all operations before an index of a particular kind  */
-    protected fun <T : RewriteOperation?> getKindOfOps(
-        rewrites: List<out RewriteOperation?>,
-        kind: Class<T?>,
+    protected inline fun <reified T : RewriteOperation> getKindOfOps(
+        rewrites: List<RewriteOperation?>,
         before: Int
-    ): List<out T?> {
-        val ops: List<T?> = ArrayList<T?>()
-        var i = 0
-        while (i < before && i < rewrites.size) {
-            val op = rewrites.get(i)
-            if (op == null) {
-                i++
-                continue  // ignore deleted
+    ): List<T> {
+        val ops = ArrayList<T>()
+        for (i in 0 until minOf(before, rewrites.size)) {
+            val op = rewrites[i] ?: continue
+            if (op is T) {
+                ops.add(op)
             }
-            if (kind.isInstance(op)) {
-                ops.add(kind.cast(op))
-            }
-            i++
         }
         return ops
     }

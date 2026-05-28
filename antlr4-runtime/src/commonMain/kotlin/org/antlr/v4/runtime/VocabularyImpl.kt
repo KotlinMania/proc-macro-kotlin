@@ -20,7 +20,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
     val symbolicNames: Array<String?>
 
     val displayNames: Array<String?>
-    val maxTokenType: Int
+    override val maxTokenType: Int
 
     /**
      * Constructs a new instance of [VocabularyImpl] from the specified
@@ -67,14 +67,14 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
                 maxOf(this.literalNames.size, this.symbolicNames.size)
             ) - 1
     }
-    fun getLiteralName(tokenType: Int): String? {
+    override fun getLiteralName(tokenType: Int): String? {
         if (tokenType >= 0 && tokenType < literalNames.size) {
             return literalNames[tokenType]
         }
 
         return null
     }
-    fun getSymbolicName(tokenType: Int): String? {
+    override fun getSymbolicName(tokenType: Int): String? {
         if (tokenType >= 0 && tokenType < symbolicNames.size) {
             return symbolicNames[tokenType]
         }
@@ -85,7 +85,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
 
         return null
     }
-    fun getDisplayName(tokenType: Int): String? {
+    override fun getDisplayName(tokenType: Int): String? {
         if (tokenType >= 0 && tokenType < displayNames.size) {
             val displayName = displayNames[tokenType]
             if (displayName != null) {

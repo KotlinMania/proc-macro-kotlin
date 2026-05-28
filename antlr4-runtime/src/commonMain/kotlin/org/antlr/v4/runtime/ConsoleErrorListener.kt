@@ -23,7 +23,7 @@ class ConsoleErrorListener : BaseErrorListener() {
      * line *line*:*charPositionInLine* *msg*
      </pre> *
      */
-    fun syntaxError(
+    override fun syntaxError(
         recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,
         line: Int,

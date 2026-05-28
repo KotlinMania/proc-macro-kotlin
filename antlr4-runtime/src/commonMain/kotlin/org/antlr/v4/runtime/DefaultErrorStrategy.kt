@@ -15,7 +15,7 @@ import org.antlr.v4.runtime.misc.Pair
  * This is the default implementation of [ANTLRErrorStrategy] used for
  * error reporting and recovery in ANTLR parsers.
  */
-class DefaultErrorStrategy : ANTLRErrorStrategy {
+open class DefaultErrorStrategy : ANTLRErrorStrategy {
     /**
      * Indicates whether the error strategy is currently "recovering from an
      * error". This is used to suppress reporting multiple error messages while
@@ -74,7 +74,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
     /**
      * {@inheritDoc}
      */
-    fun inErrorRecoveryMode(recognizer: Parser?): Boolean = errorRecoveryMode
+    override fun inErrorRecoveryMode(recognizer: Parser?): Boolean = errorRecoveryMode
 
     /**
      * This method is called to leave error recovery mode after recovering from
@@ -94,7 +94,7 @@ class DefaultErrorStrategy : ANTLRErrorStrategy {
      *
      * The default implementation simply calls [.endErrorCondition].
      */
-    fun reportMatch(recognizer: Parser?) {
+    override fun reportMatch(recognizer: Parser?) {
         endErrorCondition(recognizer)
     }
 

@@ -32,7 +32,7 @@ package org.antlr.v4.runtime
  * such a rule will not be available as part of the token stream, regardless of
  * channel.we
  */
-class CommonTokenStream
+abstract class CommonTokenStream
 /**
  * Constructs a new [CommonTokenStream] using the specified token
  * source and the default token channel ([Token.DEFAULT_CHANNEL]).
@@ -66,9 +66,9 @@ class CommonTokenStream
         this.channel = channel
     }
 
-    protected fun adjustSeekIndex(i: Int): Int = nextTokenOnChannel(i, channel)
+    override fun adjustSeekIndex(i: Int): Int = nextTokenOnChannel(i, channel)
 
-    protected fun LB(k: Int): Token? {
+    override fun LB(k: Int): Token? {
         if (k == 0 || (p - k) < 0) return null
 
         var i: Int = p
@@ -83,7 +83,7 @@ class CommonTokenStream
         return tokens.get(i)
     }
 
-    fun LT(k: Int): Token? {
+    override fun LT(k: Int): Token? {
         // println("enter LT("+k+")");
         lazyInit()
         if (k == 0) return null

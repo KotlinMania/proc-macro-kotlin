@@ -29,7 +29,7 @@ open class ANTLRInputStream : CharStream {
         p = 0
     }
 
-    fun consume() {
+    override fun consume() {
         if (p >= n) {
             assert(LA(1) == IntStream.EOF)
             throw IllegalStateException("cannot consume EOF")
@@ -39,7 +39,7 @@ open class ANTLRInputStream : CharStream {
         }
     }
 
-    fun LA(i: Int): Int {
+    override fun LA(i: Int): Int {
         var i = i
         if (i == 0) return 0
         if (i < 0) {
@@ -52,15 +52,15 @@ open class ANTLRInputStream : CharStream {
 
     fun LT(i: Int): Int = LA(i)
 
-    fun index(): Int = p
+    override fun index(): Int = p
 
-    fun size(): Int = n
+    override fun size(): Int = n
 
-    fun mark(): Int = -1
+    override fun mark(): Int = -1
 
-    fun release(marker: Int) {}
+    override fun release(marker: Int) {}
 
-    fun seek(index: Int) {
+    override fun seek(index: Int) {
         var index = index
         if (index <= p) {
             p = index
@@ -81,7 +81,7 @@ open class ANTLRInputStream : CharStream {
         return String(data, start, count)
     }
 
-    val sourceName: String?
+    override val sourceName: String?
         get() {
             if (name == null || name.isEmpty()) {
                 return IntStream.UNKNOWN_SOURCE_NAME
@@ -89,7 +89,7 @@ open class ANTLRInputStream : CharStream {
             return name
         }
 
-    fun toString(): String = String(data)
+    override fun toString(): String = String(data)
 
     companion object {
         const val READ_BUFFER_SIZE: Int = 1024

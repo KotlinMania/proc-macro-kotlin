@@ -50,7 +50,7 @@ interface ANTLRErrorStrategy {
      * @throws RecognitionException if the error strategy was not able to
      * recover from the unexpected input symbol
      */
-    @kotlin.Throws(RecognitionException::class)
+    @Throws(RecognitionException::class)
     fun recoverInline(recognizer: Parser?): Token?
 
     /**
@@ -66,7 +66,7 @@ interface ANTLRErrorStrategy {
      * @throws RecognitionException if the error strategy could not recover from
      * the recognition exception
      */
-    @kotlin.Throws(RecognitionException::class)
+    @Throws(RecognitionException::class)
     fun recover(
         recognizer: Parser?,
         e: RecognitionException?,
@@ -94,7 +94,7 @@ interface ANTLRErrorStrategy {
      * strategy but cannot be automatically recovered at the current state in
      * the parsing process
      */
-    @kotlin.Throws(RecognitionException::class)
+    @Throws(RecognitionException::class)
     fun sync(recognizer: Parser?)
 
     /**

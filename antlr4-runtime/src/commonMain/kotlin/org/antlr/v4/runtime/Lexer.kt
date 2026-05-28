@@ -95,7 +95,7 @@ abstract class Lexer :
     /** Return a token from this source; i.e., match a token on the char
      * stream.
      */
-    open fun nextToken(): Token {
+    override fun nextToken(): Token {
         checkNotNull(_input) { "nextToken requires a non-null input stream." }
 
         // Mark start location in char stream so unbuffered streams are
@@ -184,7 +184,7 @@ abstract class Lexer :
         get() = _factory
 
     /** Set the char stream and reset the lexer  */
-    fun setInputStream(input: IntStream?) {
+    override fun setInputStream(input: IntStream?) {
         this._input = null
         this._tokenFactorySourcePair = Pair<TokenSource?, CharStream?>(this, _input)
         reset()
@@ -192,9 +192,9 @@ abstract class Lexer :
         this._tokenFactorySourcePair = Pair<TokenSource?, CharStream?>(this, _input)
     }
 
-    val sourceName: String
+    override val sourceName: String
         get() = _input.sourceName
-    val inputStream: CharStream?
+    override val inputStream: CharStream?
         get() = _input
 
     /** By default does not support multiple emits per nextToken invocation
@@ -247,12 +247,12 @@ abstract class Lexer :
         return eof
     }
 
-    open var line: Int
+    override var line: Int
         get() = interpreter!!.line
         set(line) {
             interpreter!!.setLine(line)
         }
-    open var charPositionInLine: Int
+    override var charPositionInLine: Int
         get() = interpreter!!.charPositionInLine
         set(charPositionInLine) {
             interpreter!!.setCharPositionInLine(charPositionInLine)

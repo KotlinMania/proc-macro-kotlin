@@ -15,7 +15,7 @@ import org.antlr.v4.runtime.misc.MurmurHash
  * at the state. The semantic context is the tree of semantic predicates
  * encountered before reaching an ATN state.
  */
-class ATNConfig {
+open class ATNConfig {
     val state: ATNState
     val alt: Int
     var context: PredictionContext? = null

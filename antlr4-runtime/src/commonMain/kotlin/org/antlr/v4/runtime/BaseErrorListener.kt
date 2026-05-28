@@ -27,7 +27,7 @@ open class BaseErrorListener : ANTLRErrorListener {
     ) {
     }
 
-    fun reportAmbiguity(
+    override fun reportAmbiguity(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
@@ -38,7 +38,7 @@ open class BaseErrorListener : ANTLRErrorListener {
     ) {
     }
 
-    fun reportAttemptingFullContext(
+    override fun reportAttemptingFullContext(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
@@ -48,7 +48,7 @@ open class BaseErrorListener : ANTLRErrorListener {
     ) {
     }
 
-    fun reportContextSensitivity(
+    override fun reportContextSensitivity(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,

@@ -53,7 +53,7 @@ class CommonTokenFactory
          *
          * @param copyText The value for [.copyText].
          */
-        fun create(
+        override fun create(
             source: Pair<TokenSource?, CharStream?>,
             type: Int,
             text: String?,
@@ -75,7 +75,7 @@ class CommonTokenFactory
             return t
         }
 
-        fun create(
+        override fun create(
             type: Int,
             text: String?,
         ): CommonToken? = CommonToken(type, text)

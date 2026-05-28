@@ -13,7 +13,7 @@ import org.antlr.v4.runtime.misc.IntervalSet
  * in the input, where it is in the ATN, the rule invocation stack,
  * and what kind of problem occurred.
  */
-class RecognitionException : RuntimeException {
+open class RecognitionException : RuntimeException {
     /** The [Recognizer] where this exception originated.  */
     private val recognizer: Recognizer<*, *>?
 

@@ -25,10 +25,10 @@ class LexerNoViableAltException(
 
     fun getDeadEndConfigs(): ATNConfigSet? = deadEndConfigs
 
-    val inputStream: CharStream?
+    override val inputStream: CharStream?
         get() = super.inputStream as CharStream?
 
-    fun toString(): String {
+    override fun toString(): String {
         var symbol: String? = ""
         if (startIndex >= 0 && startIndex < this.inputStream.size()) {
             symbol = this.inputStream.getText(Interval.of(startIndex, startIndex))

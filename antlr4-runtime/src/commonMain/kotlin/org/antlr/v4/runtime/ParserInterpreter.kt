@@ -36,20 +36,20 @@ import org.antlr.v4.runtime.misc.Pair
  *
  * See TestParserInterpreter for examples.
  */
-class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
-    ruleNames: Collection<String?>, atn: ATN, input: TokenStream?
+class ParserInterpreter(
+    override val grammarFileName: String?,
+    override val vocabulary: Vocabulary,
+    ruleNames: Collection<String?>,
+    override val atn: ATN,
+    input: TokenStream?,
 ) : Parser(input) {
-    protected val atn: ATN
-
     protected val decisionToDFA: Array<DFA?> // not shared like it is for generated parsers
     protected val sharedContextCache: PredictionContextCache = PredictionContextCache()
 
     @get:Deprecated
     @Deprecated
-    val tokenNames: Array<String?>
-    val ruleNames: Array<String?>?
-
-    private val vocabulary: Vocabulary?
+    override val tokenNames: Array<String?>
+    override val ruleNames: Array<String?>?
 
     /** This stack corresponds to the _parentctx, _parentState pair of locals
      * that would exist on call stack frames with a recursive descent parser;
@@ -99,14 +99,12 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
     )
 
     init {
-        this.atn = atn
         this.tokenNames = arrayOfNulls<String>(atn.maxTokenType)
         for (i in tokenNames.indices) {
             tokenNames[i] = vocabulary.getDisplayName(i)
         }
 
         this.ruleNames = ruleNames.toList().toTypedArray()
-        this.vocabulary = vocabulary
 
         // init decision DFA
         val numberOfDecisions: Int = atn.numberOfDecisions
@@ -129,11 +127,7 @@ class ParserInterpreter( val grammarFileName: String?, vocabulary: Vocabulary,
         overrideDecisionReached = false
         overrideDecisionRoot = null
     }
-    override val atn: ATN
-        get() = atn
-    fun getVocabulary(): Vocabulary? {
-        return vocabulary
-    }
+
 
     /** Begin parsing at startRuleIndex  */
     fun parse(startRuleIndex: Int): ParserRuleContext? {

@@ -35,7 +35,7 @@ import org.antlr.v4.runtime.tree.TerminalNodeImpl
  * group values such as this aggregate.  The getters/setters are there to
  * satisfy the superclass interface.
  */
-class ParserRuleContext : RuleContext {
+open class ParserRuleContext : RuleContext {
     /** If we are debugging or building a parse tree for a visitor,
      * we need to track all of the tokens and rule invocations associated
      * with this rule's context. This is empty for parsing w/o tree constr.
@@ -186,9 +186,9 @@ class ParserRuleContext : RuleContext {
             children.remove(children.size - 1)
         }
     }
-    val parent: ParserRuleContext?
+    override val parent: ParserRuleContext?
         get() = super.parent as ParserRuleContext?
-    fun getChild(i: Int): ParseTree? {
+    override fun getChild(i: Int): ParseTree? {
         return if (children != null && i >= 0 && i < children.size) children!!.get(i) else null
     }
 
@@ -283,9 +283,9 @@ class ParserRuleContext : RuleContext {
 
         return contexts
     }
-    val childCount: Int
+    override val childCount: Int
         get() = if (children != null) children.size else 0
-    val sourceInterval: Interval
+    override val sourceInterval: Interval
         get() {
             if (start == null) {
                 return Interval.INVALID

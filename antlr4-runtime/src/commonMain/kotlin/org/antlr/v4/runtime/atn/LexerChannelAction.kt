@@ -28,13 +28,13 @@ class LexerChannelAction
      */
     val channel: Int,
 ) : LexerAction {
-    val actionType: LexerActionType
+    override val actionType: LexerActionType
         /**
          * {@inheritDoc}
          * @return This method returns [LexerActionType.CHANNEL].
          */
         get() = LexerActionType.CHANNEL
-    val isPositionDependent: Boolean
+    override val isPositionDependent: Boolean
         /**
          * {@inheritDoc}
          * @return This method returns `false`.
@@ -48,7 +48,7 @@ class LexerChannelAction
      * This action is implemented by calling [Lexer.setChannel] with the
      * value provided by [.getChannel].
      */
-    override fun execute(lexer: Lexer) {
+    override fun execute(lexer: Lexer?) {
         lexer.setChannel(channel)
     }
 
@@ -59,7 +59,7 @@ class LexerChannelAction
         return MurmurHash.finish(hash, 2)
     }
 
-    override fun equals(obj: Any): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (obj === this) {
             return true
         } else if (obj !is LexerChannelAction) {

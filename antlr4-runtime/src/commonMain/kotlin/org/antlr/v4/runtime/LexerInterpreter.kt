@@ -25,10 +25,10 @@ class LexerInterpreter(
 
     @get:Deprecated
     @Deprecated
-    val tokenNames: Array<String?>
-    val ruleNames: Array<String?>?
-    val channelNames: Array<String?>?
-    val modeNames: Array<String?>?
+    override val tokenNames: Array<String?>
+    override val ruleNames: Array<String?>?
+    override val channelNames: Array<String?>?
+    override val modeNames: Array<String?>?
 
     private val vocabulary: Vocabulary?
 
