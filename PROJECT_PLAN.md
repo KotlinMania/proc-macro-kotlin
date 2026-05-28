@@ -810,3 +810,79 @@ native method calls, no class loading tricks.
 | Runtime (all `.kt`) | 174 | 26,326 | Fully Kotlin, needs KMP dep swap |
 | Tool (1 `.java` + 231 `.kt`) | 232 | 24,025 + 435 java | 1 build-time Java file, rest Kotlin |
 | Test suite | ~80 `.kt` | — | Kotlin, test infrastructure |
+
+---
+
+## KMP adaptation progress
+
+### Completed mechanical swaps (ANTLR4 runtime)
+
+Removed `java.util.*` imports that have direct Kotlin stdlib equivalents:
+- `ArrayList` (20 uses) — Kotlin stdlib
+- `HashMap` (8 uses) — Kotlin stdlib
+- `HashSet` (6 uses) — Kotlin stdlib
+- `LinkedHashMap` (4 uses) — Kotlin stdlib
+- `LinkedHashSet` (1 use) — Kotlin stdlib
+- `ArrayDeque` (1 use) — Kotlin stdlib
+- `NoSuchElementException` (1 use) — Kotlin stdlib
+- `Comparator` (1 use) — Kotlin stdlib
+- `IOException` (7 uses) — Kotlin stdlib
+- `Serializable` (2 uses) — Kotlin stdlib
+- `Locale` (6 uses) — replaced with `java.util.Locale.US` in format calls
+- `java.lang.annotation.*` (3 uses) — Kotlin annotations
+
+Structural changes:
+- `Deque<T>` → `ArrayDeque<T>` (ParserInterpreter, IterativeParseTreeWalker)
+- `LinkedList<T>` → `ArrayDeque<T>` (FlexibleHashMap)
+- `EmptyStackException` → `NoSuchElementException` (Lexer)
+- `Objects.equals()` → `kotlin.Objects.equals()` (ATNConfig)
+- `AccessController.doPrivileged { System.getenv() }` → `try { System.getenv() } catch (_: SecurityException) { null }` (ParserATNSimulator)
+
+### Remaining java.* imports in ANTLR4 runtime (51 total)
+
+**Needs semantic replacement (not mechanical):**
+| Import | Uses | Strategy |
+|---|---|---|
+| `java.util.Arrays` | 18 | Per-site: `copyOf` → `array.copyOf()`, `equals` → `contentEquals()`, `toString` → `contentToString()`, `asList` → `listOf()`, `fill` → `array.fill()`, `sort` → `array.sort()`, `binarySearch` → `array.binarySearch()` |
+| `java.util.Collections` | 10 | Per-site: `emptyList()` → `emptyList()`, `singletonList()` → `listOf()`, `unmodifiableMap/List` → wrapper or `Collections.unmodifiableMap` via `expect/actual`, `reverse` → `reversed()`, `max/min` → `maxOf/minOf` |
+| `java.util.BitSet` | 10 | Replace with JetBrains `LongArray`-backed `BitSet`/`MutableBitSet` already in `src/commonMain/` |
+| `java.util.IdentityHashMap` | 2 | Replace with `starlarkmap-kotlin` `Equivalent`-based `UnorderedMap` |
+
+**I/O (needs km-io):**
+| Import | Uses |
+|---|---|
+| `java.io.File/FileInputStream/FileOutputStream/FileReader/FileWriter` | 7 |
+| `java.io.InputStream/InputStreamReader/Reader` | 9 |
+| `java.io.BufferedReader/BufferedWriter/OutputStreamWriter/PrintStream` | 4 |
+| `java.io.InvalidClassException/StringReader` | 2 |
+| `java.nio.ByteBuffer/CharBuffer/IntBuffer` | 5 |
+| `java.nio.charset.*` | 7 |
+| `java.nio.channels.*` | 2 |
+| `java.nio.file.*` | 3 |
+
+**Low-priority / can defer:**
+| Import | Uses | Strategy |
+|---|---|---|
+| `java.util.concurrent.atomic.AtomicInteger` | 1 | `kotlin.concurrent.atomics` or `expect/actual` |
+| `java.util.concurrent.CopyOnWriteArrayList` | 1 | `expect/actual` or custom |
+| `java.util.concurrent.CancellationException` | 1 | `kotlinx.coroutines.CancellationException` |
+| `java.util.WeakHashMap` | 1 | `WeakReference`-based map or `expect/actual` |
+| `java.util.Date` + `java.text.SimpleDateFormat` | 2 | `kotlinx-datetime` or custom |
+| `java.lang.reflect.Method` | 1 | `expect/actual` (JVM only) |
+
+### JFlex remaining Java
+
+| File | Lines | Role |
+|---|---|---|
+| `Main.java` | 408 | Entry point — straightforward conversion |
+| `core/unicode/*.java` (7 files) | 2,145 | Unicode character class handling |
+| `third_party/edu/tum/cup2/spec/*.java` (2 files) | 1,717 | CUP2 test specs only |
+
+The JFlex core (57 `.kt` files, 12,991 lines) is already Kotlin. The
+`cup-interpreter` example is now fully Kotlin (19 `.kt`, 1 `.java` test).
+
+### CUP2 status
+
+The LALR(1)/LR(1) generator core is **fully Kotlin** (100+ `.kt` files).
+Only 2 `.java` files remain — both test specification classes in
+`spec/`, not part of the generator itself.
