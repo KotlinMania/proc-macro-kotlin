@@ -24,13 +24,13 @@ class LexerSkipAction
      */
     private constructor() :
     LexerAction {
-        val actionType: LexerActionType
+        override val actionType: LexerActionType
             /**
              * {@inheritDoc}
              * @return This method returns [LexerActionType.SKIP].
              */
             get() = LexerActionType.SKIP
-        val isPositionDependent: Boolean
+        override val isPositionDependent: Boolean
             /**
              * {@inheritDoc}
              * @return This method returns `false`.
@@ -53,7 +53,7 @@ class LexerSkipAction
             return MurmurHash.finish(hash, 1)
         }
 
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        @Suppress("EqualsWhichDoesntCallSuperMethod")
         override fun equals(obj: Any?): Boolean = obj === this
 
         override fun toString(): String = "skip"

@@ -124,7 +124,6 @@ open class ATNConfigSet
             return labels
         }
 
-        fun getConflictingAlts(): BitSet? = conflictingAlts
 
         fun getConflictingAltsResolved(): BitSet {
             if (conflictingAlts != null) return conflictingAlts!!
@@ -193,7 +192,7 @@ open class ATNConfigSet
             configLookup!!.clear()
         }
 
-        var isReadonly: Boolean
+        var readonlyFlag: Boolean
             get() = readonly
             set(value) {
                 readonly = value
@@ -210,13 +209,13 @@ open class ATNConfigSet
             return buf.toString()
         }
 
-        override fun remove(element: ATNConfig): Boolean = throw UnsupportedOperationException()
+        override fun remove(element: ATNConfig): Boolean = throw UnsupportedOperationException("")
 
-        override fun containsAll(elements: Collection<ATNConfig>): Boolean = throw UnsupportedOperationException()
+        override fun containsAll(elements: Collection<ATNConfig>): Boolean = throw UnsupportedOperationException("")
 
-        override fun retainAll(elements: Collection<ATNConfig>): Boolean = throw UnsupportedOperationException()
+        override fun retainAll(elements: Collection<ATNConfig>): Boolean = throw UnsupportedOperationException("")
 
-        override fun removeAll(elements: Collection<ATNConfig>): Boolean = throw UnsupportedOperationException()
+        override fun removeAll(elements: Collection<ATNConfig>): Boolean = throw UnsupportedOperationException("")
 
         open class AbstractConfigHashSet(
             comparator: AbstractEqualityComparator<in ATNConfig>,

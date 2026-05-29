@@ -21,7 +21,7 @@ interface LexerAction {
      *
      * @return The serialization type of the lexer action.
      */
-    val actionType: LexerActionType?
+    val actionType: LexerActionType
 
     /**
      * Gets whether the lexer action is position-dependent. Position-dependent
@@ -49,5 +49,5 @@ interface LexerAction {
      *
      * @param lexer The lexer instance.
      */
-    override fun execute(lexer: Lexer?)
+    fun execute(lexer: Lexer)
 }

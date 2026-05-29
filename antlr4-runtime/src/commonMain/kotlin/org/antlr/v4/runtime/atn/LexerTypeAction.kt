@@ -27,13 +27,13 @@ class LexerTypeAction
      */
     val type: Int,
 ) : LexerAction {
-    val actionType: LexerActionType
+    override val actionType: LexerActionType
         /**
          * {@inheritDoc}
          * @return This method returns [LexerActionType.TYPE].
          */
         get() = LexerActionType.TYPE
-    val isPositionDependent: Boolean
+    override val isPositionDependent: Boolean
         /**
          * {@inheritDoc}
          * @return This method returns `false`.
@@ -48,7 +48,7 @@ class LexerTypeAction
      * value provided by [.getType].
      */
     override fun execute(lexer: Lexer) {
-        lexer.setType(type)
+        lexer.type = type
     }
 
     override fun hashCode(): Int {
@@ -58,14 +58,14 @@ class LexerTypeAction
         return MurmurHash.finish(hash, 2)
     }
 
-    override fun equals(obj: Any): Boolean {
-        if (obj === this) {
+    override fun equals(other: Any?): Boolean {
+        if (other === this) {
             return true
-        } else if (obj !is LexerTypeAction) {
+        } else if (other !is LexerTypeAction) {
             return false
         }
 
-        return type == obj.type
+        return type == other.type
     }
 
     override fun toString(): String = "type($type)"

@@ -4,32 +4,34 @@
  * can be found in the LICENSE.txt file in the project root.
  */
 package org.antlr.v4.runtime.misc
+
 import java.io.BufferedWriter
+import java.io.IOException
 import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 
 class LogManager {
     protected class Record {
-        var timestamp: Long
-        var location: StackTraceElement
+        var timestamp: Long = 0
+        var location: StackTraceElement? = null
         var component: String? = null
         var msg: String? = null
 
         init {
             timestamp = System.currentTimeMillis()
-            location = Throwable().getStackTrace()[0]
+            location = Throwable().stackTrace.get(0)
         }
 
-        fun toString(): String {
+        override fun toString(): String {
             val buf: StringBuilder = StringBuilder()
             buf.append(SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS").format(Date(timestamp)))
             buf.append(" ")
             buf.append(component)
             buf.append(" ")
-            buf.append(location.getFileName())
+            buf.append(location?.fileName)
             buf.append(":")
-            buf.append(location.getLineNumber())
+            buf.append(location?.lineNumber)
             buf.append(" ")
             buf.append(msg)
             return buf.toString()
@@ -38,19 +40,14 @@ class LogManager {
 
     protected var records: MutableList<Record>? = null
 
-    fun log(
-        component: String?,
-        msg: String?,
-    ) {
-        val r: Record =
-            org.antlr.v4.runtime.misc.LogManager
-                .Record()
+    fun log(component: String?, msg: String?) {
+        val r = Record()
         r.component = component
         r.msg = msg
         if (records == null) {
-            records = ArrayList()()
+            records = mutableListOf()
         }
-        records.add(r)
+        records!!.add(r)
     }
 
     fun log(msg: String?) {
@@ -59,8 +56,8 @@ class LogManager {
 
     @kotlin.Throws(IOException::class)
     fun save(filename: String?) {
-        val fw: FileWriter = FileWriter(filename)
-        val bw: BufferedWriter = BufferedWriter(fw)
+        val fw = FileWriter(filename)
+        val bw = BufferedWriter(fw)
         try {
             bw.write(toString())
         } finally {
@@ -70,7 +67,6 @@ class LogManager {
 
     @kotlin.Throws(IOException::class)
     fun save(): String {
-        // String dir = System.getProperty("java.io.tmpdir");
         val dir = "."
         val defaultFilename =
             dir.toString() + "/antlr-" +
@@ -79,11 +75,11 @@ class LogManager {
         return defaultFilename
     }
 
-    fun toString(): String? {
+    override fun toString(): String {
         if (records == null) return ""
-        val nl: String? = System.getProperty("line.separator")
+        val nl: String = System.getProperty("line.separator")
         val buf: StringBuilder = StringBuilder()
-        for (r in records) {
+        for (r in records!!) {
             buf.append(r)
             buf.append(nl)
         }
@@ -92,10 +88,9 @@ class LogManager {
 
     companion object {
         @kotlin.Throws(IOException::class)
-        fun main(args: Array<String?>?) {
-            val mgr: LogManager =
-                org.antlr.v4.runtime.misc
-                    .LogManager()
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val mgr = LogManager()
             mgr.log("atn", "test msg")
             mgr.log("dfa", "test msg 2")
             println(mgr)

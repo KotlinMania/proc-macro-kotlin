@@ -9,6 +9,7 @@ package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.IntList
+import org.antlr.v4.runtime.assert
 import org.antlr.v4.runtime.misc.IntervalSet
 
 /** This class represents a target neutral serializer for ATNs. An ATN is converted to a list of integers
@@ -27,7 +28,7 @@ class ATNSerializer(
 
     /** Note that we use a LinkedHashMap as a set to mainintain insertion order while deduplicating
      * entries with the same key.  */
-    private val sets: Map<IntervalSet?, Boolean?> = LinkedHashMap()
+    private val sets: MutableMap<IntervalSet?, Boolean?> = LinkedHashMap()
     private val nonGreedyStates: IntList = IntList()
     private val precedenceStates: IntList = IntList()
 
@@ -89,56 +90,57 @@ class ATNSerializer(
         if (atn.grammarType === ATNType.LEXER) {
             data.add(atn.lexerActions.size)
             for (action in atn.lexerActions) {
+                val action = action!!
                 data.add(action.actionType.ordinal)
                 when (action.actionType) {
-                    CHANNEL -> {
+                    LexerActionType.CHANNEL -> {
                         val channel: Int = (action as LexerChannelAction).channel
                         data.add(channel)
                         data.add(0)
                     }
 
-                    CUSTOM -> {
+                    LexerActionType.CUSTOM -> {
                         val ruleIndex: Int = (action as LexerCustomAction).ruleIndex
                         val actionIndex: Int = (action as LexerCustomAction).actionIndex
                         data.add(ruleIndex)
                         data.add(actionIndex)
                     }
 
-                    MODE -> {
+                    LexerActionType.MODE -> {
                         val mode: Int = (action as LexerModeAction).mode
                         data.add(mode)
                         data.add(0)
                     }
 
-                    MORE -> {
+                    LexerActionType.MORE -> {
                         data.add(0)
                         data.add(0)
                     }
 
-                    POP_MODE -> {
+                    LexerActionType.POP_MODE -> {
                         data.add(0)
                         data.add(0)
                     }
 
-                    PUSH_MODE -> {
-                        mode = (action as LexerPushModeAction).mode
-                        data.add(mode)
+                    LexerActionType.PUSH_MODE -> {
+                        val pushMode: Int = (action as LexerPushModeAction).mode
+                        data.add(pushMode)
                         data.add(0)
                     }
 
-                    SKIP -> {
+                    LexerActionType.SKIP -> {
                         data.add(0)
                         data.add(0)
                     }
 
-                    TYPE -> {
+                    LexerActionType.TYPE -> {
                         val type: Int = (action as LexerTypeAction).type
                         data.add(type)
                         data.add(0)
                     }
 
                     else -> {
-                        val message: String? =
+                        val message: String =
                             "The specified lexer action type ${action.actionType} is not valid."
                         throw IllegalArgumentException(message)
                     }
@@ -177,7 +179,7 @@ class ATNSerializer(
 
                 val src: Int = s.stateNumber
                 var trg: Int = t.target.stateNumber
-                val edgeType: Int = Transition.serializationTypes.get(t::class)
+                val edgeType: Int = Transition.serializationTypes.get(t::class)!!
                 var arg1 = 0
                 var arg2 = 0
                 var arg3 = 0
@@ -225,8 +227,8 @@ class ATNSerializer(
                         arg3 = if (at.isCtxDependent) 1 else 0
                     }
 
-                    Transition.SET -> arg1 = setIndices.get((t as SetTransition).set)
-                    Transition.NOT_SET -> arg1 = setIndices.get((t as SetTransition).set)
+                    Transition.SET -> arg1 = setIndices[(t as SetTransition).set]!!
+                    Transition.NOT_SET -> arg1 = setIndices[(t as SetTransition).set]!!
                     Transition.WILDCARD -> {}
                 }
 
@@ -243,10 +245,10 @@ class ATNSerializer(
     private fun addSets(): Map<IntervalSet?, Int?> {
         org.antlr.v4.runtime.atn.ATNSerializer.Companion
             .serializeSets(data, sets.keys)
-        val setIndices: Map<IntervalSet?, Int?> = HashMap()
+        val setIndices: MutableMap<IntervalSet?, Int?> = HashMap()
         var setIndex = 0
         for (s in sets.keys) {
-            setIndices.put(s, setIndex++)
+            setIndices[s] = setIndex++
         }
         return setIndices
     }
@@ -265,7 +267,7 @@ class ATNSerializer(
         val nrules: Int = atn.ruleToStartState.size
         data.add(nrules)
         for (r in 0..<nrules) {
-            val ruleStartState: ATNState = atn.ruleToStartState[r]
+            val ruleStartState: ATNState = atn.ruleToStartState[r]!!
             data.add(ruleStartState.stateNumber)
             if (atn.grammarType === ATNType.LEXER) {
                 assert(
@@ -313,9 +315,9 @@ class ATNSerializer(
             data.add(s.ruleIndex)
 
             if (s.stateType === ATNState.LOOP_END) {
-                data.add((s as LoopEndState).loopBackState.stateNumber)
+                data.add((s as LoopEndState).loopBackState!!.stateNumber)
             } else if (s is BlockStartState) {
-                data.add((s as BlockStartState).endState.stateNumber)
+                data.add((s as BlockStartState).endState!!.stateNumber)
             }
 
             if (s.stateType !== ATNState.RULE_STOP) {
@@ -325,10 +327,10 @@ class ATNSerializer(
 
             for (i in 0..<s.numberOfTransitions) {
                 val t: Transition = s.transition(i)
-                val edgeType: Int = Transition.serializationTypes.get(t::class)
+                val edgeType: Int = Transition.serializationTypes.get(t::class)!!
                 if (edgeType == Transition.SET || edgeType == Transition.NOT_SET) {
                     val st: SetTransition = t as SetTransition
-                    sets.put(st.set, true)
+                    sets[st.set] = true
                 }
             }
         }
@@ -344,15 +346,16 @@ class ATNSerializer(
             data.add(nSets)
 
             for (set in sets) {
-                val containsEof: Boolean = set.contains(Token.EOF)
-                if (containsEof && set.intervals.get(0).b === Token.EOF) {
-                    data.add(set.intervals.size - 1)
+                val s = set!!
+                val containsEof: Boolean = s.contains(Token.EOF)
+                if (containsEof && s.intervals.get(0).b === Token.EOF) {
+                    data.add(s.intervals.size - 1)
                 } else {
-                    data.add(set.intervals.size)
+                    data.add(s.intervals.size)
                 }
 
                 data.add(if (containsEof) 1 else 0)
-                for (I in set.intervals) {
+                for (I in s.intervals) {
                     if (I.a === Token.EOF) {
                         if (I.b === Token.EOF) {
                             continue

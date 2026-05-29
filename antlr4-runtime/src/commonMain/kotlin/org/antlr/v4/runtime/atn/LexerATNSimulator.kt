@@ -8,8 +8,8 @@
 package org.antlr.v4.runtime.atn
 
 import kotlinx.coroutines.InternalCoroutinesApi
+import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
 import kotlinx.coroutines.internal.SynchronizedObject
-import kotlinx.coroutines.internal.synchronized
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.IntStream
 import org.antlr.v4.runtime.Lexer
@@ -18,6 +18,7 @@ import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.dfa.DFAState
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.assert
 
 /** "dup" of ParserInterpreter  */
 class LexerATNSimulator(
@@ -284,7 +285,7 @@ class LexerATNSimulator(
 
         // if we don't find an existing DFA state
         // Fill reach starting from closure, following t transitions
-        getReachableConfigSet(input, s.configs, reach, t)
+        getReachableConfigSet(input, s!!.configs, reach, t)
 
         if (reach.isEmpty()) { // we got nowhere on t from s
             if (!reach.hasSemanticContext) {
@@ -307,8 +308,9 @@ class LexerATNSimulator(
         reach: ATNConfigSet?,
         t: Int,
     ): Int {
-        if (prevAccept.dfaState != null) {
-            val lexerActionExecutor: LexerActionExecutor? = prevAccept.dfaState.lexerActionExecutor
+        val dfaState = prevAccept.dfaState
+        if (dfaState != null) {
+            val lexerActionExecutor: LexerActionExecutor? = dfaState.lexerActionExecutor
             accept(
                 input,
                 lexerActionExecutor,
@@ -317,7 +319,7 @@ class LexerATNSimulator(
                 prevAccept.line,
                 prevAccept.charPos,
             )
-            return prevAccept.dfaState.prediction
+            return dfaState.prediction
         } else {
             // if no accept and EOF is first char, return EOF
             if (t == IntStream.EOF && input.index() === startIndex) {
@@ -361,7 +363,7 @@ class LexerATNSimulator(
                         lexerActionExecutor = lexerActionExecutor.fixOffsetBeforeMatch(input.index() - startIndex)
                     }
 
-                    val treatEofAsEpsilon = t == CharStream.EOF
+                    val treatEofAsEpsilon = t == IntStream.EOF
                     if (closure(
                             input,
                             LexerATNConfig(c as LexerATNConfig, target, lexerActionExecutor),
@@ -521,7 +523,7 @@ class LexerATNSimulator(
             Transition.RULE -> {
                 val ruleTransition: RuleTransition = t as RuleTransition
                 val newContext: PredictionContext? =
-                    SingletonPredictionContext.create(config.context, ruleTransition.followState?.stateNumber ?: )
+                    SingletonPredictionContext.create(config.context, ruleTransition.followState.stateNumber)
                 c = LexerATNConfig(config, t.target, newContext)
             }
 
@@ -556,8 +558,9 @@ class LexerATNSimulator(
                 }
             }
 
-            Transition.ACTION ->
-                if (config.context == null || config.context.hasEmptyPath()) {
+            Transition.ACTION -> {
+                val configContext = config.context
+                if (configContext == null || configContext.hasEmptyPath()) {
                     // execute actions anywhere in the start rule for a token.
                     //
                     // TODO: if the entry rule is invoked recursively, some
@@ -580,11 +583,12 @@ class LexerATNSimulator(
                     // ignore actions in referenced rules
                     c = LexerATNConfig(config, t.target)
                 }
+                }
 
             Transition.EPSILON -> c = LexerATNConfig(config, t.target)
             Transition.ATOM, Transition.RANGE, Transition.SET ->
                 if (treatEofAsEpsilon) {
-                    if (t.matches(CharStream.EOF, Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)) {
+                    if (t.matches(IntStream.EOF, Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)) {
                         c = LexerATNConfig(config, t.target)
                     }
                 }
@@ -702,17 +706,18 @@ class LexerATNSimulator(
             println("EDGE " + p + " -> " + q + " upon " + (t.toChar()))
         }
 
-        synchronized(p) {
-            if (p.edges == null) {
+        val fromState = p!!
+        antlrSynchronized(fromState) {
+            if (fromState.edges == null) {
                 //  make room for tokens 1..n and -1 masquerading as index 0
-                p.edges =
+                fromState.edges =
                     arrayOfNulls<DFAState>(
                         org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MAX_DFA_EDGE -
                             org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE +
                             1,
                     )
             }
-            p.edges?.set(t - org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE, q) // connect
+            fromState.edges!![t - org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.MIN_DFA_EDGE] = q // connect
         }
     }
 
@@ -740,18 +745,18 @@ class LexerATNSimulator(
         if (firstConfigWithRuleStopState != null) {
             proposed.isAcceptState = true
             proposed.lexerActionExecutor = (firstConfigWithRuleStopState as LexerATNConfig).getLexerActionExecutor()
-            proposed.prediction = atn?.ruleToTokenType[firstConfigWithRuleStopState.state.ruleIndex]
+            proposed.prediction = atn?.ruleToTokenType[firstConfigWithRuleStopState.state.ruleIndex]!!
         }
 
         val dfa: DFA = decisionToDFA[mode]
-        synchronized(dfa.states as SynchronizedObject) {
+        antlrSynchronized(dfa.states) {
             val existing: DFAState? = dfa.states.get(proposed)
             if (existing != null) return existing
 
             val newState: DFAState = proposed
 
             newState.stateNumber = dfa.states.size
-            configs.setReadonly(true)
+            configs.readonlyFlag = true
             newState.configs = configs
             dfa.states.put(newState, newState)
             return newState
@@ -764,7 +769,7 @@ class LexerATNSimulator(
      */
     fun getText(input: CharStream): String {
         // index is first lookahead char, don't include.
-        return input.getText(Interval.of(startIndex, input.index() - 1))
+        return input.getText(Interval.of(startIndex, input.index() - 1))!!
     }
 
     fun consume(input: CharStream) {

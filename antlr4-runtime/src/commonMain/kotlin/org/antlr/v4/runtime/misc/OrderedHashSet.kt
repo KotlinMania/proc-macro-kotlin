@@ -33,7 +33,7 @@ class OrderedHashSet<T> : MutableSet<T> {
         return result
     }
 
-    override fun remove(element: T): Boolean = throw UnsupportedOperationException()
+    override fun remove(element: T): Boolean = throw UnsupportedOperationException("")
 
     override fun clear() {
         elements.clear()

@@ -48,13 +48,10 @@ class ATNDeserializationOptions {
     }
 
     companion object {
-        val defaultOptions: ATNDeserializationOptions
-            get() = org.antlr.v4.runtime.atn.ATNDeserializationOptions.Companion.defaultOptions
-
-        init {
-            org.antlr.v4.runtime.atn.ATNDeserializationOptions.Companion.defaultOptions =
-                ATNDeserializationOptions()
-            ATNDeserializationOptions.Companion.defaultOptions.makeReadOnly()
+        val defaultOptions: ATNDeserializationOptions by lazy {
+            val opts = ATNDeserializationOptions()
+            opts.makeReadOnly()
+            opts
         }
     }
 }

@@ -331,8 +331,8 @@ class TokenStreamRewriter(tokens: TokenStream) {
     }
 
     private fun initializeProgram(name: String): MutableList<RewriteOperation?> {
-        val `is`: MutableList<RewriteOperation> =
-            ArrayList<RewriteOperation>(org.antlr.v4.runtime.TokenStreamRewriter.Companion.PROGRAM_INIT_SIZE)
+        val `is`: MutableList<RewriteOperation?> =
+            ArrayList<RewriteOperation?>(org.antlr.v4.runtime.TokenStreamRewriter.Companion.PROGRAM_INIT_SIZE)
         programs[name] = `is`
         return `is`
     }

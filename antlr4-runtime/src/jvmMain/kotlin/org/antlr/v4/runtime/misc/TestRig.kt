@@ -11,8 +11,7 @@ import java.lang.reflect.Method
  *
  * @since 4.5.1
  */
-@Deprecated
-@Deprecated("  ")
+@Deprecated("")
 object TestRig {
     fun main(args: Array<String?>?) {
         try {

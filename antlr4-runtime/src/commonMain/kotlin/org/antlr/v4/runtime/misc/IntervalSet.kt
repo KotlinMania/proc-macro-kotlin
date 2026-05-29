@@ -229,7 +229,7 @@ class IntervalSet : IntSet {
         return this.intervals == other.intervals
     }
 
-    override fun toString(): String? = toString(false)
+    override fun toString(): String = toString(false)
 
     fun toString(elemAreChar: Boolean): String {
         val buf: StringBuilder = StringBuilder()
@@ -266,11 +266,11 @@ class IntervalSet : IntSet {
         if (this.size() > 1) {
             buf.append("}")
         }
-        return buf.toString()
+        return buf.toString()!!
     }
 
     @Deprecated("Use {@link #toString(Vocabulary)} instead.")
-    fun toString(tokenNames: Array<out String?>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
+    fun toString(tokenNames: Array<String>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
 
     fun toString(vocabulary: Vocabulary): String? {
         val buf: StringBuilder = StringBuilder()
@@ -300,11 +300,11 @@ class IntervalSet : IntSet {
         if (this.size() > 1) {
             buf.append("}")
         }
-        return buf.toString()
+        return buf.toString()!!
     }
 
     @Deprecated("Use {@link #elementName(Vocabulary, int)} instead.")
-    protected fun elementName(tokenNames: Array<out String?>?, a: Int): String? =
+    protected fun elementName(tokenNames: Array<String>?, a: Int): String? =
         elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
 
     protected fun elementName(vocabulary: Vocabulary, a: Int): String? {
@@ -425,22 +425,22 @@ class IntervalSet : IntSet {
 
     fun isReadonly(): Boolean = readonly
 
-    fun setReadonly(readonly: Boolean) {
-        check(!(this.readonly && !readonly)) { "can't alter readonly IntervalSet" }
-        this.readonly = readonly
+    fun makeReadonly() {
+        if (this.readonly) throw IllegalStateException("can't alter readonly IntervalSet")
+        this.readonly = true
     }
 
     companion object {
         val COMPLETE_CHAR_SET: IntervalSet = IntervalSet.of(Lexer.MIN_CHAR_VALUE, Lexer.MAX_CHAR_VALUE)
 
         init {
-            COMPLETE_CHAR_SET.setReadonly(true)
+            COMPLETE_CHAR_SET.readonly = true
         }
 
         val EMPTY_SET: IntervalSet = IntervalSet()
 
         init {
-            EMPTY_SET.setReadonly(true)
+            EMPTY_SET.readonly = true
         }
 
         fun of(a: Int): IntervalSet {

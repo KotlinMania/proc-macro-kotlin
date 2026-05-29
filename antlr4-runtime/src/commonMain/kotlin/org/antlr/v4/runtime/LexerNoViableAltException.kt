@@ -6,8 +6,9 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.atn.ATNConfigSet
+import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.misc.Interval
-import org.antlr.v4.runtime.misc.Utils
+import org.antlr.v4.runtime.misc.CommonUtils
 
 class LexerNoViableAltException(
     lexer: Lexer?,
@@ -23,16 +24,16 @@ class LexerNoViableAltException(
         this.deadEndConfigs = deadEndConfigs
     }
 
-    fun getDeadEndConfigs(): ATNConfigSet? = deadEndConfigs
 
-    override val inputStream: CharStream?
+    val charStream: CharStream?
         get() = super.inputStream as CharStream?
 
     override fun toString(): String {
         var symbol: String? = ""
-        if (startIndex >= 0 && startIndex < this.inputStream.size()) {
-            symbol = this.inputStream.getText(Interval.of(startIndex, startIndex))
-            symbol = Utils.escapeWhitespace(symbol, false)
+        val stream = this.inputStream
+        if (stream != null && startIndex >= 0 && startIndex < stream.size()) {
+            symbol = (stream as CharStream).getText(Interval.of(startIndex, startIndex))
+            symbol = CommonUtils.escapeWhitespace(symbol!!, false)
         }
 
         return "${org.antlr.v4.runtime.LexerNoViableAltException::class.simpleName!!}('$symbol')"

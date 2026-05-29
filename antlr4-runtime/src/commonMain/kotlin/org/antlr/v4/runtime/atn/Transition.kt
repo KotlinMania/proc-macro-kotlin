@@ -9,7 +9,7 @@ import org.antlr.v4.runtime.misc.IntervalSet
 import kotlin.reflect.KClass
 
 abstract class Transition protected constructor(
-    val target: ATNState,
+    var target: ATNState,
 ) {
     abstract val serializationType: Int
 

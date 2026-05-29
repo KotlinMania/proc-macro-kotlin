@@ -93,9 +93,6 @@ open class RecognitionException : RuntimeException {
      * @return The [RuleContext] at the time this exception was thrown.
      * If the context is not available, this method returns `null`.
      */
-    fun getCtx(): RuleContext? {
-        return ctx
-    }
 
     val inputStream: IntStream?
         /**
@@ -112,13 +109,8 @@ open class RecognitionException : RuntimeException {
         get() = input
 
 
-    fun getOffendingToken(): Token? {
-        return offendingToken
-    }
 
-    protected fun setOffendingToken(offendingToken: Token?) {
-        this.offendingToken = offendingToken
-    }
+
 
     /**
      * Gets the [Recognizer] where this exception occurred.
@@ -129,7 +121,5 @@ open class RecognitionException : RuntimeException {
      * @return The recognizer where this exception occurred, or `null` if
      * the recognizer is not available.
      */
-    fun getRecognizer(): Recognizer<*, *>? {
-        return recognizer
-    }
+
 }

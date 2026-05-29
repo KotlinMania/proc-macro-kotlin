@@ -30,8 +30,8 @@ object CodePointTransitions {
         codePointTo: Int,
     ): Transition =
         if (codePointFrom == codePointTo) {
-            AtomTransition(target, codePointFrom)
+            AtomTransition(target!!, codePointFrom)
         } else {
-            RangeTransition(target, codePointFrom, codePointTo)
+            RangeTransition(target!!, codePointFrom, codePointTo)
         }
 }

@@ -186,7 +186,7 @@ object RuntimeMetaData {
         val firstDot: Int = version.indexOf('.')
         val secondDot = if (firstDot >= 0) version.indexOf('.', firstDot + 1) else -1
         val firstDash: Int = version.indexOf('-')
-        var referenceLength: Int = version.size
+        var referenceLength: Int = version.length
         if (secondDot >= 0) {
             referenceLength = minOf(referenceLength, secondDot)
         }

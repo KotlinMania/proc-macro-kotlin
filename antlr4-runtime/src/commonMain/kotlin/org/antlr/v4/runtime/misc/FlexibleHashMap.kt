@@ -7,17 +7,22 @@ package org.antlr.v4.runtime.misc
 
 import kotlin.math.floor
 
-abstract class FlexibleHashMap<K, V>
+open class FlexibleHashMap<K, V>
     @kotlin.jvm.JvmOverloads
     constructor(
         comparator: AbstractEqualityComparator<in K> = AnyEqualityComparator.INSTANCE as AbstractEqualityComparator<in K>,
         initialCapacity: Int = INITIAL_CAPACITY,
         initialBucketCapacity: Int = INITIAL_BUCKET_CAPACITY,
-    ) : MutableMap<K, V> {
-        abstract class Entry<K, V>(
+    ) : AbstractMutableMap<K, V>() {
+        class Entry<K, V>(
             override val key: K,
             override var value: V,
         ) : MutableMap.MutableEntry<K, V> {
+            override fun setValue(newValue: V): V {
+                val oldValue = value
+                value = newValue
+                return oldValue
+            }
             override fun toString(): String = "$key:$value"
         }
 
@@ -46,9 +51,9 @@ abstract class FlexibleHashMap<K, V>
             return hash and (buckets.size - 1)
         }
 
-        fun get(key: Any?): V? {
+        override fun get(key: K): V? {
             @Suppress("UNCHECKED_CAST")
-            val typedKey = key as? K ?: return null
+            val typedKey = key
             val b = getBucket(typedKey)
             val bucket = buckets[b] ?: return null
             for (e in bucket) {
@@ -81,14 +86,14 @@ abstract class FlexibleHashMap<K, V>
             return null
         }
 
-        override fun remove(key: K): V? = throw UnsupportedOperationException()
+        override fun remove(key: K): V? = throw UnsupportedOperationException("")
 
-        override fun putAll(from: Map<out K, V>) = throw UnsupportedOperationException()
+        override fun putAll(from: Map<out K, V>) = throw UnsupportedOperationException("")
 
         override val keys: MutableSet<K>
-            get() = throw UnsupportedOperationException()
+            get() = throw UnsupportedOperationException("")
 
-        override val values: Collection<V>
+        override val values: MutableCollection<V>
             get() {
                 val a = mutableListOf<V>()
                 for (bucket in buckets) {
@@ -99,11 +104,11 @@ abstract class FlexibleHashMap<K, V>
             }
 
         override val entries: MutableSet<MutableMap.MutableEntry<K, V>>
-            get() = throw UnsupportedOperationException()
+            get() = throw UnsupportedOperationException("")
 
-        fun containsKey(key: Any): Boolean = get(key) != null
+        override fun containsKey(key: K): Boolean = get(key) != null
 
-        override fun containsValue(value: V): Boolean = throw UnsupportedOperationException()
+        override fun containsValue(value: V): Boolean = throw UnsupportedOperationException("")
 
         override fun hashCode(): Int {
             var hash = MurmurHash.initialize()
@@ -117,13 +122,13 @@ abstract class FlexibleHashMap<K, V>
             return hash
         }
 
-        override fun equals(other: Any?): Boolean = throw UnsupportedOperationException()
+        override fun equals(other: Any?): Boolean = throw UnsupportedOperationException("")
 
         protected fun expand() {
             val old = buckets
             currentPrime += 4
             val newCapacity = buckets.size * 2
-            val newTable = createEntryListArray(newCapacity)
+            val newTable = createEntryListArray<K, V>(newCapacity)
             buckets = newTable
             threshold = floor(newCapacity * LOAD_FACTOR).toInt()
             val oldSize = n

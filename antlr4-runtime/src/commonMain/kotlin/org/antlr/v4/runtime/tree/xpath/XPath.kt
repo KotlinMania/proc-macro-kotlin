@@ -44,7 +44,7 @@ open class XPath(protected var parser: Parser, path: String) {
             throw IllegalArgumentException(msg, e)
         }
 
-        val tokens = tokenStream.getTokens()
+        val tokens = tokenStream.allTokens()
         val elements = mutableListOf<XPathElement>()
         val n = tokens.size
         var i = 0

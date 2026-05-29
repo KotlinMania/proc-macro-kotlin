@@ -50,52 +50,58 @@ class DiagnosticErrorListener
          * @param exactOnly `true` to report only exact ambiguities, otherwise
          * `false` to report all ambiguities.
          */
-        fun reportAmbiguity(
-            recognizer: Parser,
-            dfa: DFA,
+        override fun reportAmbiguity(
+            recognizer: Parser?,
+            dfa: DFA?,
             startIndex: Int,
             stopIndex: Int,
             exact: Boolean,
             ambigAlts: BitSet?,
-            configs: ATNConfigSet,
+            configs: ATNConfigSet?,
         ) {
             if (exactOnly && !exact) {
                 return
             }
-
-            val decision = getDecisionDescription(recognizer, dfa)
-            val conflictingAlts: BitSet? = getConflictingAlts(ambigAlts, configs)
-            val text: String? = recognizer.tokenStream.getText(Interval.of(startIndex, stopIndex))
-            val message: String? = "reportAmbiguity d=$decision: ambigAlts=$conflictingAlts, input='$text'"
-            recognizer.notifyErrorListeners(message)
+            val r = recognizer ?: return
+            val d = dfa ?: return
+            val c = configs ?: return
+            val decision = getDecisionDescription(r, d)
+            val conflictingAlts: BitSet? = getConflictingAlts(ambigAlts, c)
+            val text = r.tokenStream?.getText(Interval.of(startIndex, stopIndex)) ?: ""
+            val message = "reportAmbiguity d=$decision: ambigAlts=$conflictingAlts, input='$text'"
+            r.notifyErrorListeners(message)
         }
 
-        fun reportAttemptingFullContext(
-            recognizer: Parser,
-            dfa: DFA,
+        override fun reportAttemptingFullContext(
+            recognizer: Parser?,
+            dfa: DFA?,
             startIndex: Int,
             stopIndex: Int,
             conflictingAlts: BitSet?,
             configs: ATNConfigSet?,
         ) {
-            val decision = getDecisionDescription(recognizer, dfa)
-            val text: String? = recognizer.tokenStream.getText(Interval.of(startIndex, stopIndex))
-            val message: String? = "reportAttemptingFullContext d=$decision, input='$text'"
-            recognizer.notifyErrorListeners(message)
+            val r = recognizer ?: return
+            val d = dfa ?: return
+            val decision = getDecisionDescription(r, d)
+            val text = r.tokenStream?.getText(Interval.of(startIndex, stopIndex)) ?: ""
+            val message = "reportAttemptingFullContext d=$decision, input='$text'"
+            r.notifyErrorListeners(message)
         }
 
-        fun reportContextSensitivity(
-            recognizer: Parser,
-            dfa: DFA,
+        override fun reportContextSensitivity(
+            recognizer: Parser?,
+            dfa: DFA?,
             startIndex: Int,
             stopIndex: Int,
             prediction: Int,
             configs: ATNConfigSet?,
         ) {
-            val decision = getDecisionDescription(recognizer, dfa)
-            val text: String? = recognizer.tokenStream.getText(Interval.of(startIndex, stopIndex))
-            val message: String? = "reportContextSensitivity d=$decision, input='$text'"
-            recognizer.notifyErrorListeners(message)
+            val r = recognizer ?: return
+            val d = dfa ?: return
+            val decision = getDecisionDescription(r, d)
+            val text = r.tokenStream?.getText(Interval.of(startIndex, stopIndex)) ?: ""
+            val message = "reportContextSensitivity d=$decision, input='$text'"
+            r.notifyErrorListeners(message)
         }
 
         protected fun getDecisionDescription(
@@ -105,13 +111,13 @@ class DiagnosticErrorListener
             val decision: Int = dfa.decision
             val ruleIndex: Int = dfa.atnStartState.ruleIndex
 
-            val ruleNames: Array<String?> = recognizer.ruleNames
-            if (ruleIndex < 0 || ruleIndex >= ruleNames.size) {
+            val ruleNames: Array<String>? = recognizer.ruleNames
+            if (ruleNames == null || ruleIndex < 0 || ruleIndex >= ruleNames.size) {
                 return decision.toString()
             }
 
             val ruleName = ruleNames[ruleIndex]
-            if (ruleName == null || ruleName.isEmpty()) {
+            if (ruleName.isNullOrEmpty()) {
                 return decision.toString()
             }
 

@@ -41,10 +41,10 @@ class ATNDeserializer
             if (version != org.antlr.v4.runtime.atn.ATNDeserializer.Companion.SERIALIZED_VERSION) {
                 val reason: String? =
                     "Could not deserialize ATN with version $version (expected ${org.antlr.v4.runtime.atn.ATNDeserializer.Companion.SERIALIZED_VERSION})."
-                throw UnsupportedOperationException(InvalidClassException(ATN::class.qualifiedName, reason))
+                throw UnsupportedOperationException(reason!!)
             }
 
-            val grammarType: ATNType? = ATNType.values()[data[p++]]
+            val grammarType: ATNType = ATNType.entries[data[p++]]
             val maxTokenType = data[p++]
             val atn: ATN = ATN(grammarType, maxTokenType)
 
@@ -76,11 +76,11 @@ class ATNDeserializer
 
             // delay the assignment of loop back and end states until we know all the state instances have been initialized
             for (pair in loopBackStateNumbers) {
-                pair.a.loopBackState = atn.states.get(pair.b)
+                pair.a!!.loopBackState = atn.states[pair.b!!]
             }
 
             for (pair in endStateNumbers) {
-                pair.a.endState = atn.states.get(pair.b) as BlockEndState?
+                pair.a!!.endState = atn.states[pair.b!!] as BlockEndState?
             }
 
             val numNonGreedyStates = data[p++]
@@ -122,7 +122,7 @@ class ATNDeserializer
 
                 val stopState: RuleStopState? = state as RuleStopState?
                 atn.ruleToStopState[state.ruleIndex] = stopState
-                atn.ruleToStartState[state.ruleIndex].stopState = stopState
+                atn.ruleToStartState[state.ruleIndex]!!.stopState = stopState
             }
 
             //
@@ -131,7 +131,7 @@ class ATNDeserializer
             val nmodes = data[p++]
             for (i in 0..<nmodes) {
                 val s = data[p++]
-                atn.modeToStartState.add(atn.states.get(s) as TokensStartState?)
+                atn.modeToStartState.add(atn.states[s] as TokensStartState)
             }
 
             //
@@ -157,7 +157,7 @@ class ATNDeserializer
 // 					   " "+Transition.serializationNames[ttype]+
 // 					   " "+arg1+","+arg2+","+arg3);
                 val srcState: ATNState = atn.states.get(src)
-                srcState.addTransition(trans)
+                srcState.addTransition(trans!!)
                 p += 6
             }
 
@@ -171,7 +171,7 @@ class ATNDeserializer
 
                     val ruleTransition: RuleTransition = t as RuleTransition
                     var outermostPrecedenceReturn = -1
-                    if (atn.ruleToStartState[ruleTransition.target.ruleIndex].isLeftRecursiveRule) {
+                    if (atn.ruleToStartState[ruleTransition.target.ruleIndex]!!.isLeftRecursiveRule) {
                         if (ruleTransition.precedence === 0) {
                             outermostPrecedenceReturn = ruleTransition.target.ruleIndex
                         }
@@ -179,7 +179,7 @@ class ATNDeserializer
 
                     val returnTransition: EpsilonTransition =
                         EpsilonTransition(ruleTransition.followState, outermostPrecedenceReturn)
-                    atn.ruleToStopState[ruleTransition.target.ruleIndex].addTransition(returnTransition)
+                    atn.ruleToStopState[ruleTransition.target.ruleIndex]!!.addTransition(returnTransition)
                 }
             }
 
@@ -189,9 +189,9 @@ class ATNDeserializer
                     checkNotNull((state as BlockStartState).endState)
 
                     // block end states can only be associated to a single block start state
-                    check((state as BlockStartState).endState.startState == null)
+                    check((state as BlockStartState).endState!!.startState == null)
 
-                    (state as BlockStartState).endState.startState = state as BlockStartState
+                    (state as BlockStartState).endState!!.startState = state as BlockStartState
                 }
 
                 if (state is PlusLoopbackState) {
@@ -242,11 +242,11 @@ class ATNDeserializer
 
             markPrecedenceDecisions(atn)
 
-            if (deserializationOptions.isVerifyATN()) {
+            if (deserializationOptions!!.isVerifyATN()) {
                 verifyATN(atn)
             }
 
-            if (deserializationOptions.isGenerateRuleBypassTransitions() && atn.grammarType === ATNType.PARSER) {
+            if (deserializationOptions!!.isGenerateRuleBypassTransitions() && atn.grammarType === ATNType.PARSER) {
                 atn.ruleToTokenType = IntArray(atn.ruleToStartState.size)
                 for (i in 0..<atn.ruleToStartState.size) {
                     atn.ruleToTokenType[i] = atn.maxTokenType + i + 1
@@ -268,7 +268,7 @@ class ATNDeserializer
 
                     var endState: ATNState?
                     var excludeTransition: Transition? = null
-                    if (atn.ruleToStartState[i].isLeftRecursiveRule) {
+                    if (atn.ruleToStartState[i]!!.isLeftRecursiveRule) {
                         // wrap from the beginning of the rule to the StarLoopEntryState
                         endState = null
                         for (state in atn.states) {
@@ -295,7 +295,7 @@ class ATNDeserializer
                             throw UnsupportedOperationException("Couldn't identify final state of the precedence rule prefix section.")
                         }
 
-                        excludeTransition = (endState as StarLoopEntryState).loopBackState.transition(0)
+                        excludeTransition = (endState as StarLoopEntryState).loopBackState!!.transition(0)
                     } else {
                         endState = atn.ruleToStopState[i]
                     }
@@ -314,15 +314,15 @@ class ATNDeserializer
                     }
 
                     // all transitions leaving the rule start state need to leave blockStart instead
-                    while (atn.ruleToStartState[i].numberOfTransitions > 0) {
+                    while (atn.ruleToStartState[i]!!.numberOfTransitions > 0) {
                         val transition: Transition? =
-                            atn.ruleToStartState[i].removeTransition(atn.ruleToStartState[i].numberOfTransitions - 1)
-                        bypassStart.addTransition(transition)
+                            atn.ruleToStartState[i]!!.removeTransition(atn.ruleToStartState[i]!!.numberOfTransitions - 1)
+                        bypassStart.addTransition(transition!!)
                     }
 
                     // link the new states
-                    atn.ruleToStartState[i].addTransition(EpsilonTransition(bypassStart))
-                    bypassStop.addTransition(EpsilonTransition(endState))
+                    atn.ruleToStartState[i]!!.addTransition(EpsilonTransition(bypassStart))
+                    bypassStop.addTransition(EpsilonTransition(endState!!))
 
                     val matchState: ATNState = BasicState()
                     atn.addState(matchState)
@@ -330,7 +330,7 @@ class ATNDeserializer
                     bypassStart.addTransition(EpsilonTransition(matchState))
                 }
 
-                if (deserializationOptions.isVerifyATN()) {
+                if (deserializationOptions!!.isVerifyATN()) {
                     // reverify after modification
                     verifyATN(atn)
                 }
@@ -342,7 +342,7 @@ class ATNDeserializer
         private fun deserializeSets(
             data: IntArray,
             p: Int,
-            sets: List<IntervalSet?>,
+            sets: MutableList<IntervalSet?>,
         ): Int {
             var p = p
             val nsets = data[p++]
@@ -383,7 +383,7 @@ class ATNDeserializer
              * decision for the closure block that determines whether a
              * precedence rule should continue or complete.
              */
-                if (atn.ruleToStartState[state.ruleIndex].isLeftRecursiveRule) {
+                if (atn.ruleToStartState[state.ruleIndex]!!.isLeftRecursiveRule) {
                     val maybeLoopEndState: ATNState = state.transition(state.numberOfTransitions - 1).target
                     if (maybeLoopEndState is LoopEndState) {
                         if (maybeLoopEndState.epsilonOnlyTransitions && maybeLoopEndState.transition(0).target is RuleStopState) {
@@ -419,7 +419,7 @@ class ATNDeserializer
                         checkCondition(starLoopEntryState.transition(1).target is StarBlockStartState)
                         checkCondition(starLoopEntryState.nonGreedy)
                     } else {
-                        throw IllegalStateException()
+                        throw IllegalStateException("")
                     }
                 }
 
@@ -470,9 +470,9 @@ class ATNDeserializer
             arg1: Int,
             arg2: Int,
             arg3: Int,
-            sets: List<IntervalSet?>,
+            sets: MutableList<IntervalSet?>,
         ): Transition? {
-            val target: ATNState? = atn.states.get(trg)
+            val target: ATNState = atn.states[trg]
             when (type) {
                 Transition.EPSILON -> return EpsilonTransition(target)
                 Transition.RANGE ->
@@ -483,7 +483,7 @@ class ATNDeserializer
                     }
 
                 Transition.RULE -> {
-                    val rt: RuleTransition = RuleTransition(atn.states.get(arg1) as RuleStartState?, arg2, arg3, target)
+                    val rt: RuleTransition = RuleTransition(atn.states[arg1] as RuleStartState, arg2, arg3, target)
                     return rt
                 }
 
@@ -505,8 +505,8 @@ class ATNDeserializer
                     return a
                 }
 
-                Transition.SET -> return SetTransition(target, sets.get(arg1))
-                Transition.NOT_SET -> return NotSetTransition(target, sets.get(arg1))
+                Transition.SET -> return SetTransition(target, sets[arg1]!!)
+                Transition.NOT_SET -> return NotSetTransition(target, sets[arg1]!!)
                 Transition.WILDCARD -> return WildcardTransition(target)
             }
 
@@ -549,21 +549,21 @@ class ATNDeserializer
             data2: Int,
         ): LexerAction? {
             when (type) {
-                CHANNEL -> return LexerChannelAction(data1)
+                LexerActionType.CHANNEL -> return LexerChannelAction(data1)
 
-                CUSTOM -> return LexerCustomAction(data1, data2)
+                LexerActionType.CUSTOM -> return LexerCustomAction(data1, data2)
 
-                MODE -> return LexerModeAction(data1)
+                LexerActionType.MODE -> return LexerModeAction(data1)
 
-                MORE -> return LexerMoreAction.INSTANCE
+                LexerActionType.MORE -> return LexerMoreAction.INSTANCE
 
-                POP_MODE -> return LexerPopModeAction.INSTANCE
+                LexerActionType.POP_MODE -> return LexerPopModeAction.INSTANCE
 
-                PUSH_MODE -> return LexerPushModeAction(data1)
+                LexerActionType.PUSH_MODE -> return LexerPushModeAction(data1)
 
-                SKIP -> return LexerSkipAction.INSTANCE
+                LexerActionType.SKIP -> return LexerSkipAction.INSTANCE
 
-                TYPE -> return LexerTypeAction(data1)
+                LexerActionType.TYPE -> return LexerTypeAction(data1)
 
                 else -> throw IllegalArgumentException(
                     "The specified lexer action type $type is not valid.",
@@ -572,11 +572,7 @@ class ATNDeserializer
         }
 
         companion object {
-            val SERIALIZED_VERSION: Int
-
-            init {
-                org.antlr.v4.runtime.atn.ATNDeserializer.Companion.SERIALIZED_VERSION = 4
-            }
+            val SERIALIZED_VERSION: Int = 4
 
             protected fun toInt(c: Char): Int = c.code
 
@@ -617,7 +613,7 @@ class ATNDeserializer
                         data16.add(v)
                     } else { // v > 0x7FFF
                         if (v >= 0x7FFFFFFF) { // too big to fit in 15 bits + 16 bits? (+1 would be 8000_0000 which is bad encoding)
-                            throw UnsupportedOperationException("Serialized ATN data element[" + i + "] = " + v + " doesn't fit in 31 bits")
+                            throw UnsupportedOperationException("Serialized ATN data element[$i] = $v doesn't fit in 31 bits")
                         }
                         v = v and 0x7FFFFFFF // strip high bit (sentinel) if set
                         data16.add((v shr 16) or 0x8000) // store high 15-bit word first and set high bit to say word follows

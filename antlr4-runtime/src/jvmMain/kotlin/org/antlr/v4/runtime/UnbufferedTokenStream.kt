@@ -6,6 +6,7 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.assert
 
 abstract class UnbufferedTokenStream<T : Token?>(
     override var tokenSource: TokenSource,
@@ -106,14 +107,12 @@ abstract class UnbufferedTokenStream<T : Token?>(
 
     override fun LA(i: Int): Int = LT(i)?.type ?: Token.INVALID_TYPE
 
-    fun getTokenSource(): TokenSource = tokenSource
-
     override val text: String?
         get() = ""
 
-    fun getText(ctx: RuleContext): String = getText(ctx.sourceInterval)
+    fun textForContext(ctx: RuleContext): String = getText(ctx.sourceInterval)!!
 
-    fun getText(
+    fun textForRange(
         start: Token,
         stop: Token,
     ): String = getText(Interval.of(start.tokenIndex, stop.tokenIndex))
@@ -171,7 +170,7 @@ abstract class UnbufferedTokenStream<T : Token?>(
         }
 
         if (t is WritableToken) {
-            t.setTokenIndex(this.bufferStartIndex + n)
+            t.tokenIndex = this.bufferStartIndex + n
         }
 
         tokens[n++] = t
@@ -250,7 +249,8 @@ abstract class UnbufferedTokenStream<T : Token?>(
     override val sourceName: String?
         get() = tokenSource.sourceName
 
-    fun getText(interval: Interval): String {
+    override fun getText(interval: Interval?): String {
+        if (interval == null) throw NullPointerException("interval")
         val bufferStartIndex = this.bufferStartIndex
         val bufferStopIndex = bufferStartIndex + tokens.size - 1
 

@@ -48,8 +48,8 @@ class LexerChannelAction
      * This action is implemented by calling [Lexer.setChannel] with the
      * value provided by [.getChannel].
      */
-    override fun execute(lexer: Lexer?) {
-        lexer.setChannel(channel)
+    override fun execute(lexer: Lexer) {
+        lexer.channel = channel
     }
 
     override fun hashCode(): Int {
@@ -60,13 +60,13 @@ class LexerChannelAction
     }
 
     override fun equals(other: Any?): Boolean {
-        if (obj === this) {
+        if (other === this) {
             return true
-        } else if (obj !is LexerChannelAction) {
+        } else if (other !is LexerChannelAction) {
             return false
         }
 
-        return channel == obj.channel
+        return channel == other.channel
     }
 
     override fun toString(): String = "channel($channel)"

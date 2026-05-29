@@ -28,13 +28,13 @@ class LexerPushModeAction
      */
     val mode: Int,
 ) : LexerAction {
-    val actionType: LexerActionType
+    override val actionType: LexerActionType
         /**
          * {@inheritDoc}
          * @return This method returns [LexerActionType.PUSH_MODE].
          */
         get() = LexerActionType.PUSH_MODE
-    val isPositionDependent: Boolean
+    override val isPositionDependent: Boolean
         /**
          * {@inheritDoc}
          * @return This method returns `false`.
@@ -59,14 +59,14 @@ class LexerPushModeAction
         return MurmurHash.finish(hash, 2)
     }
 
-    override fun equals(obj: Any): Boolean {
-        if (obj === this) {
+    override fun equals(other: Any?): Boolean {
+        if (other === this) {
             return true
-        } else if (obj !is LexerPushModeAction) {
+        } else if (other !is LexerPushModeAction) {
             return false
         }
 
-        return mode == obj.mode
+        return mode == other.mode
     }
 
     override fun toString(): String = "pushMode($mode)"

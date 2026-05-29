@@ -8,7 +8,7 @@ import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.Predicate
-import org.antlr.v4.runtime.misc.Utils
+import org.antlr.v4.runtime.misc.CommonUtils
 import org.antlr.v4.runtime.tree.Trees.toStringTree
 
 object Trees {
@@ -22,11 +22,11 @@ object Trees {
     }
 
     fun toStringTree(t: Tree, ruleNames: List<String?>?): String? {
-        var s: String = Utils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
+        var s: String = CommonUtils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
         if (t.childCount === 0) return s
         val buf: StringBuilder = StringBuilder()
         buf.append("(")
-        s = Utils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
+        s = CommonUtils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
         buf.append(s)
         buf.append(' ')
         for (i in 0..<t.childCount) {
@@ -162,9 +162,9 @@ object Trees {
         }
         if (t is ParserRuleContext) {
             val r: ParserRuleContext = t
-            val startToken = r.getStart()
+            val startToken = r.start
             if (startToken != null && startTokenIndex >= startToken.tokenIndex &&
-                (r.getStop() == null || stopTokenIndex <= r.getStop()!!.tokenIndex)
+                (r.stop == null || stopTokenIndex <= r.stop!!.tokenIndex)
             ) {
                 return r
             }

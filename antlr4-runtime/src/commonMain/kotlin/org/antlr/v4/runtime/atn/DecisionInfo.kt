@@ -232,7 +232,7 @@ class DecisionInfo
      */
     var LL_DFATransitions: Long = 0
 
-    fun toString(): String? =
+    override fun toString(): String =
         "{" +
             "decision=" + decision +
             ", contextSensitivities=" + contextSensitivities.size +

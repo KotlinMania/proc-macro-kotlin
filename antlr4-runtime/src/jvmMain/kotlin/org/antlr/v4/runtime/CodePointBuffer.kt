@@ -4,9 +4,12 @@
  * can be found in the LICENSE.txt file in the project root.
  */
 package org.antlr.v4.runtime
+
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.IntBuffer
+import kotlin.math.pow
+import org.antlr.v4.runtime.assert
 
 /**
  * Wrapper for [ByteBuffer] / [CharBuffer] / [IntBuffer].
@@ -16,9 +19,9 @@ import java.nio.IntBuffer
  */
 class CodePointBuffer private constructor(
     val type: Type,
-    byteBuffer: ByteBuffer,
-    charBuffer: CharBuffer,
-    intBuffer: IntBuffer,
+    private val byteBuffer: ByteBuffer?,
+    private val charBuffer: CharBuffer?,
+    private val intBuffer: IntBuffer?,
 ) {
     enum class Type {
         BYTE,
@@ -26,179 +29,161 @@ class CodePointBuffer private constructor(
         INT,
     }
 
-    private val byteBuffer: ByteBuffer
-    private val charBuffer: CharBuffer
-    private val intBuffer: IntBuffer
-
-    init {
-        this.byteBuffer = byteBuffer
-        this.charBuffer = charBuffer
-        this.intBuffer = intBuffer
-    }
-
-    fun position(): Int {
-        when (type) {
-            org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> return byteBuffer.position()
-            org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> return charBuffer.position()
-            org.antlr.v4.runtime.CodePointBuffer.Type.INT -> return intBuffer.position()
-        }
-        throw UnsupportedOperationException("Not reached")
+    fun position(): Int = when (type) {
+        Type.BYTE -> byteBuffer!!.position()
+        Type.CHAR -> charBuffer!!.position()
+        Type.INT -> intBuffer!!.position()
     }
 
     fun position(newPosition: Int) {
         when (type) {
-            org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> byteBuffer.position(newPosition)
-            org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> charBuffer.position(newPosition)
-            org.antlr.v4.runtime.CodePointBuffer.Type.INT -> intBuffer.position(newPosition)
+            Type.BYTE -> byteBuffer!!.position(newPosition)
+            Type.CHAR -> charBuffer!!.position(newPosition)
+            Type.INT -> intBuffer!!.position(newPosition)
         }
     }
 
-    fun remaining(): Int {
-        when (type) {
-            org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> return byteBuffer.remaining()
-            org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> return charBuffer.remaining()
-            org.antlr.v4.runtime.CodePointBuffer.Type.INT -> return intBuffer.remaining()
-        }
-        throw UnsupportedOperationException("Not reached")
+    fun remaining(): Int = when (type) {
+        Type.BYTE -> byteBuffer!!.remaining()
+        Type.CHAR -> charBuffer!!.remaining()
+        Type.INT -> intBuffer!!.remaining()
     }
 
-    fun get(offset: Int): Int {
-        when (type) {
-            org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> return byteBuffer.get(offset)
-            org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> return charBuffer.get(offset)
-            org.antlr.v4.runtime.CodePointBuffer.Type.INT -> return intBuffer.get(offset)
-        }
-        throw UnsupportedOperationException("Not reached")
+    fun get(offset: Int): Int = when (type) {
+        Type.BYTE -> byteBuffer!!.get(offset).toInt() and 0xFF
+        Type.CHAR -> charBuffer!!.get(offset).toInt()
+        Type.INT -> intBuffer!!.get(offset)
     }
 
-    fun arrayOffset(): Int {
-        when (type) {
-            org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> return byteBuffer.arrayOffset()
-            org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> return charBuffer.arrayOffset()
-            org.antlr.v4.runtime.CodePointBuffer.Type.INT -> return intBuffer.arrayOffset()
-        }
-        throw UnsupportedOperationException("Not reached")
+    internal fun getType(): Type = type
+
+    internal fun arrayOffset(): Int = when (type) {
+        Type.BYTE -> byteBuffer!!.arrayOffset()
+        Type.CHAR -> charBuffer!!.arrayOffset()
+        Type.INT -> intBuffer!!.arrayOffset()
     }
 
-    fun byteArray(): ByteArray {
-        assert(type == org.antlr.v4.runtime.CodePointBuffer.Type.BYTE)
-        return byteBuffer.array()
+    internal fun byteArray(): ByteArray {
+        assert(type == Type.BYTE)
+        return byteBuffer!!.array()
     }
 
-    fun charArray(): CharArray {
-        assert(type == org.antlr.v4.runtime.CodePointBuffer.Type.CHAR)
-        return charBuffer.array()
+    internal fun charArray(): CharArray {
+        assert(type == Type.CHAR)
+        return charBuffer!!.array()
     }
 
-    fun intArray(): IntArray {
-        assert(type == org.antlr.v4.runtime.CodePointBuffer.Type.INT)
-        return intBuffer.array()
+    internal fun intArray(): IntArray {
+        assert(type == Type.INT)
+        return intBuffer!!.array()
     }
 
-    class Builder private constructor(
-        initialBufferSize: Int,
-    ) {
-        var type: Type
-            private set
-        private var byteBuffer: ByteBuffer?
+    companion object {
+        @JvmStatic
+        fun withBytes(byteBuffer: ByteBuffer): CodePointBuffer =
+            CodePointBuffer(Type.BYTE, byteBuffer, null, null)
+
+        @JvmStatic
+        fun withChars(charBuffer: CharBuffer): CodePointBuffer =
+            CodePointBuffer(Type.CHAR, null, charBuffer, null)
+
+        @JvmStatic
+        fun withInts(intBuffer: IntBuffer): CodePointBuffer =
+            CodePointBuffer(Type.INT, null, null, intBuffer)
+
+        @JvmStatic
+        fun builder(initialBufferSize: Int): Builder = Builder(initialBufferSize)
+    }
+
+    class Builder internal constructor(initialBufferSize: Int) {
+        private var type: Type = Type.BYTE
+        private var byteBuffer: ByteBuffer = ByteBuffer.allocate(initialBufferSize)
         private var charBuffer: CharBuffer? = null
         private var intBuffer: IntBuffer? = null
-        private var prevHighSurrogate: Int
+        private var prevHighSurrogate: Int = -1
 
-        init {
-            type = org.antlr.v4.runtime.CodePointBuffer.Type.BYTE
-            byteBuffer = ByteBuffer.allocate(initialBufferSize)
-            prevHighSurrogate = -1
-        }
+        internal fun getType(): Type = type
 
-        fun getByteBuffer(): ByteBuffer? = byteBuffer
+        internal fun getByteBuffer(): ByteBuffer = byteBuffer
 
-        fun getCharBuffer(): CharBuffer? = charBuffer
+        internal fun getCharBuffer(): CharBuffer? = charBuffer
 
-        fun getIntBuffer(): IntBuffer? = intBuffer
+        internal fun getIntBuffer(): IntBuffer? = intBuffer
 
         fun build(): CodePointBuffer {
             when (type) {
-                org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> byteBuffer.flip()
-                org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> charBuffer.flip()
-                org.antlr.v4.runtime.CodePointBuffer.Type.INT -> intBuffer.flip()
+                Type.BYTE -> byteBuffer.flip()
+                Type.CHAR -> charBuffer!!.flip()
+                Type.INT -> intBuffer!!.flip()
             }
-            return org.antlr.v4.runtime
-                .CodePointBuffer(type, byteBuffer, charBuffer, intBuffer)
+            return CodePointBuffer(type, byteBuffer, charBuffer, intBuffer)
+        }
+
+        private fun roundUpToNextPowerOfTwo(i: Int): Int {
+            val nextPowerOfTwo = 32 - Integer.numberOfLeadingZeros(i - 1)
+            return 2.0.pow(nextPowerOfTwo.toDouble()).toInt()
         }
 
         fun ensureRemaining(remainingNeeded: Int) {
             when (type) {
-                org.antlr.v4.runtime.CodePointBuffer.Type.BYTE ->
+                Type.BYTE -> {
                     if (byteBuffer.remaining() < remainingNeeded) {
-                        val newCapacity: Int =
-                            org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(
-                                byteBuffer.capacity() + remainingNeeded,
-                            )
-                        val newBuffer: ByteBuffer = ByteBuffer.allocate(newCapacity)
+                        val newCapacity = roundUpToNextPowerOfTwo(byteBuffer.capacity() + remainingNeeded)
+                        val newBuffer = ByteBuffer.allocate(newCapacity)
                         byteBuffer.flip()
                         newBuffer.put(byteBuffer)
                         byteBuffer = newBuffer
                     }
-
-                org.antlr.v4.runtime.CodePointBuffer.Type.CHAR ->
-                    if (charBuffer.remaining() < remainingNeeded) {
-                        val newCapacity: Int =
-                            org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(
-                                charBuffer.capacity() + remainingNeeded,
-                            )
-                        val newBuffer: CharBuffer = CharBuffer.allocate(newCapacity)
-                        charBuffer.flip()
-                        newBuffer.put(charBuffer)
+                }
+                Type.CHAR -> {
+                    if (charBuffer!!.remaining() < remainingNeeded) {
+                        val newCapacity = roundUpToNextPowerOfTwo(charBuffer!!.capacity() + remainingNeeded)
+                        val newBuffer = CharBuffer.allocate(newCapacity)
+                        charBuffer!!.flip()
+                        newBuffer.put(charBuffer!!)
                         charBuffer = newBuffer
                     }
-
-                org.antlr.v4.runtime.CodePointBuffer.Type.INT ->
-                    if (intBuffer.remaining() < remainingNeeded) {
-                        val newCapacity: Int =
-                            org.antlr.v4.runtime.CodePointBuffer.Builder.Companion.roundUpToNextPowerOfTwo(
-                                intBuffer.capacity() + remainingNeeded,
-                            )
-                        val newBuffer: IntBuffer = IntBuffer.allocate(newCapacity)
-                        intBuffer.flip()
-                        newBuffer.put(intBuffer)
+                }
+                Type.INT -> {
+                    if (intBuffer!!.remaining() < remainingNeeded) {
+                        val newCapacity = roundUpToNextPowerOfTwo(intBuffer!!.capacity() + remainingNeeded)
+                        val newBuffer = IntBuffer.allocate(newCapacity)
+                        intBuffer!!.flip()
+                        newBuffer.put(intBuffer!!)
                         intBuffer = newBuffer
                     }
+                }
             }
         }
 
         fun append(utf16In: CharBuffer) {
-            ensureRemaining(utf16In.remaining())
             if (utf16In.hasArray()) {
                 appendArray(utf16In)
             } else {
-                // TODO
-                throw UnsupportedOperationException("TODO")
+                throw UnsupportedOperationException("Not implemented for non-array CharBuffers")
             }
         }
 
         private fun appendArray(utf16In: CharBuffer) {
-            assert(utf16In.hasArray())
-
             when (type) {
-                org.antlr.v4.runtime.CodePointBuffer.Type.BYTE -> appendArrayByte(utf16In)
-                org.antlr.v4.runtime.CodePointBuffer.Type.CHAR -> appendArrayChar(utf16In)
-                org.antlr.v4.runtime.CodePointBuffer.Type.INT -> appendArrayInt(utf16In)
+                Type.BYTE -> appendArrayByte(utf16In)
+                Type.CHAR -> appendArrayChar(utf16In)
+                Type.INT -> appendArrayInt(utf16In)
             }
         }
 
         private fun appendArrayByte(utf16In: CharBuffer) {
             assert(prevHighSurrogate == -1)
 
-            val `in`: CharArray = utf16In.array()
-            var inOffset: Int = utf16In.arrayOffset() + utf16In.position()
-            val inLimit: Int = utf16In.arrayOffset() + utf16In.limit()
+            val inn = utf16In.array()
+            var inOffset = utf16In.arrayOffset() + utf16In.position()
+            val inLimit = utf16In.arrayOffset() + utf16In.limit()
 
-            val outByte: ByteArray = byteBuffer.array()
-            var outOffset: Int = byteBuffer.arrayOffset() + byteBuffer.position()
+            val outByte = byteBuffer.array()
+            var outOffset = byteBuffer.arrayOffset() + byteBuffer.position()
 
             while (inOffset < inLimit) {
-                val c = `in`[inOffset]
+                val c = inn[inOffset]
                 if (c.code <= 0xFF) {
                     outByte[outOffset] = (c.code and 0xFF).toByte()
                 } else {
@@ -225,20 +210,20 @@ class CodePointBuffer private constructor(
         private fun appendArrayChar(utf16In: CharBuffer) {
             assert(prevHighSurrogate == -1)
 
-            val `in`: CharArray = utf16In.array()
-            var inOffset: Int = utf16In.arrayOffset() + utf16In.position()
-            val inLimit: Int = utf16In.arrayOffset() + utf16In.limit()
+            val inn = utf16In.array()
+            var inOffset = utf16In.arrayOffset() + utf16In.position()
+            val inLimit = utf16In.arrayOffset() + utf16In.limit()
 
-            val outChar: CharArray = charBuffer.array()
-            var outOffset: Int = charBuffer.arrayOffset() + charBuffer.position()
+            val outChar = charBuffer!!.array()
+            var outOffset = charBuffer!!.arrayOffset() + charBuffer!!.position()
 
             while (inOffset < inLimit) {
-                val c = `in`[inOffset]
+                val c = inn[inOffset]
                 if (!Character.isHighSurrogate(c)) {
                     outChar[outOffset] = c
                 } else {
                     utf16In.position(inOffset - utf16In.arrayOffset())
-                    charBuffer.position(outOffset - charBuffer.arrayOffset())
+                    charBuffer!!.position(outOffset - charBuffer!!.arrayOffset())
                     charToIntBuffer(utf16In.remaining())
                     appendArrayInt(utf16In)
                     return
@@ -248,19 +233,19 @@ class CodePointBuffer private constructor(
             }
 
             utf16In.position(inOffset - utf16In.arrayOffset())
-            charBuffer.position(outOffset - charBuffer.arrayOffset())
+            charBuffer!!.position(outOffset - charBuffer!!.arrayOffset())
         }
 
         private fun appendArrayInt(utf16In: CharBuffer) {
-            val `in`: CharArray = utf16In.array()
-            var inOffset: Int = utf16In.arrayOffset() + utf16In.position()
-            val inLimit: Int = utf16In.arrayOffset() + utf16In.limit()
+            val inn = utf16In.array()
+            var inOffset = utf16In.arrayOffset() + utf16In.position()
+            val inLimit = utf16In.arrayOffset() + utf16In.limit()
 
-            val outInt: IntArray = intBuffer.array()
-            var outOffset: Int = intBuffer.arrayOffset() + intBuffer.position()
+            val outInt = intBuffer!!.array()
+            var outOffset = intBuffer!!.arrayOffset() + intBuffer!!.position()
 
             while (inOffset < inLimit) {
-                val c = `in`[inOffset]
+                val c = inn[inOffset]
                 inOffset++
                 if (prevHighSurrogate != -1) {
                     if (Character.isLowSurrogate(c)) {
@@ -268,7 +253,6 @@ class CodePointBuffer private constructor(
                         outOffset++
                         prevHighSurrogate = -1
                     } else {
-                        // Dangling high surrogate
                         outInt[outOffset] = prevHighSurrogate
                         outOffset++
                         if (Character.isHighSurrogate(c)) {
@@ -288,89 +272,51 @@ class CodePointBuffer private constructor(
             }
 
             if (prevHighSurrogate != -1) {
-                // Dangling high surrogate
                 outInt[outOffset] = prevHighSurrogate and 0xFFFF
                 outOffset++
             }
 
             utf16In.position(inOffset - utf16In.arrayOffset())
-            intBuffer.position(outOffset - intBuffer.arrayOffset())
+            intBuffer!!.position(outOffset - intBuffer!!.arrayOffset())
         }
 
         private fun byteToCharBuffer(toAppend: Int) {
             byteBuffer.flip()
-            // CharBuffers hold twice as much per unit as ByteBuffers, so start with half the capacity.
-            val newBuffer: CharBuffer =
-                CharBuffer.allocate(maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 2))
+            val newBuffer = CharBuffer.allocate(
+                maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 2)
+            )
             while (byteBuffer.hasRemaining()) {
-                newBuffer.put((byteBuffer.get() and 0xFF) as Char)
+                newBuffer.put((byteBuffer.get().toInt() and 0xFF).toChar())
             }
-            type = org.antlr.v4.runtime.CodePointBuffer.Type.CHAR
-            byteBuffer = null
+            type = Type.CHAR
+            byteBuffer = ByteBuffer.allocate(0) // release
             charBuffer = newBuffer
         }
 
         private fun byteToIntBuffer(toAppend: Int) {
             byteBuffer.flip()
-            // IntBuffers hold four times as much per unit as ByteBuffers, so start with one quarter the capacity.
-            val newBuffer: IntBuffer =
-                IntBuffer.allocate(maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 4))
+            val newBuffer = IntBuffer.allocate(
+                maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 4)
+            )
             while (byteBuffer.hasRemaining()) {
-                newBuffer.put(byteBuffer.get() and 0xFF)
+                newBuffer.put(byteBuffer.get().toInt() and 0xFF)
             }
-            type = org.antlr.v4.runtime.CodePointBuffer.Type.INT
-            byteBuffer = null
+            type = Type.INT
+            byteBuffer = ByteBuffer.allocate(0) // release
             intBuffer = newBuffer
         }
 
         private fun charToIntBuffer(toAppend: Int) {
-            charBuffer.flip()
-            // IntBuffers hold two times as much per unit as ByteBuffers, so start with one half the capacity.
-            val newBuffer: IntBuffer =
-                IntBuffer.allocate(maxOf(charBuffer.remaining() + toAppend, charBuffer.capacity() / 2))
-            while (charBuffer.hasRemaining()) {
-                newBuffer.put(charBuffer.get() and 0xFFFF)
+            charBuffer!!.flip()
+            val newBuffer = IntBuffer.allocate(
+                maxOf(charBuffer!!.remaining() + toAppend, charBuffer!!.capacity() / 2)
+            )
+            while (charBuffer!!.hasRemaining()) {
+                newBuffer.put(charBuffer!!.get().toInt() and 0xFFFF)
             }
-            type = org.antlr.v4.runtime.CodePointBuffer.Type.INT
+            type = Type.INT
             charBuffer = null
             intBuffer = newBuffer
         }
-
-        companion object {
-            private fun roundUpToNextPowerOfTwo(i: Int): Int {
-                val nextPowerOfTwo: Int = 32 - Integer.numberOfLeadingZeros(i - 1)
-                return Math.pow(2, nextPowerOfTwo) as Int
-            }
-        }
-    }
-
-    companion object {
-        fun withBytes(byteBuffer: ByteBuffer): CodePointBuffer =
-            org.antlr.v4.runtime.CodePointBuffer(
-                org.antlr.v4.runtime.CodePointBuffer.Type.BYTE,
-                byteBuffer,
-                null,
-                null,
-            )
-
-        fun withChars(charBuffer: CharBuffer): CodePointBuffer =
-            org.antlr.v4.runtime.CodePointBuffer(
-                org.antlr.v4.runtime.CodePointBuffer.Type.CHAR,
-                null,
-                charBuffer,
-                null,
-            )
-
-        fun withInts(intBuffer: IntBuffer): CodePointBuffer =
-            org.antlr.v4.runtime.CodePointBuffer(
-                org.antlr.v4.runtime.CodePointBuffer.Type.INT,
-                null,
-                null,
-                intBuffer,
-            )
-
-        fun builder(initialBufferSize: Int): Builder =
-            org.antlr.v4.runtime.CodePointBuffer
-                .Builder(initialBufferSize)
     }
 }

@@ -96,9 +96,7 @@ abstract class ATNState {
 
     fun onlyHasEpsilonTransitions(): Boolean = epsilonOnlyTransitions
 
-    fun setRuleIndex(ruleIndex: Int) {
-        this.ruleIndex = ruleIndex
-    }
+
 
     companion object {
         const val INITIAL_NUM_TRANSITIONS: Int = 4

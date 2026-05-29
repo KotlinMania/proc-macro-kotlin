@@ -46,14 +46,14 @@ class LexerCustomAction
      */
     val actionIndex: Int,
 ) : LexerAction {
-    val actionType: LexerActionType
+    override val actionType: LexerActionType
         /**
          * {@inheritDoc}
          *
          * @return This method returns [LexerActionType.CUSTOM].
          */
         get() = LexerActionType.CUSTOM
-    val isPositionDependent: Boolean
+    override val isPositionDependent: Boolean
         /**
          * Gets whether the lexer action is position-dependent. Position-dependent
          * actions may have different semantics depending on the [CharStream]

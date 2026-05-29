@@ -35,7 +35,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
         e: RecognitionException?
     ) {
         for (listener in delegates) {
-            listener.syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e)
+            listener!!.syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e)
         }
     }
     override fun reportAmbiguity(
@@ -48,7 +48,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
         configs: ATNConfigSet?
     ) {
         for (listener in delegates) {
-            listener.reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
+            listener!!.reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
         }
     }
     override fun reportAttemptingFullContext(
@@ -60,7 +60,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
         configs: ATNConfigSet?
     ) {
         for (listener in delegates) {
-            listener.reportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
+            listener!!.reportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
         }
     }
     override fun reportContextSensitivity(
@@ -72,7 +72,7 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
         configs: ATNConfigSet?
     ) {
         for (listener in delegates) {
-            listener.reportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
+            listener!!.reportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
         }
     }
 }

@@ -18,8 +18,7 @@ import org.antlr.v4.runtime.atn.ATN
  * will really every use this.
  */
 class RuleContextWithAltNum : ParserRuleContext {
-    @set:Override
-    var altNumber: Int = 0
+    override var altNumber: Int = 0
 
     constructor() {
         this.altNumber = ATN.INVALID_ALT_NUMBER

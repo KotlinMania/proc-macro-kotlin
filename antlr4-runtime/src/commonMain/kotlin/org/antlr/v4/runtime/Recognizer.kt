@@ -8,7 +8,7 @@ package org.antlr.v4.runtime
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.atn.ATNSimulator
 import org.antlr.v4.runtime.atn.ParseInfo
-import org.antlr.v4.runtime.misc.Utils
+
 
 abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     private val _listeners: MutableList<ANTLRErrorListener> = mutableListOf(ConsoleErrorListener.INSTANCE)
@@ -89,7 +89,7 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
         return -1
     }
 
-    val serializedATN: String
+    open val serializedATN: String
         get() = throw UnsupportedOperationException("there is no serialized ATN")
 
     abstract val grammarFileName: String
@@ -134,9 +134,9 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     val errorListenerDispatch: ANTLRErrorListener
         get() = ProxyErrorListener(this.errorListeners)
 
-    fun sempred(_localctx: RuleContext?, ruleIndex: Int, actionIndex: Int): Boolean = true
+    open fun sempred(_localctx: RuleContext?, ruleIndex: Int, actionIndex: Int): Boolean = true
 
-    fun precpred(localctx: RuleContext?, precedence: Int): Boolean = true
+    open fun precpred(localctx: RuleContext?, precedence: Int): Boolean = true
 
     fun action(_localctx: RuleContext?, ruleIndex: Int, actionIndex: Int) {}
 

@@ -42,8 +42,8 @@ class ParseInfo(
          * full-context predictions during parsing.
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
-            val LL: MutableList<Int> = ArrayList()()
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
+            val LL: MutableList<Int> = mutableListOf<Int>()
             for (i in decisions.indices) {
                 val fallBack: Long = decisions[i].LL_Fallback
                 if (fallBack > 0) LL.add(i)
@@ -58,7 +58,7 @@ class ParseInfo(
          * [DecisionInfo.timeInPrediction] for all decisions.
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
             var t: Long = 0
             for (i in decisions.indices) {
                 t += decisions[i].timeInPrediction
@@ -73,7 +73,7 @@ class ParseInfo(
          * [DecisionInfo.SLL_TotalLook] for all decisions.
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
             var k: Long = 0
             for (i in decisions.indices) {
                 k += decisions[i].SLL_TotalLook
@@ -88,7 +88,7 @@ class ParseInfo(
          * [DecisionInfo.LL_TotalLook] for all decisions.
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
             var k: Long = 0
             for (i in decisions.indices) {
                 k += decisions[i].LL_TotalLook
@@ -102,7 +102,7 @@ class ParseInfo(
          * across all decisions made during parsing.
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
             var k: Long = 0
             for (i in decisions.indices) {
                 k += decisions[i].SLL_ATNTransitions
@@ -116,7 +116,7 @@ class ParseInfo(
          * across all decisions made during parsing.
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
             var k: Long = 0
             for (i in decisions.indices) {
                 k += decisions[i].LL_ATNTransitions
@@ -135,7 +135,7 @@ class ParseInfo(
          * [.getTotalLLATNLookaheadOps].
          */
         get() {
-            val decisions: Array<DecisionInfo?> = atnSimulator.decisionInfo
+            val decisions: Array<DecisionInfo> = atnSimulator.decisionInfo
             var k: Long = 0
             for (i in decisions.indices) {
                 k += decisions[i].SLL_ATNTransitions
@@ -151,7 +151,7 @@ class ParseInfo(
          */
         get() {
             var n = 0
-            val decisionToDFA: Array<DFA?> = atnSimulator.decisionToDFA
+            val decisionToDFA: Array<DFA> = atnSimulator.decisionToDFA
             for (i in decisionToDFA.indices) {
                 n += getDFASize(i)
             }
@@ -163,7 +163,8 @@ class ParseInfo(
      * particular decision.
      */
     fun getDFASize(decision: Int): Int {
-        val decisionToDFA: DFA = atnSimulator.decisionToDFA[decision]
-        return decisionToDFA.states.size
+        val decisionToDFA: Array<DFA> = atnSimulator.decisionToDFA
+        val dfa = if (decision < decisionToDFA.size) decisionToDFA[decision] else null
+        return dfa?.states?.size ?: 0
     }
 }

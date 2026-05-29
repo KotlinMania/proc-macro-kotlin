@@ -10,5 +10,4 @@ class TextChunk(text: String) : Chunk() {
 
     override fun toString(): String = "'$text'"
 
-    fun getText(): String = text
 }

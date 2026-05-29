@@ -6,13 +6,13 @@ import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.Interval
 
 open class TerminalNodeImpl(override var symbol: Token?) : TerminalNode {
-    override var parent: ParseTree? = null
+    private var _parent: ParseTree? = null
+    override val parent: ParseTree? get() = _parent
+
+    override fun setParent(parent: RuleContext?) { _parent = parent }
 
     override fun getChild(i: Int): ParseTree? = null
 
-    override fun setParent(parent: RuleContext?) {
-        this.parent = parent
-    }
 
     override val payload: Token?
         get() = symbol

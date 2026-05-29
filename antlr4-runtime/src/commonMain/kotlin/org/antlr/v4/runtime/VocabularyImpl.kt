@@ -103,7 +103,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
             return symbolicName
         }
 
-        return Int.toString(tokenType)
+        return tokenType.toString()
     }
 
     companion object {
@@ -154,11 +154,11 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
                 }
 
                 if (!tokenName.isEmpty()) {
-                    val firstChar: Char = tokenName.charAt(0)
+                    val firstChar: Char = tokenName[0]
                     if (firstChar == '\'') {
                         symbolicNames[i] = null
                         continue
-                    } else if (Character.isUpperCase(firstChar)) {
+                    } else if (firstChar.isUpperCase()) {
                         literalNames[i] = null
                         continue
                     }
@@ -169,7 +169,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
                 symbolicNames[i] = null
             }
 
-            return org.antlr.v4.runtime.VocabularyImpl(literalNames, symbolicNames, tokenNames)
+            return org.antlr.v4.runtime.VocabularyImpl(literalNames, symbolicNames, tokenNames as Array<String?>?)
         }
     }
 }

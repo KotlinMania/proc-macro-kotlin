@@ -24,13 +24,13 @@ class LexerPopModeAction
      */
     private constructor() :
     LexerAction {
-        val actionType: LexerActionType
+        override val actionType: LexerActionType
             /**
              * {@inheritDoc}
              * @return This method returns [LexerActionType.POP_MODE].
              */
             get() = LexerActionType.POP_MODE
-        val isPositionDependent: Boolean
+        override val isPositionDependent: Boolean
             /**
              * {@inheritDoc}
              * @return This method returns `false`.
@@ -53,7 +53,7 @@ class LexerPopModeAction
             return MurmurHash.finish(hash, 1)
         }
 
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        @Suppress("EqualsWhichDoesntCallSuperMethod")
         override fun equals(obj: Any?): Boolean = obj === this
 
         override fun toString(): String = "popMode"

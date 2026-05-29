@@ -9,8 +9,10 @@ class RuleTransition(
     ruleStart: ATNState,
     val ruleIndex: Int,
     val precedence: Int,
-    val followState: ATNState?,
+    followState: ATNState,
 ) : Transition(ruleStart) {
+    var followState: ATNState = followState
+
     override val serializationType: Int
         get() = RULE
 

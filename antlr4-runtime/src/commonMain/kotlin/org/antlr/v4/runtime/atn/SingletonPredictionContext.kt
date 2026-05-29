@@ -7,6 +7,8 @@
 
 package org.antlr.v4.runtime.atn
 
+import org.antlr.v4.runtime.assert
+
 open class SingletonPredictionContext internal constructor(
     parent: PredictionContext?,
     returnState: Int,
@@ -22,12 +24,12 @@ open class SingletonPredictionContext internal constructor(
 
     override fun size(): Int = 1
 
-    open fun getParent(index: Int): PredictionContext? {
+    override fun getParent(index: Int): PredictionContext? {
         assert(index == 0)
         return parent
     }
 
-    open fun getReturnState(index: Int): Int {
+    override fun getReturnState(index: Int): Int {
         assert(index == 0)
         return returnState
     }
@@ -39,33 +41,31 @@ open class SingletonPredictionContext internal constructor(
             return false
         }
 
-        if (this.hashCode() !== o.hashCode()) {
+        if (this.hashCode() != o.hashCode()) {
             return false // can't be same if hash is different
         }
 
-        val s = o
-        return returnState == s.returnState &&
-            (parent != null && parent.equals(s.parent))
+        return returnState == o.returnState &&
+            (parent != null && parent == o.parent)
     }
 
-    override fun toString(): String? {
-        val up = if (parent != null) parent.toString() else ""
-        if (up.length === 0) {
+    override fun toString(): String {
+        val up = parent?.toString() ?: ""
+        if (up.isEmpty()) {
             if (returnState == EMPTY_RETURN_STATE) {
                 return "$"
             }
             return returnState.toString()
         }
-        return returnState.toString() + " " + up
+        return "$returnState $up"
     }
 
     companion object {
         fun create(
             parent: PredictionContext?,
             returnState: Int,
-        ): SingletonPredictionContext? {
+        ): SingletonPredictionContext {
             if (returnState == EMPTY_RETURN_STATE && parent == null) {
-                // someone can pass in the bits of an array ctx that mean $
                 return EmptyPredictionContext.Instance
             }
             return SingletonPredictionContext(parent, returnState)

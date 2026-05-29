@@ -1,6 +1,6 @@
 package org.antlr.v4.runtime.misc
 
-object Utils {
+internal object CommonUtils {
     fun <T> join(iter: Iterator<T?>, separator: String?): String {
         val buf = StringBuilder()
         while (iter.hasNext()) {

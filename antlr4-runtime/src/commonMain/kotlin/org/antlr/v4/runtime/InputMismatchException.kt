@@ -9,8 +9,8 @@ package org.antlr.v4.runtime
  * when the current input does not match the expected token.
  */
 class InputMismatchException : RecognitionException {
-    constructor(recognizer: Parser?) : super(recognizer, recognizer.inputStream, recognizer._ctx) {
-        this.setOffendingToken(recognizer.currentToken)
+    constructor(recognizer: Parser?) : super(recognizer, recognizer?.inputStream, recognizer?._ctx) {
+        recognizer?.let { this.offendingToken = it.currentToken }
     }
 
     constructor(recognizer: Parser, state: Int, ctx: ParserRuleContext?) : super(
@@ -18,7 +18,7 @@ class InputMismatchException : RecognitionException {
         recognizer.inputStream,
         ctx,
     ) {
-        this.setOffendingState(state)
-        this.setOffendingToken(recognizer.currentToken)
+        this.offendingState = state
+        recognizer?.let { this.offendingToken = it.currentToken }
     }
 }

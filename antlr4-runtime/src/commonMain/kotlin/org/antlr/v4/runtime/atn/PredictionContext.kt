@@ -12,13 +12,12 @@ import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.misc.DoubleKeyMap
 import org.antlr.v4.runtime.misc.MurmurHash
+import org.antlr.v4.runtime.assert
 
 abstract class PredictionContext protected constructor(
     cachedHashCode: Int,
 ) {
-    val id: Int =
-        org.antlr.v4.runtime.atn.PredictionContext.Companion.globalNodeCount
-            .getAndIncrement()
+    val id: Int = org.antlr.v4.runtime.atn.PredictionContext.Companion.globalNodeCount++
 
     /**
      * Stores the computed hash code of this [PredictionContext]. The hash
@@ -49,7 +48,7 @@ abstract class PredictionContext protected constructor(
 
     abstract fun size(): Int
 
-    abstract fun getParent(index: Int): PredictionContext
+    abstract fun getParent(index: Int): PredictionContext?
 
     abstract fun getReturnState(index: Int): Int
 
@@ -64,9 +63,9 @@ abstract class PredictionContext protected constructor(
 
     override fun hashCode(): Int = cachedHashCode
 
-    abstract fun equals(obj: Any?): Boolean
+    override abstract fun equals(other: Any?): Boolean
 
-    override fun toString(recog: Recognizer<*, *>?): String? {
+    fun toString(recog: Recognizer<*, *>?): String? {
         return toString()
         // 		return toString(recog, ParserRuleContext.EMPTY);
     }
@@ -111,18 +110,18 @@ abstract class PredictionContext protected constructor(
                 }
 
                 if (recognizer != null) {
-                    if (localBuffer.size > 1) {
+                    if (localBuffer.length > 1) {
                         // first char is '[', if more than that this isn't the first rule
                         localBuffer.append(' ')
                     }
 
                     val atn: ATN = recognizer.atn
                     val s: ATNState = atn.states.get(stateNumber)
-                    val ruleName: String? = recognizer.ruleNames[s.ruleIndex]
+                    val ruleName: String? = recognizer.ruleNames?.get(s.ruleIndex)
                     localBuffer.append(ruleName)
                 } else if (p.getReturnState(index) != org.antlr.v4.runtime.atn.PredictionContext.Companion.EMPTY_RETURN_STATE) {
                     if (!p.isEmpty) {
-                        if (localBuffer.size > 1) {
+                        if (localBuffer.length > 1) {
                             // first char is '[', if more than that this isn't the first rule
                             localBuffer.append(' ')
                         }
@@ -131,7 +130,7 @@ abstract class PredictionContext protected constructor(
                     }
                 }
                 stateNumber = p.getReturnState(index)
-                p = p.getParent(index)
+                p = p.getParent(index)!!
             }
             localBuffer.append("]")
             result.add(localBuffer.toString())
@@ -154,7 +153,7 @@ abstract class PredictionContext protected constructor(
 
         private const val INITIAL_HASH = 1
 
-        private val globalNodeCount: AtomicInt = AtomicInt()
+        private var globalNodeCount: Int = 0
 
         /** Convert a [RuleContext] tree to a [PredictionContext] graph.
          * Return [EmptyPredictionContext.Instance] if `outerContext` is empty or null.
@@ -176,20 +175,20 @@ abstract class PredictionContext protected constructor(
             var parent: PredictionContext? = EmptyPredictionContext.Instance
             parent =
                 org.antlr.v4.runtime.atn.PredictionContext.Companion
-                    .fromRuleContext(atn, outerContext.parent)
+                    .fromRuleContext(atn, outerContext.parent as? RuleContext)
 
             val state: ATNState = atn.states.get(outerContext.invokingState)
             val transition: RuleTransition = state.transition(0) as RuleTransition
             return SingletonPredictionContext.create(parent, transition.followState.stateNumber)
         }
 
-        protected fun calculateEmptyHashCode(): Int {
+        internal fun calculateEmptyHashCode(): Int {
             var hash: Int = MurmurHash.initialize(org.antlr.v4.runtime.atn.PredictionContext.Companion.INITIAL_HASH)
             hash = MurmurHash.finish(hash, 0)
             return hash
         }
 
-        protected fun calculateHashCode(
+        internal fun calculateHashCode(
             parent: PredictionContext?,
             returnState: Int,
         ): Int {
@@ -200,7 +199,7 @@ abstract class PredictionContext protected constructor(
             return hash
         }
 
-        protected fun calculateHashCode(
+        internal fun calculateHashCode(
             parents: Array<PredictionContext?>,
             returnStates: IntArray,
         ): Int {
@@ -232,10 +231,10 @@ abstract class PredictionContext protected constructor(
             )
 
             // share same graph if both same
-            if (a === b || a.equals(b)) return a
+            if (a === b || a?.equals(b) == true) return a
 
             if (a is SingletonPredictionContext && b is SingletonPredictionContext) {
-                return org.antlr.v4.runtime.atn.PredictionContext.Companion.mergeSingletons(
+                return mergeSingletons(
                     a as SingletonPredictionContext,
                     b as SingletonPredictionContext,
                     rootIsWildcard,
@@ -257,7 +256,7 @@ abstract class PredictionContext protected constructor(
             if (b is SingletonPredictionContext) {
                 b = ArrayPredictionContext(b as SingletonPredictionContext)
             }
-            return org.antlr.v4.runtime.atn.PredictionContext.Companion.mergeArrays(
+            return mergeArrays(
                 a as ArrayPredictionContext,
                 b as ArrayPredictionContext,
                 rootIsWildcard,
@@ -310,16 +309,15 @@ abstract class PredictionContext protected constructor(
             }
 
             val rootMerge: PredictionContext? =
-                org.antlr.v4.runtime.atn.PredictionContext.Companion
-                    .mergeRoot(a, b, rootIsWildcard)
+                mergeRoot(a, b, rootIsWildcard)
             if (rootMerge != null) {
-                if (mergeCache != null) mergeCache.put(a, b, rootMerge)
+                if (mergeCache != null) mergeCache.put(a, b, rootMerge!!)
                 return rootMerge
             }
 
             if (a.returnState === b.returnState) { // a == b
                 val parent: PredictionContext? =
-                    org.antlr.v4.runtime.atn.PredictionContext.Companion.merge(
+                    merge(
                         a.parent,
                         b.parent,
                         rootIsWildcard,
@@ -335,7 +333,7 @@ abstract class PredictionContext protected constructor(
                 // of those graphs.  dup a, a' points at merged array
                 // new joined parent so create new singleton pointing to it, a'
                 val a_: PredictionContext? = SingletonPredictionContext.create(parent, a.returnState)
-                if (mergeCache != null) mergeCache.put(a, b, a_)
+                if (mergeCache != null) mergeCache.put(a, b, a_!!)
                 return a_
             } else { // a != b payloads differ
                 // see if we can collapse parents due to $+x parents if local ctx
@@ -352,7 +350,7 @@ abstract class PredictionContext protected constructor(
                     }
                     val parents = arrayOf<PredictionContext?>(singleParent, singleParent)
                     val a_: PredictionContext = ArrayPredictionContext(parents, payloads)
-                    if (mergeCache != null) mergeCache.put(a, b, a_)
+                    if (mergeCache != null) mergeCache.put(a, b, a_!!)
                     return a_
                 }
                 // parents differ and can't merge them. Just pack together
@@ -366,7 +364,7 @@ abstract class PredictionContext protected constructor(
                     parents = arrayOf<PredictionContext?>(b.parent, a.parent)
                 }
                 val a_: PredictionContext = ArrayPredictionContext(parents, payloads)
-                if (mergeCache != null) mergeCache.put(a, b, a_)
+                if (mergeCache != null) mergeCache.put(a, b, a_!!)
                 return a_
             }
         }
@@ -515,19 +513,19 @@ abstract class PredictionContext protected constructor(
                     // same payload (stack tops are equal), must yield merged singleton
                     val payload: Int = a.returnStates[i]
                     // $+$ = $
-                    val `both$` =
+                    val bothEmpty =
                         payload == org.antlr.v4.runtime.atn.PredictionContext.Companion.EMPTY_RETURN_STATE &&
                             a_parent == null &&
                             b_parent == null
                     val ax_ax =
                         (a_parent != null && b_parent != null) &&
                             a_parent.equals(b_parent) // ax+ax -> ax
-                    if (`both$` || ax_ax) {
+                    if (bothEmpty || ax_ax) {
                         mergedParents[k] = a_parent // choose left
                         mergedReturnStates!![k] = payload
                     } else { // ax+ay -> a'[x,y]
                         val mergedParent: PredictionContext? =
-                            org.antlr.v4.runtime.atn.PredictionContext.Companion.merge(
+                            merge(
                                 a_parent,
                                 b_parent,
                                 rootIsWildcard,
@@ -571,17 +569,17 @@ abstract class PredictionContext protected constructor(
                     val a_: PredictionContext? =
                         SingletonPredictionContext.create(
                             mergedParents[0],
-                            mergedReturnStates!![0],
+                            mergedReturnStates?.get(0) ?: 0,
                         )
-                    if (mergeCache != null) mergeCache.put(a, b, a_)
+                    if (mergeCache != null) mergeCache.put(a, b, a_!!)
                     return a_
                 }
                 mergedParents = mergedParents.copyOf(k)
-                mergedReturnStates = mergedReturnStates.copyOf(k)
+                mergedReturnStates = mergedReturnStates!!.copyOf(k)
             }
 
             val M: PredictionContext =
-                ArrayPredictionContext(mergedParents, mergedReturnStates)
+                ArrayPredictionContext(mergedParents, mergedReturnStates!!)
 
             // if we created same array as a or b, return that instead
             // TODO: track whether this is possible above during merge sort for speed
@@ -596,8 +594,7 @@ abstract class PredictionContext protected constructor(
                 return b
             }
 
-            org.antlr.v4.runtime.atn.PredictionContext.Companion
-                .combineCommonParents(mergedParents)
+            combineCommonParents(mergedParents)
 
             if (mergeCache != null) mergeCache.put(a, b, M)
 
@@ -612,19 +609,19 @@ abstract class PredictionContext protected constructor(
          * Make pass over all *M* `parents`; merge any `equals()`
          * ones.
          */
-        protected fun combineCommonParents(parents: Array<PredictionContext?>) {
-            val uniqueParents: Map<PredictionContext?, PredictionContext?> =
+        fun combineCommonParents(parents: Array<PredictionContext?>) {
+            val uniqueParents: MutableMap<PredictionContext?, PredictionContext?> =
                 HashMap<PredictionContext?, PredictionContext?>()
 
             for (p in parents.indices) {
                 val parent = parents[p]
                 if (!uniqueParents.containsKey(parent)) { // don't replace
-                    uniqueParents.put(parent, parent)
+                    uniqueParents[parent] = parent
                 }
             }
 
             for (p in parents.indices) {
-                parents[p] = uniqueParents.get(parents[p])
+                parents[p] = uniqueParents[parents[p]]
             }
         }
 
@@ -635,23 +632,14 @@ abstract class PredictionContext protected constructor(
             buf.append("rankdir=LR;\n")
 
             val nodes: List<PredictionContext?> =
-                org.antlr.v4.runtime.atn.PredictionContext.Companion
-                    .getAllContextNodes(context)
-            sort(
-                nodes,
-                object : Comparator<PredictionContext?>() {
-                    fun compare(
-                        o1: PredictionContext,
-                        o2: PredictionContext,
-                    ): Int = o1.id - o2.id
-                },
-            )
+                getAllContextNodes(context)
+            (nodes as? MutableList<PredictionContext?>)?.sortWith(compareBy { it?.id ?: 0 })
 
             for (current in nodes) {
                 if (current is SingletonPredictionContext) {
                     val s: String? = current.id.toString()
                     buf.append("  s").append(s)
-                    var returnState: String? = current.getReturnState(0.toString())
+                    var returnState: String? = current.getReturnState(0).toString()
                     if (current is EmptyPredictionContext) returnState = "$"
                     buf.append(" [label=\"").append(returnState).append("\"];\n")
                     continue
@@ -682,7 +670,7 @@ abstract class PredictionContext protected constructor(
                     buf.append("  s").append(s)
                     buf.append("->")
                     buf.append("s")
-                    buf.append(current.getParent(i).id)
+                    buf.append(current.getParent(i)!!.id)
                     if (current.size() > 1) {
                         buf.append(" [label=\"parent[" + i + "]\"];\n")
                     } else {
@@ -712,17 +700,17 @@ abstract class PredictionContext protected constructor(
 
             existing = contextCache.get(context)
             if (existing != null) {
-                visited.put(context, existing)
+                visited[context] = existing
                 return existing
             }
 
             var changed = false
-var parents = arrayOfNulls<PredictionContext>(context.size())
-                    var i = 0
+            var parents = arrayOfNulls<PredictionContext>(context.size())
+            var i = 0
             while (i < parents.size) {
                 val parent: PredictionContext? =
-                    org.antlr.v4.runtime.atn.PredictionContext.Companion.getCachedContext(
-                        context.getParent(i),
+                    getCachedContext(
+                        context.getParent(i)!!,
                         contextCache,
                         visited,
                     )
@@ -743,7 +731,7 @@ var parents = arrayOfNulls<PredictionContext>(context.size())
 
             if (!changed) {
                 contextCache.add(context)
-                visited.put(context, context)
+                visited[context] = context
                 return context
             }
 
@@ -758,7 +746,7 @@ var parents = arrayOfNulls<PredictionContext>(context.size())
             }
 
             contextCache.add(updated)
-            visited.put(updated, updated)
+            visited[updated] = updated
             visited.put(context, updated)
 
             return updated
@@ -771,7 +759,7 @@ var parents = arrayOfNulls<PredictionContext>(context.size())
         // 			new IdentityHashMap<PredictionContext, PredictionContext>();
         // 		Deque<PredictionContext> workList = new ArrayDeque<PredictionContext>();
         // 		workList.add(context);
-        // 		visited.put(context, context);
+        // 		visited[context] = context;
         // 		List<PredictionContext> nodes = new ArrayList<PredictionContext>();
         // 		while (!workList.isEmpty) {
         // 			PredictionContext current = workList.pop();
@@ -801,11 +789,11 @@ var parents = arrayOfNulls<PredictionContext>(context.size())
             visited: MutableMap<PredictionContext?, PredictionContext?>,
         ) {
             if (context == null || visited.containsKey(context)) return
-            visited.put(context, context)
+            visited[context] = context
             nodes.add(context)
             for (i in 0..<context.size()) {
-                org.antlr.v4.runtime.atn.PredictionContext.Companion.getAllContextNodes_(
-                    context.getParent(i),
+                getAllContextNodes_(
+                    context.getParent(i)!!,
                     nodes,
                     visited,
                 )

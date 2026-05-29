@@ -37,19 +37,18 @@ import org.antlr.v4.runtime.misc.Pair
  * See TestParserInterpreter for examples.
  */
 class ParserInterpreter(
-    override val grammarFileName: String?,
+    override val grammarFileName: String,
     override val vocabulary: Vocabulary,
     ruleNames: Collection<String?>,
     override val atn: ATN,
     input: TokenStream?,
 ) : Parser(input) {
-    protected val decisionToDFA: Array<DFA?> // not shared like it is for generated parsers
+    protected var decisionToDFA: Array<DFA?> // not shared like it is for generated parsers
     protected val sharedContextCache: PredictionContextCache = PredictionContextCache()
 
-    @get:Deprecated
-    @Deprecated
-    override val tokenNames: Array<String?>
-    override val ruleNames: Array<String?>?
+    @Deprecated("")
+    override var tokenNames: Array<String>? = null
+    override var ruleNames: Array<String>? = null
 
     /** This stack corresponds to the _parentctx, _parentState pair of locals
      * that would exist on call stack frames with a recursive descent parser;
@@ -64,8 +63,8 @@ class ParserInterpreter(
      * Those values are used to create new recursive rule invocation contexts
      * associated with left operand of an alt like "expr '*' expr".
      */
-    protected val _parentContextStack: ArrayDeque<Pair<ParserRuleContext?, Int?>?> =
-        ArrayArrayDeque<Pair<ParserRuleContext?, Int?>?>()
+    protected val _parentContextStack: ArrayDeque<Pair<ParserRuleContext?, Int?>> =
+        ArrayDeque<Pair<ParserRuleContext?, Int?>>()
 
     /** We need a map from (decision,inputIndex)->forced alt for computing ambiguous
      * parse trees. For now, we allow exactly one override.
@@ -85,40 +84,33 @@ class ParserInterpreter(
 
     protected var rootContext: InterpreterRuleContext? = null
 
-    @Deprecated
-    @Deprecated("Use {@link #ParserInterpreter(String, Vocabulary, Collection, ATN, TokenStream)} instead.")
+    @Deprecated("")
     constructor(
-        grammarFileName: String?, tokenNames: Collection<String?>,
-        ruleNames: Collection<String?>?, atn: ATN?, input: TokenStream?
+        grammarFileName: String, tokenNames: Collection<String>,
+        ruleNames: Collection<String>, atn: ATN, input: TokenStream?
     ) : this(
-        grammarFileName, VocabularyImpl.fromTokenNames(
-            tokenNames.toArray(
-                arrayOfNulls<String>(0)
-            )
-        ), ruleNames, atn, input
+        grammarFileName, VocabularyImpl.fromTokenNames(tokenNames.toTypedArray().map { it ?: "" }.toTypedArray()), ruleNames, atn, input
     )
 
     init {
-        this.tokenNames = arrayOfNulls<String>(atn.maxTokenType)
-        for (i in tokenNames.indices) {
-            tokenNames[i] = vocabulary.getDisplayName(i)
+        this.tokenNames = Array(atn.maxTokenType) { "" }
+        for (i in 0..<atn.maxTokenType) {
+            tokenNames!![i] = vocabulary.getDisplayName(i) ?: ""
         }
 
-        this.ruleNames = ruleNames.toList().toTypedArray()
+        this.ruleNames = ruleNames.map { it }.toTypedArray() as Array<String>?
 
         // init decision DFA
         val numberOfDecisions: Int = atn.numberOfDecisions
-        this.decisionToDFA = arrayOfNulls<DFA>(numberOfDecisions)
-        for (i in 0..<numberOfDecisions) {
-            val decisionState: DecisionState? = atn.getDecisionState(i)
-            decisionToDFA[i] = DFA(decisionState, i)
+        decisionToDFA = Array(numberOfDecisions) { i ->
+            DFA(atn.getDecisionState(i)!!, i)
         }
 
         // get atn simulator that knows how to do predictions
         interpreter = 
             ParserATNSimulator(
                 this, atn,
-                decisionToDFA,
+                decisionToDFA.filterNotNull().toTypedArray(),
                 sharedContextCache
             )
     }
@@ -131,13 +123,13 @@ class ParserInterpreter(
 
     /** Begin parsing at startRuleIndex  */
     fun parse(startRuleIndex: Int): ParserRuleContext? {
-        val startRuleStartState: RuleStartState = atn.ruleToStartState[startRuleIndex]
+        val startRuleStartState: RuleStartState = atn.ruleToStartState[startRuleIndex]!!
 
         rootContext = createInterpreterRuleContext(null, ATNState.INVALID_STATE_NUMBER, startRuleIndex)
         if (startRuleStartState.isLeftRecursiveRule) {
-            enterRecursionRule(rootContext, startRuleStartState.stateNumber, startRuleIndex, 0)
+            enterRecursionRule(rootContext!!, startRuleStartState.stateNumber, startRuleIndex, 0)
         } else {
-            enterRule(rootContext, startRuleStartState.stateNumber, startRuleIndex)
+            enterRule(rootContext!!, startRuleStartState.stateNumber, startRuleIndex)
         }
 
         while (true) {
@@ -145,10 +137,10 @@ class ParserInterpreter(
             when (p.stateType) {
                 ATNState.RULE_STOP -> {
                     // pop; return from rule
-                    if (_ctx.isEmpty) {
+                    if (_ctx!!.isEmpty) {
                         if (startRuleStartState.isLeftRecursiveRule) {
                             val result: ParserRuleContext? = _ctx
-                            val parentContext: Pair<ParserRuleContext?, Int?> = _parentContextStack.pop()
+                            val parentContext: Pair<ParserRuleContext?, Int?> = _parentContextStack.removeLast()
                             unrollRecursionContexts(parentContext.a)
                             return result
                         } else {
@@ -163,8 +155,8 @@ class ParserInterpreter(
                 else -> try {
                     visitState(p)
                 } catch (e: RecognitionException) {
-                    state = atn.ruleToStopState[p.ruleIndex].stateNumber
-                    getContext().exception = e
+                    state = atn.ruleToStopState[p.ruleIndex]!!.stateNumber
+                    _ctx!!.exception = e
                     errorHandler.reportError(this, e)
                     recover(e)
                 }
@@ -172,20 +164,20 @@ class ParserInterpreter(
             }
         }
     }
-    fun enterRecursionRule(localctx: ParserRuleContext, state: Int, ruleIndex: Int, precedence: Int) {
-        val pair: Pair<ParserRuleContext?, Int?> = Pair<ParserRuleContext?, Int?>(_ctx, localctx.invokingState)
-        _parentContextStack.push(pair)
+    override fun enterRecursionRule(localctx: ParserRuleContext?, state: Int, ruleIndex: Int, precedence: Int) {
+        val pair: Pair<ParserRuleContext?, Int?> = Pair<ParserRuleContext?, Int?>(_ctx, localctx?.invokingState)
+        _parentContextStack.addLast(pair)
         super.enterRecursionRule(localctx, state, ruleIndex, precedence)
     }
 
     protected val aTNState: ATNState
-        get() = atn.states.get(state)
+        get() = atn.states[state]!!
 
     protected fun visitState(p: ATNState) {
 //		println("visitState "+p.stateNumber);
         var predictedAlt = 1
         if (p is DecisionState) {
-            predictedAlt = visitDecisionState(p as DecisionState?)
+            predictedAlt = visitDecisionState(p)
         }
 
         val transition: Transition = p.transition(predictedAlt - 1)
@@ -197,20 +189,20 @@ class ParserInterpreter(
                 // and we're not taking the exit branch of loop.
                 val localctx: InterpreterRuleContext =
                     createInterpreterRuleContext(
-                        _parentContextStack.peek().a,
-                        _parentContextStack.peek().b,
-                        _ctx.ruleIndex
+                        _parentContextStack.last().a,
+                        _parentContextStack.last().b!!,
+                        _ctx!!.ruleIndex
                     )
                 pushNewRecursionContext(
                     localctx,
-                    atn.ruleToStartState[p.ruleIndex].stateNumber,
-                    _ctx.ruleIndex
+                    atn.ruleToStartState[p.ruleIndex]!!.stateNumber,
+                    _ctx!!.ruleIndex
                 )
             }
 
             Transition.ATOM -> match((transition as AtomTransition).label)
             Transition.RANGE, Transition.SET, Transition.NOT_SET -> {
-                if (!transition.matches(_input.LA(1), Token.MIN_USER_TOKEN_TYPE, 65535)) {
+                if (!transition.matches(_input!!!!.LA(1), Token.MIN_USER_TOKEN_TYPE, 65535)) {
                     recoverInline()
                 }
                 matchWildcard()
@@ -267,11 +259,11 @@ class ParserInterpreter(
         if (p.numberOfTransitions > 1) {
             errorHandler.sync(this)
             val decision: Int = p.decision
-            if (decision == overrideDecision && _input.index() === overrideDecisionInputIndex && !overrideDecisionReached) {
+            if (decision == overrideDecision && _input!!!!.index() === overrideDecisionInputIndex && !overrideDecisionReached) {
                 predictedAlt = overrideDecisionAlt
                 overrideDecisionReached = true
             } else {
-                predictedAlt = interpreter!!.adaptivePredict(_input, decision, _ctx)
+                predictedAlt = interpreter!!.adaptivePredict(_input!!, decision, _ctx)
             }
         }
         return predictedAlt
@@ -289,16 +281,16 @@ class ParserInterpreter(
     }
 
     protected fun visitRuleStopState(p: ATNState) {
-        val ruleStartState: RuleStartState = atn.ruleToStartState[p.ruleIndex]
+        val ruleStartState: RuleStartState = atn.ruleToStartState[p.ruleIndex]!!
         if (ruleStartState.isLeftRecursiveRule) {
-            val parentContext: Pair<ParserRuleContext?, Int?> = _parentContextStack.pop()
+            val parentContext: Pair<ParserRuleContext?, Int?> = _parentContextStack.removeLast()
             unrollRecursionContexts(parentContext.a)
-            state = parentContext.b
+            state = parentContext.b!!
         } else {
             exitRule()
         }
 
-        val ruleTransition: RuleTransition = atn.states.get(state).transition(0) as RuleTransition
+        val ruleTransition: RuleTransition = atn.states[state]!!.transition(0) as RuleTransition
         state = ruleTransition.followState.stateNumber
     }
 
@@ -348,46 +340,45 @@ class ParserInterpreter(
         overrideDecisionAlt = forcedAlt
     }
 
-    fun getOverrideDecisionRoot(): InterpreterRuleContext? {
-        return overrideDecisionRoot
-    }
+
 
     /** Rely on the error handler for this parser but, if no tokens are consumed
      * to recover, add an error node. Otherwise, nothing is seen in the parse
      * tree.
      */
     protected fun recover(e: RecognitionException) {
-        val i: Int = _input.index()
+        val i: Int = _input!!!!.index()
         errorHandler.recover(this, e)
-        if (_input.index() === i) {
+        if (_input!!!!.index() === i) {
             // no input consumed, better add an error node
             if (e is InputMismatchException) {
                 val ime: InputMismatchException? = e as InputMismatchException?
-                val tok: Token = e.getOffendingToken()!!
+                val tok: Token = e.offendingToken!!
                 var expectedTokenType: Int = Token.INVALID_TYPE
-                if (!ime.expectedTokens.isNil()) {
-                    expectedTokenType = ime.expectedTokens.getMinElement() // get any element
+                val et = ime!!.expectedTokens
+                    if (et?.isNil == false) {
+                    expectedTokenType = et?.minElement ?: Token.INVALID_TYPE
                 }
                 val errToken: Token? =
-                    getTokenFactory().create(
-                        Pair<TokenSource?, CharStream?>(tok.tokenSource, tok.tokenSource.inputStream),
+                    tokenFactory?.create(
+                        Pair<TokenSource?, CharStream?>(tok.tokenSource, tok.tokenSource?.inputStream),
                         expectedTokenType, tok.text,
                         Token.DEFAULT_CHANNEL,
                         -1, -1,  // invalid start/stop
                         tok.line, tok.charPositionInLine
-                    )
-                _ctx.addErrorNode(createErrorNode(_ctx, errToken))
+                    ) as Token?
+                _ctx!!.addErrorNode(createErrorNode(_ctx!!, errToken!!))
             } else { // NoViableAlt
-                val tok: Token = e.getOffendingToken()!!
+                val tok: Token = e.offendingToken!!
                 val errToken: Token? =
-                    getTokenFactory().create(
-                        Pair<TokenSource?, CharStream?>(tok.tokenSource, tok.tokenSource.inputStream),
+                    tokenFactory?.create(
+                        Pair<TokenSource?, CharStream?>(tok.tokenSource, tok.tokenSource?.inputStream),
                         Token.INVALID_TYPE, tok.text,
                         Token.DEFAULT_CHANNEL,
                         -1, -1,  // invalid start/stop
                         tok.line, tok.charPositionInLine
-                    )
-                _ctx.addErrorNode(createErrorNode(_ctx, errToken))
+                    ) as Token?
+                _ctx!!.addErrorNode(createErrorNode(_ctx!!, errToken!!))
             }
         }
     }
@@ -404,8 +395,6 @@ class ParserInterpreter(
      *
      * @since 4.5.1
      */
-    fun getRootContext(): InterpreterRuleContext {
-        return rootContext
-    }
+    fun rootContextNonNull(): InterpreterRuleContext = rootContext!!
 }
 

@@ -37,7 +37,7 @@ open class IntList {
 
     constructor(list: Collection<Int?>) : this(list.size) {
         for (value in list) {
-            add(value)
+            add(value!!)
         }
     }
 
@@ -66,7 +66,7 @@ open class IntList {
         ensureCapacity(_size + list.size)
         var current = 0
         for (x in list) {
-            _data[_size + current] = x
+            _data[_size + current] = x!!
             current++
         }
         _size += list.size
@@ -74,7 +74,7 @@ open class IntList {
 
     fun get(index: Int): Int {
         if (index < 0 || index >= _size) {
-            throw IndexOutOfBoundsException()
+            throw IndexOutOfBoundsException("")
         }
 
         return _data[index]
@@ -95,7 +95,7 @@ open class IntList {
         value: Int,
     ): Int {
         if (index < 0 || index >= _size) {
-            throw IndexOutOfBoundsException()
+            throw IndexOutOfBoundsException("")
         }
 
         val previous = _data[index]
@@ -116,7 +116,7 @@ open class IntList {
         toIndex: Int,
     ) {
         if (fromIndex < 0 || toIndex < 0 || fromIndex > _size || toIndex > _size) {
-            throw IndexOutOfBoundsException()
+            throw IndexOutOfBoundsException("")
         }
         require(fromIndex <= toIndex)
 
@@ -221,7 +221,7 @@ open class IntList {
      */
     override fun toString(): String = toArray().contentToString()
 
-    fun binarySearch(key: Int): Int = _data.binarySearch(key, 0, _size)
+    fun binarySearch(key: Int): Int = binarySearch(0, _size, key)
 
     fun binarySearch(
         fromIndex: Int,
@@ -229,16 +229,27 @@ open class IntList {
         key: Int,
     ): Int {
         if (fromIndex < 0 || toIndex < 0 || fromIndex > _size || toIndex > _size) {
-            throw IndexOutOfBoundsException()
+            throw IndexOutOfBoundsException("")
         }
         require(fromIndex <= toIndex)
 
-        return _data.binarySearch(key, fromIndex, toIndex)
+        var low = fromIndex
+        var high = toIndex - 1
+        while (low <= high) {
+            val mid = (low + high).ushr(1)
+            val midVal = _data[mid]
+            when {
+                midVal < key -> low = mid + 1
+                midVal > key -> high = mid - 1
+                else -> return mid
+            }
+        }
+        return -(low + 1)
     }
 
     private fun ensureCapacity(capacity: Int) {
         if (capacity < 0 || capacity > org.antlr.v4.runtime.misc.IntList.Companion.MAX_ARRAY_SIZE) {
-            throw OutOfMemoryError()
+            throw IllegalStateException("Requested array size exceeds limit")
         }
 
         var newLength: Int
@@ -280,7 +291,7 @@ open class IntList {
                 resultArray = resultArray!!.copyOf(charArraySize())
                 calculatedPreciseResultSize = true
             }
-            val chars = Char.toChars(codePoint)
+            val chars = intToChars(codePoint)
             chars.copyInto(resultArray!!, resultIdx)
             resultIdx += chars.size
         }
@@ -290,12 +301,23 @@ open class IntList {
     private fun charArraySize(): Int {
         var result = 0
         for (i in 0..<_size) {
-            result += Char.charCount(_data[i])
+            result += charCount(_data[i])
         }
         return result
     }
 
     companion object {
+        private fun intToChars(codePoint: Int): CharArray {
+            if (codePoint < 0 || codePoint > Char.MAX_VALUE.code) {
+                throw IllegalArgumentException("Invalid code point: $codePoint")
+            }
+            return charArrayOf(codePoint.toChar())
+        }
+
+        private fun charCount(codePoint: Int): Int {
+            return if (codePoint < 0) 0 else if (codePoint <= Char.MAX_VALUE.code) 1 else 2
+        }
+
         private val EMPTY_DATA = IntArray(0)
 
         private const val INITIAL_SIZE = 4

@@ -1,0 +1,68 @@
+# Detekt configuration focused on surfacing rustified patterns, dead code,
+# potential bugs, and style issues. Based on the default config, with some
+# rules explicitly enabled to catch unused/empty constructs commonly left
+# behind during ports.
+
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+config:
+  validation: true
+
+processors:
+  active: true
+
+potential-bugs:
+  active: true
+  EqualsWithHashCodeExist: { active: true }
+  ExplicitGarbageCollectionCall: { active: true }
+  LateinitUsage: { active: true }
+  NullCheckOnMutableProperty: { active: true }
+  UnreachableCode: { active: true }
+
+performance:
+  active: true
+
+style:
+  active: true
+  MagicNumber: { active: false }
+  NewLineAtEndOfFile: { active: true }
+  RedundantVisibilityModifierRule: { active: true }
+  ReturnCount: { active: true, max: 4 }
+  UnusedImports: { active: true }
+  UnnecessaryAbstractClass: { active: true }
+  UnnecessaryInheritance: { active: true }
+  UtilityClassWithPublicConstructor: { active: true }
+  DestructuringDeclarationWithTooManyEntries: { active: true, maxDestructuringEntries: 3 }
+
+complexity:
+  active: true
+  LongMethod: { active: true, threshold: 60 }
+  LargeClass: { active: true, threshold: 600 }
+  CyclomaticComplexMethod: { active: true, threshold: 15 }
+  TooManyFunctions: { active: true, thresholdInFiles: 30, thresholdInClasses: 20 }
+
+empty-blocks:
+  active: true
+  EmptyClassBlock: { active: true }
+  EmptyDefaultConstructor: { active: true }
+  EmptyDoWhileBlock: { active: true }
+  EmptyElseBlock: { active: true }
+  EmptyFinallyBlock: { active: true }
+  EmptyForBlock: { active: true }
+  EmptyFunctionBlock: { active: true }
+  EmptyIfBlock: { active: true }
+  EmptyInitBlock: { active: true }
+  EmptyKtFile: { active: true }
+  EmptySecondaryConstructor: { active: true }
+  EmptyTryBlock: { active: true }
+  EmptyWhenBlock: { active: true }
+  EmptyWhileBlock: { active: true }
+
+naming:
+  active: true
+  TopLevelPropertyNaming: { active: true }
+  FunctionNaming: { active: true }
+  ClassNaming: { active: true }
+  EnumNaming: { active: true }

@@ -11,104 +11,77 @@ import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.atn.ATNDeserializer
 import java.io.BufferedReader
 import java.io.FileReader
+import java.io.IOException
 
 // A class to read plain text interpreter data produced by ANTLR.
 object InterpreterDataReader {
-    /**
-     * The structure of the data file is very simple. Everything is line based with empty lines
-     * separating the different parts. For lexers the layout is:
-     * token literal names:
-     * ...
-     *
-     * token symbolic names:
-     * ...
-     *
-     * rule names:
-     * ...
-     *
-     * channel names:
-     * ...
-     *
-     * mode names:
-     * ...
-     *
-     * atn:
-     * <a single line with comma separated int values> enclosed in a pair of squared brackets.
-     *
-     * Data for a parser does not contain channel and mode names.
-     </a> */
     fun parseFile(fileName: String?): InterpreterData {
-        val result: InterpreterData =
-            org.antlr.v4.runtime.misc.InterpreterDataReader
-                .InterpreterData()
-        result.ruleNames = ArrayList<String?>()
+        val result = InterpreterData()
+        result.ruleNames = mutableListOf<String>()
 
         try {
             BufferedReader(FileReader(fileName)).use { br ->
                 var line: String
-                val literalNames: MutableList<String> = ArrayList()()
-                val symbolicNames: MutableList<String> = ArrayList()()
+                val literalNames = mutableListOf<String>()
+                val symbolicNames = mutableListOf<String>()
 
-                line = br.readLine()
-                if (!line.equals("token literal names:")) throw RuntimeException("Unexpected data entry")
-                while ((br.readLine().also { line = it }) != null) {
+                line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
+                if (line != "token literal names:") throw RuntimeException("Unexpected data entry")
+                while (br.readLine().also { line = it ?: "" } != null) {
                     if (line.isEmpty()) break
-                    literalNames.add(if (line.equals("null")) "" else line)
+                    literalNames.add(if (line == "null") "" else line)
                 }
 
-                line = br.readLine()
-                if (!line.equals("token symbolic names:")) throw RuntimeException("Unexpected data entry")
-                while ((br.readLine().also { line = it }) != null) {
+                line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
+                if (line != "token symbolic names:") throw RuntimeException("Unexpected data entry")
+                while (br.readLine().also { line = it ?: "" } != null) {
                     if (line.isEmpty()) break
-                    symbolicNames.add(if (line.equals("null")) "" else line)
+                    symbolicNames.add(if (line == "null") "" else line)
                 }
 
-                result.vocabulary =
-                    VocabularyImpl(
-                        literalNames.toArray(arrayOfNulls<String>(0)),
-                        symbolicNames.toArray(
-                            arrayOfNulls<String>(0),
-                        ),
-                    )
+                result.vocabulary = VocabularyImpl(
+                    literalNames.toTypedArray(),
+                    symbolicNames.toTypedArray()
+                )
 
-                line = br.readLine()
-                if (!line.equals("rule names:")) throw RuntimeException("Unexpected data entry")
-                while ((br.readLine().also { line = it }) != null) {
+                line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
+                if (line != "rule names:") throw RuntimeException("Unexpected data entry")
+                while (br.readLine().also { line = it ?: "" } != null) {
                     if (line.isEmpty()) break
-                    result.ruleNames.add(line)
+                    result.ruleNames!!.add(line)
                 }
 
-                line = br.readLine()
-                if (line.equals("channel names:")) { // Additional lexer data.
-                    result.channels = ArrayList<String?>()
-                    while ((br.readLine().also { line = it }) != null) {
+                line = br.readLine() ?: ""
+                if (line == "channel names:") { // Additional lexer data.
+                    result.channels = mutableListOf<String>()
+                    while (br.readLine().also { line = it ?: "" } != null) {
                         if (line.isEmpty()) break
-                        result.channels.add(line)
+                        result.channels!!.add(line)
                     }
 
-                    line = br.readLine()
-                    if (!line.equals("mode names:")) throw RuntimeException("Unexpected data entry")
-                    result.modes = ArrayList<String?>()
-                    while ((br.readLine().also { line = it }) != null) {
+                    line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
+                    if (line != "mode names:") throw RuntimeException("Unexpected data entry")
+                    result.modes = mutableListOf<String>()
+                    while (br.readLine().also { line = it ?: "" } != null) {
                         if (line.isEmpty()) break
-                        result.modes.add(line)
+                        result.modes!!.add(line)
                     }
                 }
 
-                line = br.readLine()
-                if (!line.equals("atn:")) throw RuntimeException("Unexpected data entry")
-                line = br.readLine()
-                val elements: Array<String?> = line.substring(1, line.length() - 1).split(",")
+                line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
+                if (line != "atn:") throw RuntimeException("Unexpected data entry")
+                line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
+                val elements = line.substring(1, line.length - 1).split(",")
                 val serializedATN = IntArray(elements.size)
 
                 for (i in elements.indices) { // ignore [...] on ends
-                    serializedATN[i] = String.toInt(elements[i].trim())
+                    serializedATN[i] = elements[i].trim().toInt()
                 }
 
-                val deserializer: ATNDeserializer = ATNDeserializer()
+                val deserializer = ATNDeserializer()
                 result.atn = deserializer.deserialize(serializedATN)
             }
-        } catch (e: java.io.IOException) {
+        } catch (e: IOException) {
             // We just swallow the error and return empty objects instead.
         }
 

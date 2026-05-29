@@ -5,10 +5,14 @@
  */
 package org.antlr.v4.runtime.atn
 
+import org.antlr.v4.runtime.RuleContext
+import org.antlr.v4.runtime.Recognizer
+import org.antlr.v4.runtime.atn.SemanticContext
 import org.antlr.v4.runtime.misc.AbstractEqualityComparator
 import org.antlr.v4.runtime.misc.BitSet
 import org.antlr.v4.runtime.misc.FlexibleHashMap
 import org.antlr.v4.runtime.misc.MurmurHash
+import org.antlr.v4.runtime.dfa.DFAState
 
 enum class PredictionMode {
     SLL,
@@ -133,7 +137,7 @@ enum class PredictionMode {
                 var alts = configToAlts.get(c)
                 if (alts == null) {
                     alts = BitSet()
-                    configToAlts.put(c, alts)
+                    configToAlts[c] = alts
                 }
                 alts.set(c.alt)
             }
@@ -169,6 +173,24 @@ enum class PredictionMode {
                 if (viableAlts.cardinality() > 1) return ATN.INVALID_ALT_NUMBER
             }
             return viableAlts.nextSetBit(0)
+        }
+
+        fun hasConfigInRuleStopState(configs: ATNConfigSet): Boolean {
+            for (c in configs) {
+                if (c.state is RuleStopState) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        fun allConfigsInRuleStopStates(configs: ATNConfigSet): Boolean {
+            for (config in configs) {
+                if (config.state !is RuleStopState) {
+                    return false
+                }
+            }
+            return true
         }
     }
 }

@@ -21,18 +21,18 @@ class NoViableAltException(
     ctx: ParserRuleContext?,
 ) : RecognitionException(recognizer, input, ctx) {
     /** Which configurations did we try at input.index() that couldn't match input.LT(1)?  */
-    private val deadEndConfigs: ATNConfigSet?
+    val deadEndConfigs: ATNConfigSet?
 
     /** The token object at the start index; the input stream might
      * not be buffering tokens so get a reference to it. (At the
      * time the error occurred, of course the stream needs to keep a
      * buffer all of the tokens but later we might not have access to those.)
      */
-    private val startToken: Token?
+    val startToken: Token?
 
     constructor(recognizer: Parser) : this(
         recognizer,
-        recognizer.inputStream,
+        recognizer.tokenStream,
         recognizer.currentToken,
         recognizer.currentToken,
         null,
@@ -42,10 +42,8 @@ class NoViableAltException(
     init {
         this.deadEndConfigs = deadEndConfigs
         this.startToken = startToken
-        this.setOffendingToken(offendingToken)
+        this.offendingToken = offendingToken
     }
 
-    fun getStartToken(): Token? = startToken
 
-    fun getDeadEndConfigs(): ATNConfigSet? = deadEndConfigs
 }

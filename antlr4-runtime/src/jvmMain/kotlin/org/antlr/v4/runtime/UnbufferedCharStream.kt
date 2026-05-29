@@ -149,7 +149,7 @@ abstract class UnbufferedCharStream(
 
                 try {
                     val c = nextChar()
-                    if (c > Character.MAX_VALUE || c == IntStream.EOF) {
+                    if (c > Char.MAX_VALUE.code || c == IntStream.EOF) {
                         add(c)
                     } else {
                         val ch = c.toChar()
@@ -157,7 +157,7 @@ abstract class UnbufferedCharStream(
                             throw RuntimeException("Invalid UTF-16 (low surrogate with no preceding high surrogate)")
                         } else if (Character.isHighSurrogate(ch)) {
                             val lowSurrogate = nextChar()
-                            if (lowSurrogate > Character.MAX_VALUE) {
+                            if (lowSurrogate > Char.MAX_VALUE.code) {
                                 throw RuntimeException("Invalid UTF-16 (high surrogate followed by code point > U+FFFF")
                             } else if (lowSurrogate == IntStream.EOF) {
                                 throw RuntimeException("Invalid UTF-16 (dangling high surrogate at end of file)")
@@ -287,23 +287,23 @@ abstract class UnbufferedCharStream(
                 return name!!
             }
 
-        override fun getText(interval: Interval): String {
-            require(!(interval.a < 0 || interval.b < interval.a - 1)) { "invalid interval" }
+        override fun getText(interval: Interval?): String? {
+            require(!(interval!!.a < 0 || interval!!.b < interval!!.a - 1)) { "invalid interval" }
 
             val bufferStartIndex = this.bufferStartIndex
             if (n > 0 && data[n - 1] == IntStream.EOF) {
-                require(!(interval.a + interval.length() > bufferStartIndex + n)) { "the interval extends past the end of the stream" }
+                require(!(interval!!.a + interval!!.length() > bufferStartIndex + n)) { "the interval extends past the end of the stream" }
             }
 
-            if (interval.a < bufferStartIndex || interval.b >= bufferStartIndex + n) {
+            if (interval!!.a < bufferStartIndex || interval!!.b >= bufferStartIndex + n) {
                 throw UnsupportedOperationException(
                     "interval " + interval + " outside buffer: " +
                         bufferStartIndex + ".." + (bufferStartIndex + n - 1),
                 )
             }
             // convert from absolute to local index
-            val i: Int = interval.a - bufferStartIndex
-            val len = interval.length()
+            val i: Int = interval!!.a - bufferStartIndex
+            val len = interval!!.length()
             val buf = StringBuilder(len)
             for (j in 0..<len) {
                 buf.appendCodePoint(data[i + j])

@@ -66,7 +66,10 @@ open class RuleContext : RuleNode {
     /** @since 4.7. {@see ParseTree#setParent} comment
      */
     /** What context invoked this rule?  */
-    override var parent: RuleContext? = null
+    private var _parent: RuleContext? = null
+    override val parent: ParseTree? get() = _parent
+
+    override fun setParent(parent: RuleContext?) { _parent = parent }
 
     /** What state invoked the rule associated with this context?
      * The "return address" is the followState of invokingState
@@ -78,7 +81,7 @@ open class RuleContext : RuleNode {
     constructor()
 
     constructor(parent: RuleContext?, invokingState: Int) {
-        this.parent = parent
+        this.setParent(parent)
         //if ( parent!=null ) println("invoke "+stateNumber+" from "+parent);
         this.invokingState = invokingState
     }
@@ -87,7 +90,7 @@ open class RuleContext : RuleNode {
         var n = 0
         var p: RuleContext? = this
         while (p != null) {
-            p = p.parent
+            p = p.parent as? RuleContext
             n++
         }
         return n
@@ -105,7 +108,7 @@ open class RuleContext : RuleNode {
         get() = this
     override val payload: RuleContext
         get() = this
-    override val text: String?
+    override val text: String
         /** Return the combined text of all child nodes. This method only considers
          * tokens which have been added to the parse tree.
          *
@@ -121,16 +124,15 @@ open class RuleContext : RuleNode {
 
             val builder: StringBuilder = StringBuilder()
             for (i in 0..<this.childCount) {
-                builder.append(getChild(i).text)
+                builder.append(getChild(i)?.text ?: "")
             }
 
             return builder.toString()
         }
 
-    val ruleIndex: Int
-        get() = -1
+    open var ruleIndex: Int = -1
 
-    var altNumber: Int
+    open var altNumber: Int
         /** For rule associated with this parse tree internal node, return
          * the outer alternative number used to match the input. Default
          * implementation does not compute nor store this alt num. Create
@@ -155,8 +157,8 @@ open class RuleContext : RuleNode {
     }
     override val childCount: Int
         get() = 0
-    fun <T> accept(visitor: ParseTreeVisitor<out T?>): T? {
-        return visitor.visitChildren(this)
+    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? {
+        return visitor?.visitChildren(this) ?: null
     }
 
     /** Print out a whole tree, not just a node, in LISP format
@@ -164,16 +166,16 @@ open class RuleContext : RuleNode {
      * We have to know the recognizer so we can get rule names.
      */
     override fun toStringTree(recog: Parser?): String {
-        return Trees.toStringTree(this, recog)
+        return Trees.toStringTree(this, recog)!!
     }
 
     /** Print out a whole tree, not just a node, in LISP format
      * (root child1 .. childN). Print just a node if this is a leaf.
      */
-    override fun toStringTree(ruleNames: List<String?>?): String {
-        return Trees.toStringTree(this, ruleNames)
+    fun toStringTree(ruleNames: List<String?>?): String {
+        return Trees.toStringTree(this, ruleNames)!!
     }
-    fun toStringTree(): String {
+    override fun toStringTree(): String {
         return toStringTree(null as List<String?>?)
     }
     override fun toString(): String {
@@ -190,8 +192,8 @@ open class RuleContext : RuleNode {
 
     // recog null unless ParserRuleContext, in which case we use subclass toString(...)
     fun toString(recog: Recognizer<*, *>?, stop: RuleContext?): String {
-        val ruleNames: Array<String?>? = if (recog != null) recog.ruleNames else null
-        val ruleNamesList: List<String?>? = if (ruleNames != null) ruleNames.toList() else null
+        val ruleNames: Array<String>? = if (recog != null) recog.ruleNames else null
+        val ruleNamesList: List<String?>? = if (ruleNames != null) ruleNames.map { it as String? } else null
         return toString(ruleNamesList, stop)
     }
 
@@ -207,17 +209,16 @@ open class RuleContext : RuleNode {
             } else {
                 val ruleIndex = p.ruleIndex
                 val ruleName =
-                    if (ruleIndex >= 0 && ruleIndex < ruleNames.size) ruleNames.get(ruleIndex) else Int.toString(
-                        ruleIndex
-                    )
+                    if (ruleIndex >= 0 && ruleIndex < ruleNames.size) ruleNames.get(ruleIndex) else ruleIndex.toString()
                 buf.append(ruleName)
             }
 
-            if (p.parent != null && (ruleNames != null || !p.parent!!.isEmpty)) {
+            val pParent = p.parent as? RuleContext
+            if (pParent != null && (ruleNames != null || !pParent.isEmpty)) {
                 buf.append(" ")
             }
 
-            p = p.parent
+            p = p.parent as? RuleContext
         }
 
         buf.append("]")

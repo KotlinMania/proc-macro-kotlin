@@ -72,7 +72,7 @@ open class ParserRuleContext : RuleContext {
      */
     var exception: RecognitionException? = null
 
-    constructor()
+    constructor() : super()
 
     /** COPY a ctx (I'm deliberately not using copy constructor) to avoid
      * confusion with creating node with parent. Does not copy children
@@ -87,7 +87,7 @@ open class ParserRuleContext : RuleContext {
      * the YContext as well else they are lost!
      */
     fun copyFrom(ctx: ParserRuleContext) {
-        this.parent = ctx.parent
+        this.setParent(ctx.parent as? RuleContext)
         this.invokingState = ctx.invokingState
 
         this.start = ctx.start
@@ -99,7 +99,7 @@ open class ParserRuleContext : RuleContext {
             // reset parent pointer for any error nodes
             for (child in ctx.children) {
                 if (child is ErrorNode) {
-                    addChild(child as ErrorNode?)
+                    addChild(child as ErrorNode)
                 }
             }
         }
@@ -122,13 +122,13 @@ open class ParserRuleContext : RuleContext {
      *
      * @since 4.7
      */
-    fun <T : ParseTree?> addAnyChild(t: T?): T? {
+    fun <T : ParseTree> addAnyChild(t: T): T {
         if (children == null) children = ArrayList()
-        children.add(t)
+        children!!.add(t)
         return t
     }
 
-    fun addChild(ruleInvocation: RuleContext?): RuleContext? {
+    fun addChild(ruleInvocation: RuleContext): RuleContext {
         return addAnyChild(ruleInvocation)
     }
 
@@ -152,10 +152,10 @@ open class ParserRuleContext : RuleContext {
      * [Parser.createTerminalNode]. I'm leaving this
      * in for compatibility but the parser doesn't use this anymore.
      */
-    @Deprecated
+    @Deprecated("")
     fun addChild(matchedToken: Token?): TerminalNode {
         val t: TerminalNodeImpl = TerminalNodeImpl(matchedToken)
-        addAnyChild<ParseTree?>(t)
+        addAnyChild(t)
         t.setParent(this)
         return t
     }
@@ -165,10 +165,10 @@ open class ParserRuleContext : RuleContext {
      * [Parser.createErrorNode]. I'm leaving this
      * in for compatibility but the parser doesn't use this anymore.
      */
-    @Deprecated
+    @Deprecated("")
     fun addErrorNode(badToken: Token?): ErrorNode {
         val t: ErrorNodeImpl = ErrorNodeImpl(badToken)
-        addAnyChild<ParseTree?>(t)
+        addAnyChild(t)
         t.setParent(this)
         return t
     }
@@ -183,43 +183,39 @@ open class ParserRuleContext : RuleContext {
      */
     fun removeLastChild() {
         if (children != null) {
-            children.remove(children.size - 1)
+            children!!.removeAt(children!!.size - 1)
         }
     }
-    override val parent: ParserRuleContext?
+    val parserRuleContextParent: ParserRuleContext?
         get() = super.parent as ParserRuleContext?
     override fun getChild(i: Int): ParseTree? {
-        return if (children != null && i >= 0 && i < children.size) children!!.get(i) else null
+        val c = children; return if (c != null && i >= 0 && i < c.size) c[i] else null
     }
 
-    fun <T : ParseTree?> getChild(ctxType: Class<out T?>, i: Int): T? {
-        if (children == null || i < 0 || i >= children.size) {
-            return null
-        }
-
-        var j = -1 // what element have we found with ctxType?
-        for (o in children) {
-            if (ctxType.isInstance(o)) {
+    inline fun <reified T : ParseTree> getChildOfType(i: Int): T? {
+        val c = children ?: return null
+        if (i < 0 || i >= c.size) return null
+        var j = -1
+        for (o in c) {
+            if (o is T) {
                 j++
-                if (j == i) {
-                    return ctxType.cast(o)
-                }
+                if (j == i) return o
             }
         }
         return null
     }
 
     fun getToken(ttype: Int, i: Int): TerminalNode? {
-        if (children == null || i < 0 || i >= children.size) {
+        val c = children; if (c == null || i < 0 || i >= c.size) {
             return null
         }
 
-        var j = -1 // what token with ttype have we found?
-        for (o in children) {
+        var j = -1
+        for (o in c) {
             if (o is TerminalNode) {
                 val tnode: TerminalNode = o as TerminalNode
                 val symbol: Token = tnode.symbol!!
-                if (symbol.type === ttype) {
+                if (symbol.type == ttype) {
                     j++
                     if (j == i) {
                         return tnode
@@ -237,13 +233,13 @@ open class ParserRuleContext : RuleContext {
         }
 
         var tokens: MutableList<TerminalNode>? = null
-        for (o in children) {
+        for (o in children!!) {
             if (o is TerminalNode) {
                 val tnode: TerminalNode = o as TerminalNode
                 val symbol: Token = tnode.symbol!!
                 if (symbol.type === ttype) {
                     if (tokens == null) {
-                        tokens = ArrayList()()
+                        tokens = ArrayList()
                     }
                     tokens.add(tnode)
                 }
@@ -257,43 +253,31 @@ open class ParserRuleContext : RuleContext {
         return tokens
     }
 
-    fun <T : ParserRuleContext?> getRuleContext(ctxType: Class<out T?>, i: Int): T? {
-        return getChild(ctxType, i)
+    inline fun <reified T : ParserRuleContext> getRuleContextOfType(i: Int): T? {
+        return getChildOfType(i)
     }
 
-    fun <T : ParserRuleContext?> getRuleContexts(ctxType: Class<out T?>): List<T?>? {
-        if (children == null) {
-            return emptyList()
-        }
-
-        var contexts: MutableList<T>? = null
-        for (o in children) {
-            if (ctxType.isInstance(o)) {
-                if (contexts == null) {
-                    contexts = ArrayList<T?>()
-                }
-
-                contexts.add(ctxType.cast(o))
+    inline fun <reified T : ParserRuleContext> getRuleContextsOfType(): List<T> {
+        val c = children ?: return emptyList()
+        val contexts = mutableListOf<T>()
+        for (o in c) {
+            if (o is T) {
+                contexts.add(o)
             }
         }
-
-        if (contexts == null) {
-            return emptyList()
-        }
-
         return contexts
     }
     override val childCount: Int
-        get() = if (children != null) children.size else 0
+        get() = children?.size ?: 0
     override val sourceInterval: Interval
         get() {
             if (start == null) {
                 return Interval.INVALID
             }
-            if (stop == null || stop.tokenIndex < start.tokenIndex) {
-                return Interval.of(start.tokenIndex, start.tokenIndex - 1) // empty
+            val s = start!!; val st = stop; if (st == null || st.tokenIndex < s.tokenIndex) {
+                return Interval.of(s.tokenIndex, s.tokenIndex - 1) // empty
             }
-            return Interval.of(start.tokenIndex, stop.tokenIndex)
+            return Interval.of(s.tokenIndex, st.tokenIndex)
         }
 
     /**
@@ -301,24 +285,20 @@ open class ParserRuleContext : RuleContext {
      * Note that the range from start to stop is inclusive, so for rules that do not consume anything
      * (for example, zero length or error productions) this token may exceed stop.
      */
-    fun getStart(): Token? {
-        return start
-    }
+
 
     /**
      * Get the final token in this context.
      * Note that the range from start to stop is inclusive, so for rules that do not consume anything
      * (for example, zero length or error productions) this token may precede start.
      */
-    fun getStop(): Token? {
-        return stop
-    }
+
 
     /** Used for rule context info debugging during parse-time, not so much for ATN debugging  */
     fun toInfoString(recognizer: Parser): String? {
         val rules: List<String?>? = recognizer.getRuleInvocationStack(this)
-        rules.reverse()
-        return "ParserRuleContext" + rules + "{" +
+        val mutableRules = rules?.toMutableList(); mutableRules?.reverse()
+        return "ParserRuleContext" + mutableRules + "{" +
                 "start=" + start +
                 ", stop=" + stop +
                 '}'

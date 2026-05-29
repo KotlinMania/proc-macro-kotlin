@@ -6,6 +6,7 @@
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.dfa.DFAState
+import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
 
 abstract class ATNSimulator(
     atn: ATN?,
@@ -38,7 +39,7 @@ abstract class ATNSimulator(
     internal val sharedContextCache: PredictionContextCache?
 
     init {
-        this.atn = atn
+        this.atn = atn!!
         this.sharedContextCache = sharedContextCache
     }
 
@@ -62,11 +63,10 @@ abstract class ATNSimulator(
     fun getCachedContext(context: PredictionContext?): PredictionContext? {
         if (sharedContextCache == null) return context
 
-        synchronized(sharedContextCache) {
+        antlrSynchronized(sharedContextCache) {
             val visited: MutableMap<PredictionContext?, PredictionContext?> =
                 HashMap<PredictionContext?, PredictionContext?>()
-            return PredictionContext.getCachedContext(
-                context,
+            return PredictionContext.getCachedContext(context!!,
                 sharedContextCache,
                 visited,
             )

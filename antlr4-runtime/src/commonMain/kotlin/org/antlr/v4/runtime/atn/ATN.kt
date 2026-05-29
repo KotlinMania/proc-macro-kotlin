@@ -17,13 +17,13 @@ class ATN(
 
     val decisionToState: MutableList<DecisionState> = ArrayList()
 
-    var ruleToStartState: Array<RuleStartState> = arrayOf()
-    var ruleToStopState: Array<RuleStopState> = arrayOf()
+    var ruleToStartState: Array<RuleStartState?> = arrayOf()
+    var ruleToStopState: Array<RuleStopState?> = arrayOf()
 
     val modeNameToStartState: MutableMap<String, TokensStartState> = LinkedHashMap()
 
     var ruleToTokenType: IntArray = IntArray(0)
-    var lexerActions: Array<LexerAction> = arrayOf()
+    var lexerActions: Array<LexerAction?> = arrayOf()
 
     val modeToStartState: MutableList<TokensStartState> = ArrayList()
 
@@ -35,7 +35,7 @@ class ATN(
     fun nextTokens(s: ATNState): IntervalSet {
         if (s.nextTokenWithinRule != null) return s.nextTokenWithinRule!!
         s.nextTokenWithinRule = nextTokens(s, null)
-        s.nextTokenWithinRule!!.setReadonly(true)
+        s.nextTokenWithinRule!!.makeReadonly()
         return s.nextTokenWithinRule!!
     }
 
@@ -95,7 +95,7 @@ class ATN(
             following = nextTokens(rt.followState!!)
             expected.addAll(following)
             expected.remove(Token.EPSILON)
-            ctx = ctx.parent
+            ctx = ctx.parent as? RuleContext
         }
         if (following.contains(Token.EPSILON)) {
             expected.add(Token.EOF)

@@ -7,6 +7,7 @@ package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
 import java.nio.charset.StandardCharsets
+import org.antlr.v4.runtime.assert
 
 /**
  * Alternative to [ANTLRInputStream] which treats the input
@@ -19,10 +20,10 @@ import java.nio.charset.StandardCharsets
 abstract class CodePointCharStream private constructor(
     position: Int,
     remaining: Int,
-    name: String?,
+    name: String,
 ) : CharStream {
     protected val size: Int
-    protected val name: String?
+    protected val name: String
 
     // To avoid lots of virtual method calls, we directly access
     // the state of the underlying code points in the
@@ -40,9 +41,9 @@ abstract class CodePointCharStream private constructor(
     }
 
     // Visible for testing.
-    abstract val internalStorage: Any?
+    abstract fun getInternalStorage(): Any
 
-    fun consume() {
+    override fun consume() {
         if (size - position == 0) {
             assert(LA(1) === IntStream.EOF)
             throw IllegalStateException("cannot consume EOF")
@@ -50,21 +51,21 @@ abstract class CodePointCharStream private constructor(
         position = position + 1
     }
 
-    fun index(): Int = position
+    override fun index(): Int = position
 
-    fun size(): Int = size
+    override fun size(): Int = size
 
     /** mark/release do nothing; we have entire buffer  */
-    fun mark(): Int = -1
+    override fun mark(): Int = -1
 
-    fun release(marker: Int) {
+    override fun release(marker: Int) {
     }
 
-    fun seek(index: Int) {
+    override fun seek(index: Int) {
         position = index
     }
 
-    val sourceName: String?
+    override val sourceName: String
         get() {
             if (name == null || name.isEmpty()) {
                 return IntStream.UNKNOWN_SOURCE_NAME
@@ -73,13 +74,13 @@ abstract class CodePointCharStream private constructor(
             return name
         }
 
-    fun toString(): String = getText(Interval.of(0, size - 1))
+    override fun toString(): String = getText(Interval.of(0, size - 1))!!
 
     // 8-bit storage for code points <= U+00FF.
     private class CodePoint8BitCharStream(
         position: Int,
         remaining: Int,
-        name: String?,
+        name: String,
         byteArray: ByteArray,
         arrayOffset: Int,
     ) : CodePointCharStream(position, remaining, name) {
@@ -92,9 +93,9 @@ abstract class CodePointCharStream private constructor(
         }
 
         /** Return the UTF-16 encoded string for the given interval  */
-        fun getText(interval: Interval): String {
-            val startIdx: Int = minOf(interval.a, size)
-            val len: Int = minOf(interval.b - interval.a + 1, size - startIdx)
+        override fun getText(interval: Interval?): String? {
+            val startIdx: Int = minOf(interval!!.a, size)
+            val len: Int = minOf(interval!!.b - interval!!.a + 1, size - startIdx)
 
             // We know the maximum code point in byteArray is U+00FF,
             // so we can treat this as if it were ISO-8859-1, aka Latin-1,
@@ -102,7 +103,7 @@ abstract class CodePointCharStream private constructor(
             return String(byteArray, startIdx, len, StandardCharsets.ISO_8859_1)
         }
 
-        fun LA(i: Int): Int {
+        override fun LA(i: Int): Int {
             val offset: Int
             when (Integer.signum(i)) {
                 -1 -> {
@@ -134,7 +135,7 @@ abstract class CodePointCharStream private constructor(
     private class CodePoint16BitCharStream(
         position: Int,
         remaining: Int,
-        name: String?,
+        name: String,
         private val charArray: CharArray,
         arrayOffset: Int,
     ) : CodePointCharStream(position, remaining, name) {
@@ -144,9 +145,9 @@ abstract class CodePointCharStream private constructor(
         }
 
         /** Return the UTF-16 encoded string for the given interval  */
-        fun getText(interval: Interval): String {
-            val startIdx: Int = minOf(interval.a, size)
-            val len: Int = minOf(interval.b - interval.a + 1, size - startIdx)
+        override fun getText(interval: Interval?): String? {
+            val startIdx: Int = minOf(interval!!.a, size)
+            val len: Int = minOf(interval!!.b - interval!!.a + 1, size - startIdx)
 
             // We know there are no surrogates in this
             // array, since otherwise we would be given a
@@ -157,7 +158,7 @@ abstract class CodePointCharStream private constructor(
             return String(charArray, startIdx, len)
         }
 
-        fun LA(i: Int): Int {
+        override fun LA(i: Int): Int {
             val offset: Int
             when (Integer.signum(i)) {
                 -1 -> {
@@ -189,7 +190,7 @@ abstract class CodePointCharStream private constructor(
     private class CodePoint32BitCharStream(
         position: Int,
         remaining: Int,
-        name: String?,
+        name: String,
         private val intArray: IntArray,
         arrayOffset: Int,
     ) : CodePointCharStream(position, remaining, name) {
@@ -199,16 +200,16 @@ abstract class CodePointCharStream private constructor(
         }
 
         /** Return the UTF-16 encoded string for the given interval  */
-        fun getText(interval: Interval): String {
-            val startIdx: Int = minOf(interval.a, size)
-            val len: Int = minOf(interval.b - interval.a + 1, size - startIdx)
+        override fun getText(interval: Interval?): String? {
+            val startIdx: Int = minOf(interval!!.a, size)
+            val len: Int = minOf(interval!!.b - interval!!.a + 1, size - startIdx)
 
             // Note that we pass the int[] code points to the String constructor --
             // this is supported, and the constructor will convert to UTF-16 internally.
             return String(intArray, startIdx, len)
         }
 
-        fun LA(i: Int): Int {
+        override fun LA(i: Int): Int {
             val offset: Int
             when (Integer.signum(i)) {
                 -1 -> {
@@ -251,7 +252,7 @@ abstract class CodePointCharStream private constructor(
          */
         fun fromBuffer(
             codePointBuffer: CodePointBuffer,
-            name: String?,
+            name: String,
         ): CodePointCharStream {
             // Java lacks generics on primitive types.
             //
@@ -264,7 +265,7 @@ abstract class CodePointCharStream private constructor(
             // char[], or int[]), so we can avoid lots of virtual
             // method calls to ByteBuffer.get(offset).
             when (codePointBuffer.type) {
-                BYTE -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint8BitCharStream(
+                CodePointBuffer.Type.BYTE -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint8BitCharStream(
                     codePointBuffer.position(),
                     codePointBuffer.remaining(),
                     name,
@@ -272,7 +273,7 @@ abstract class CodePointCharStream private constructor(
                     codePointBuffer.arrayOffset(),
                 )
 
-                CHAR -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint16BitCharStream(
+                CodePointBuffer.Type.CHAR -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint16BitCharStream(
                     codePointBuffer.position(),
                     codePointBuffer.remaining(),
                     name,
@@ -280,7 +281,7 @@ abstract class CodePointCharStream private constructor(
                     codePointBuffer.arrayOffset(),
                 )
 
-                INT -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint32BitCharStream(
+                CodePointBuffer.Type.INT -> return org.antlr.v4.runtime.CodePointCharStream.CodePoint32BitCharStream(
                     codePointBuffer.position(),
                     codePointBuffer.remaining(),
                     name,

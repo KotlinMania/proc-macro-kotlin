@@ -17,6 +17,4 @@ class TagChunk(label: String?, tag: String) : Chunk() {
         return tag
     }
 
-    fun getTag(): String = tag
-    fun getLabel(): String? = label
 }

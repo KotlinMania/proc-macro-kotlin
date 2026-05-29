@@ -6,11 +6,11 @@
 package org.antlr.v4.runtime.dfa
 
 import org.antlr.v4.runtime.Vocabulary
+import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
 import org.antlr.v4.runtime.VocabularyImpl
 import org.antlr.v4.runtime.atn.ATNConfigSet
 import org.antlr.v4.runtime.atn.DecisionState
 import org.antlr.v4.runtime.atn.StarLoopEntryState
-import kotlin.synchronized
 
 class DFA(
     atnStartState: DecisionState?,
@@ -64,7 +64,7 @@ class DFA(
     ) {
         check(isPrecedenceDfa()) { "Only precedence DFAs may contain a precedence start state." }
         if (precedence < 0) return
-        synchronized(s0!!) {
+        antlrSynchronized(s0!!) {
             if (precedence >= s0!!.edges!!.size) {
                 s0!!.edges = s0!!.edges!!.copyOf(precedence + 1)
             }

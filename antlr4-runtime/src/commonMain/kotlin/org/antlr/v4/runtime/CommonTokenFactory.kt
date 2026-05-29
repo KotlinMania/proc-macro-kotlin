@@ -41,7 +41,7 @@ class CommonTokenFactory
          * overhead of copying text for every token unless explicitly requested.
          */
         protected val copyText: Boolean = false,
-    ) : TokenFactory<CommonToken?> {
+    ) : TokenFactory<CommonToken> {
         /**
          * Constructs a [CommonTokenFactory] with the specified value for
          * [.copyText].
@@ -54,7 +54,7 @@ class CommonTokenFactory
          * @param copyText The value for [.copyText].
          */
         override fun create(
-            source: Pair<TokenSource?, CharStream?>,
+            source: Pair<TokenSource?, CharStream?>?,
             type: Int,
             text: String?,
             channel: Int,
@@ -63,13 +63,13 @@ class CommonTokenFactory
             line: Int,
             charPositionInLine: Int,
         ): CommonToken {
-            val t: CommonToken = CommonToken(source, type, channel, start, stop)
-            t.setLine(line)
-            t.setCharPositionInLine(charPositionInLine)
+            val t: CommonToken = CommonToken(source!!, type, channel, start, stop)
+            t.line = line
+            t.charPositionInLine = charPositionInLine
             if (text != null) {
-                t.setText(text)
-            } else if (copyText && source.b != null) {
-                t.setText(source.b.getText(Interval.of(start, stop)))
+                t.text = text
+            } else if (copyText && source!!.b != null) {
+                t.text = source!!.b.getText(Interval.of(start, stop))
             }
 
             return t
@@ -89,6 +89,6 @@ class CommonTokenFactory
              * This token factory does not explicitly copy token text when constructing
              * tokens.
              */
-            val DEFAULT: TokenFactory<CommonToken?> = CommonTokenFactory()
+            val DEFAULT: TokenFactory<CommonToken> = CommonTokenFactory()
         }
     }

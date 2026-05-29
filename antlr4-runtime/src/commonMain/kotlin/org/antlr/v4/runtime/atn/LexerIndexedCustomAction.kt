@@ -18,7 +18,7 @@ class LexerIndexedCustomAction(
     override val isPositionDependent: Boolean
         get() = true
 
-    override fun execute(lexer: Lexer?) {
+    override fun execute(lexer: Lexer) {
         action.execute(lexer)
     }
 

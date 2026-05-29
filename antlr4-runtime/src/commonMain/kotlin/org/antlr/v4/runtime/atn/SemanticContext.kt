@@ -8,7 +8,7 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.misc.MurmurHash
-import org.antlr.v4.runtime.misc.Utils
+import org.antlr.v4.runtime.misc.CommonUtils
 
 abstract class SemanticContext {
     abstract fun eval(
@@ -50,11 +50,11 @@ abstract class SemanticContext {
         }
 
         override fun eval(
-            parser: Recognizer<*, *>,
+            parser: Recognizer<*, *>?,
             parserCallStack: RuleContext?,
         ): Boolean {
             val localctx = if (isCtxDependent) parserCallStack else null
-            return parser.sempred(localctx, ruleIndex, predIndex)
+            return parser?.sempred(localctx, ruleIndex, predIndex) ?: true
         }
 
         override fun hashCode(): Int {
@@ -89,14 +89,14 @@ abstract class SemanticContext {
         }
 
         override fun eval(
-            parser: Recognizer<*, *>,
+            parser: Recognizer<*, *>?,
             parserCallStack: RuleContext?,
-        ): Boolean = parser.precpred(parserCallStack, precedence)
+        ): Boolean = parser?.precpred(parserCallStack, precedence) ?: false
 
         override fun evalPrecedence(
             parser: Recognizer<*, *>?,
             parserCallStack: RuleContext?,
-        ): SemanticContext? = if (parser.precpred(parserCallStack, precedence)) Empty.Instance else null
+        ): SemanticContext? = if (parser?.precpred(parserCallStack, precedence) == true) Empty.Instance else null
 
         override fun compareTo(other: PrecedencePredicate): Int = precedence.compareTo(other.precedence)
 
@@ -178,7 +178,7 @@ abstract class SemanticContext {
             return result
         }
 
-        override fun toString(): String = Utils.join(operands.toList().iterator(), "&&")
+        override fun toString(): String = CommonUtils.join(operands.toList().iterator(), "&&")
     }
 
     class OR : Operator {
@@ -243,7 +243,7 @@ abstract class SemanticContext {
             return result
         }
 
-        override fun toString(): String = Utils.join(operands.toList().iterator(), "||")
+        override fun toString(): String = CommonUtils.join(operands.toList().iterator(), "||")
     }
 
     companion object {

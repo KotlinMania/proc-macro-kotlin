@@ -82,7 +82,7 @@ class LexerActionExecutor(
     fun fixOffsetBeforeMatch(offset: Int): LexerActionExecutor {
         var updatedLexerActions: Array<LexerAction>? = null
         for (i in lexerActions.indices) {
-            if (lexerActions[i].isPositionDependent() && lexerActions[i] !is LexerIndexedCustomAction) {
+            if (lexerActions[i].isPositionDependent && lexerActions[i] !is LexerIndexedCustomAction) {
                 if (updatedLexerActions == null) {
                     updatedLexerActions = lexerActions.copyOf()
                 }
@@ -139,12 +139,12 @@ class LexerActionExecutor(
                     input.seek(startIndex + offset)
                     lexerAction = (lexerAction as LexerIndexedCustomAction).action
                     requiresSeek = (startIndex + offset) != stopIndex
-                } else if (lexerAction.isPositionDependent()) {
+                } else if (lexerAction.isPositionDependent) {
                     input.seek(stopIndex)
                     requiresSeek = false
                 }
 
-                lexerAction.execute(lexer)
+                lexerAction.execute(lexer!!)
             }
         } finally {
             if (requiresSeek) {
@@ -192,8 +192,8 @@ class LexerActionExecutor(
             }
 
             val lexerActions: Array<LexerAction> =
-                lexerActionExecutor.lexerActions.copyOf(lexerActionExecutor.lexerActions.size + 1)
-            lexerActions[lexerActions.size - 1] = lexerAction
+                lexerActionExecutor.lexerActions.copyOf(lexerActionExecutor.lexerActions.size + 1).map { it!! }.toTypedArray()
+            lexerActions[lexerActions.size - 1] = lexerAction!!
             return LexerActionExecutor(lexerActions)
         }
     }

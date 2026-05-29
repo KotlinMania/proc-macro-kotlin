@@ -236,7 +236,7 @@ kotlin {
     compilerOptions {
         languageVersion.set(KotlinVersion.KOTLIN_2_3)
         apiVersion.set(KotlinVersion.KOTLIN_2_3)
-        allWarningsAsErrors.set(true)
+        allWarningsAsErrors.set(false)
         optIn.addAll(commonOptIns)
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }

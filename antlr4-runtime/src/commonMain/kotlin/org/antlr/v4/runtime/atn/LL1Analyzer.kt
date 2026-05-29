@@ -107,13 +107,13 @@ class LL1Analyzer(
     ): IntervalSet {
         val r: IntervalSet = IntervalSet()
         val seeThruPreds = true // ignore preds; get all lookahead
-        val lookContext: PredictionContext? = if (ctx != null) PredictionContext.fromRuleContext(s.atn, ctx) else null
+        val lookContext: PredictionContext? = if (ctx != null) PredictionContext.fromRuleContext(s.atn!!, ctx) else null
         _LOOK(
             s,
             stopState,
             lookContext,
             r,
-            HashSet<ATNConfig?>(),
+            HashSet<ATNConfig>(),
             BitSet(),
             seeThruPreds,
             true,
@@ -157,7 +157,7 @@ class LL1Analyzer(
         stopState: ATNState?,
         ctx: PredictionContext?,
         look: IntervalSet,
-        lookBusy: Set<ATNConfig?>,
+        lookBusy: MutableSet<ATNConfig>,
         calledRuleStack: BitSet,
         seeThruPreds: Boolean,
         addEOF: Boolean,
@@ -236,7 +236,7 @@ class LL1Analyzer(
                 } else {
                     look.add(HIT_PRED)
                 }
-            } else if (t.isEpsilon()) {
+            } else if (t.isEpsilon) {
                 _LOOK(t.target, stopState, ctx, look, lookBusy, calledRuleStack, seeThruPreds, addEOF)
             } else if (t is WildcardTransition) {
                 look.addAll(IntervalSet.of(Token.MIN_USER_TOKEN_TYPE, atn.maxTokenType))

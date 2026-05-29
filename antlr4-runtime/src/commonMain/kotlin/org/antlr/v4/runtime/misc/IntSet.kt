@@ -118,7 +118,7 @@ interface IntSet {
     /**
      * {@inheritDoc}
      */
-    fun equals(obj: Any?): Boolean
+    override fun equals(other: Any?): Boolean
 
     /**
      * Returns `true` if the set contains the specified element.
@@ -150,5 +150,5 @@ interface IntSet {
     /**
      * {@inheritDoc}
      */
-    fun toString(): String?
+    override fun toString(): String
 }

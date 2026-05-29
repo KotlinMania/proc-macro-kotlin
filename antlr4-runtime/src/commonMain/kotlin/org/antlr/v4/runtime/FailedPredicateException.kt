@@ -48,7 +48,7 @@ class FailedPredicateException(
         }
 
         this.predicate = predicate
-        this.setOffendingToken(recognizer.currentToken)
+        this.offendingToken = recognizer.currentToken
     }
 
     companion object {

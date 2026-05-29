@@ -18,7 +18,7 @@ import org.antlr.v4.runtime.misc.Pair
  */
 class ListTokenSource(
     tokens: List<out Token?>,
-    sourceName: String?,
+    _sourceName: String?,
 ) : TokenSource {
     /**
      * The wrapped collection of [Token] objects to return.
@@ -26,12 +26,18 @@ class ListTokenSource(
     protected val tokens: List<out Token?>
 
     /**
-     * The name of the input source. If this value is `null`, a call to
-     * [.getSourceName] should return the source name used to create the
-     * the next token in [.tokens] (or the previous token if the end of
-     * the input has been reached).
+     * The name of the input source. If this value is `null`, the source name
+     * is inferred from the next token's input stream.
      */
+    private val _sourceName: String? = _sourceName
+
     override val sourceName: String?
+        get() {
+            if (_sourceName != null) return _sourceName
+            val inputStream: CharStream? = this.inputStream
+            if (inputStream != null) return inputStream.sourceName
+            return "List"
+        }
 
     /**
      * The index into [.tokens] of token to return by the next call to
@@ -80,7 +86,7 @@ class ListTokenSource(
         }
 
         this.tokens = tokens
-        this.sourceName = sourceName
+        // _sourceName is set via constructor parameter
     }
 
     override val charPositionInLine: Int
@@ -201,27 +207,13 @@ class ListTokenSource(
             return null
         }
 
-    /**
-     * {@inheritDoc}
-     */
-    fun getSourceName(): String? {
-        if (sourceName != null) {
-            return sourceName
-        }
 
-        val inputStream: CharStream? = this.inputStream
-        if (inputStream != null) {
-            return inputStream.sourceName
-        }
-
-        return "List"
-    }
 
     /**
      * {@inheritDoc}
      */
     override fun setTokenFactory(factory: TokenFactory<*>?) {
-        this._factory = factory
+        this._factory = factory!!
     }
 
     override val tokenFactory: TokenFactory<*>?

@@ -3,6 +3,7 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.assert
 
 @Deprecated("as of 4.7 Please use CharStreams interface.")
 open class ANTLRInputStream : CharStream {
@@ -72,9 +73,9 @@ open class ANTLRInputStream : CharStream {
         }
     }
 
-    fun getText(interval: Interval): String? {
-        val start = interval.a
-        var stop = interval.b
+    override fun getText(interval: Interval?): String? {
+        val start = interval!!.a
+        var stop = interval!!.b
         if (stop >= n) stop = n - 1
         val count = stop - start + 1
         if (start >= n) return ""

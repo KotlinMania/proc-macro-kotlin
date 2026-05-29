@@ -16,7 +16,7 @@ class LexerATNConfig : ATNConfig {
         state: ATNState?,
         alt: Int,
         context: PredictionContext?,
-    ) : super(state, alt, context, SemanticContext.Empty.Instance) {
+    ) : super(state!!, alt, context, SemanticContext.Empty.Instance) {
         this.passedThroughNonGreedyDecision = false
         this.lexerActionExecutor = null
     }
@@ -49,7 +49,7 @@ class LexerATNConfig : ATNConfig {
         c: LexerATNConfig,
         state: ATNState?,
         context: PredictionContext?,
-    ) : super(c, state, context, c.semanticContext) {
+    ) : super(c, state!!, context, c.semanticContext) {
         this.lexerActionExecutor = c.lexerActionExecutor
         this.passedThroughNonGreedyDecision = checkNonGreedyDecision(c, state)
     }

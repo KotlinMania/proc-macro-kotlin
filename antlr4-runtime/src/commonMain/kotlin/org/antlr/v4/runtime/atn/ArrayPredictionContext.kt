@@ -7,6 +7,8 @@
 
 package org.antlr.v4.runtime.atn
 
+import org.antlr.v4.runtime.assert
+
 class ArrayPredictionContext(
     parents: Array<PredictionContext?>,
     returnStates: IntArray,
@@ -25,44 +27,39 @@ class ArrayPredictionContext(
     constructor(a: SingletonPredictionContext) : this(arrayOf<PredictionContext?>(a.parent), intArrayOf(a.returnState))
 
     init {
-        assert(parents != null && parents.size > 0)
-        assert(returnStates != null && returnStates.size > 0)
-        // 		println("CREATE ARRAY: "+parents.contentToString()+", "+returnStates.contentToString());
+        assert(parents.size > 0)
+        assert(returnStates.size > 0)
         this.parents = parents
         this.returnStates = returnStates
     }
 
-    val isEmpty: Boolean
+    override val isEmpty: Boolean
         get() = // since EMPTY_RETURN_STATE can only appear in the last position, we
             // don't need to verify that size==1
             returnStates[0] == EMPTY_RETURN_STATE
 
     override fun size(): Int = returnStates.size
 
-    fun getParent(index: Int): PredictionContext? = parents[index]
+    override fun getParent(index: Int): PredictionContext? = parents[index]
 
-    fun getReturnState(index: Int): Int = returnStates[index]
+    override fun getReturnState(index: Int): Int = returnStates[index]
 
-    // //	public int findReturnState(int returnState) {
-    // 		return .binarySearch(returnStates, returnState);
-    // 	}
-    fun equals(o: Any): Boolean {
+    override fun equals(o: Any?): Boolean {
         if (this === o) {
             return true
         } else if (o !is ArrayPredictionContext) {
             return false
         }
 
-        if (this.hashCode() !== o.hashCode()) {
+        if (this.hashCode() != o.hashCode()) {
             return false // can't be same if hash is different
         }
 
-        val a = o
-        return returnStates.contentEquals(a.returnStates) &&
-            parents.contentEquals(a.parents)
+        return returnStates.contentEquals(o.returnStates) &&
+            parents.contentEquals(o.parents)
     }
 
-    fun toString(): String? {
+    override fun toString(): String {
         if (this.isEmpty) return "[]"
         val buf: StringBuilder = StringBuilder()
         buf.append("[")

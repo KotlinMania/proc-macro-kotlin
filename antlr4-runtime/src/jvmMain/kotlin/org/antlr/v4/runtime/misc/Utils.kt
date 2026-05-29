@@ -5,15 +5,14 @@
  */
 package org.antlr.v4.runtime.misc
 
-import org.antlr.v4.runtime.misc.BitSet
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.io.IOException
 
 object Utils {
-    // Seriously: why isn't this built in to java? ugh!
     fun <T> join(
         iter: Iterator<T?>,
         separator: String?,
@@ -39,7 +38,6 @@ object Utils {
                 builder.append(separator)
             }
         }
-
         return builder.toString()
     }
 
@@ -53,8 +51,8 @@ object Utils {
     }
 
     fun <T> removeAllElements(
-        data: Collection<T?>?,
-        value: T?,
+        data: MutableCollection<T>,
+        value: T,
     ) {
         if (data == null) return
         while (data.contains(value)) data.remove(value)
@@ -81,16 +79,15 @@ object Utils {
         return buf.toString()
     }
 
-    @kotlin.Throws(IOException::class)
+    @Throws(IOException::class)
     fun writeFile(
         fileName: String?,
         content: String?,
     ) {
-        org.antlr.v4.runtime.misc.Utils
-            .writeFile(fileName, content, null)
+        writeFile(fileName, content, null)
     }
 
-    @kotlin.Throws(IOException::class)
+    @Throws(IOException::class)
     fun writeFile(
         fileName: String?,
         content: String?,
@@ -98,7 +95,7 @@ object Utils {
     ) {
         val f: File = File(fileName)
         val fos: FileOutputStream = FileOutputStream(f)
-        val osw: OutputStreamWriter?
+        val osw: OutputStreamWriter
         if (encoding != null) {
             osw = OutputStreamWriter(fos, encoding)
         } else {
@@ -112,19 +109,18 @@ object Utils {
         }
     }
 
-    @kotlin.Throws(IOException::class)
+    @Throws(IOException::class)
     fun readFile(fileName: String?): CharArray? =
-        org.antlr.v4.runtime.misc.Utils
-            .readFile(fileName, null)
+        readFile(fileName, null)
 
-    @kotlin.Throws(IOException::class)
+    @Throws(IOException::class)
     fun readFile(
         fileName: String?,
         encoding: String?,
     ): CharArray? {
-        val f: File = File(fileName)
-        val size = f.length() as Int
-        val isr: InputStreamReader?
+        val f: File = File(fileName!!)
+        val size = f.length().toInt()
+        val isr: InputStreamReader
         val fis: FileInputStream = FileInputStream(fileName)
         if (encoding != null) {
             isr = InputStreamReader(fis, encoding)
@@ -144,18 +140,15 @@ object Utils {
         return data
     }
 
-    /** Convert array of strings to stringindex map. Useful for
-     * converting rulenames to nameruleindex map.
-     */
-    fun toMap(keys: Array<String?>): Map<String?, Integer?> {
-        val m: Map<String?, Integer?> = HashMap<String?, Integer?>()
+    fun toMap(keys: Array<String>): Map<String, Int> {
+        val m: MutableMap<String, Int> = HashMap()
         for (i in keys.indices) {
-            m.put(keys[i], i)
+            m[keys[i]] = i
         }
         return m
     }
 
-    fun toCharArray(data: IntegerList?): CharArray? {
+    fun toCharArray(data: IntList?): CharArray? {
         if (data == null) return null
         return data.toCharArray()
     }
@@ -170,8 +163,6 @@ object Utils {
         return s
     }
 
-    /** @since 4.6
-     */
     fun expandTabs(
         s: String?,
         tabSize: Int,
@@ -179,8 +170,8 @@ object Utils {
         if (s == null) return null
         val buf: StringBuilder = StringBuilder()
         var col = 0
-        for (i in 0..<s.length()) {
-            val c: Char = s.charAt(i)
+        for (i in 0 until s.length) {
+            val c: Char = s[i]
             when (c) {
                 '\n' -> {
                     col = 0
@@ -190,10 +181,7 @@ object Utils {
                 '\t' -> {
                     val n = tabSize - col % tabSize
                     col += n
-                    buf.append(
-                        org.antlr.v4.runtime.misc.Utils
-                            .spaces(n),
-                    )
+                    buf.append(spaces(n))
                 }
 
                 else -> {
@@ -205,20 +193,10 @@ object Utils {
         return buf.toString()
     }
 
-    /** @since 4.6
-     */
-    fun spaces(n: Int): String =
-        org.antlr.v4.runtime.misc.Utils
-            .sequence(n, " ")
+    fun spaces(n: Int): String = sequence(n, " ")
 
-    /** @since 4.6
-     */
-    fun newlines(n: Int): String =
-        org.antlr.v4.runtime.misc.Utils
-            .sequence(n, "\n")
+    fun newlines(n: Int): String = sequence(n, "\n")
 
-    /** @since 4.6
-     */
     fun sequence(
         n: Int,
         s: String?,
@@ -228,15 +206,13 @@ object Utils {
         return buf.toString()
     }
 
-    /** @since 4.6
-     */
     fun count(
         s: String,
         x: Char,
     ): Int {
         var n = 0
-        for (i in 0..<s.length()) {
-            if (s.charAt(i) === x) {
+        for (i in 0 until s.length) {
+            if (s[i] == x) {
                 n++
             }
         }

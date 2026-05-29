@@ -26,8 +26,8 @@ open class DFASerializer(
         this.vocabulary = vocabulary
     }
 
-    override fun toString(): String? {
-        if (dfa.s0 == null) return null
+    override fun toString(): String {
+        if (dfa.s0 == null) return ""
         val buf: StringBuilder = StringBuilder()
         val states = dfa.getStates()
         for (s in states) {
@@ -49,12 +49,12 @@ open class DFASerializer(
         }
 
         val output = buf.toString()
-        if (output.length == 0) return null
+        if (output.length == 0) return ""
         // return Utils.sortLinesInString(output);
         return output
     }
 
-    protected open fun getEdgeLabel(i: Int): String = vocabulary.getDisplayName(i - 1)
+    protected open fun getEdgeLabel(i: Int): String = vocabulary.getDisplayName(i - 1) ?: ""
 
     protected fun getStateString(s: DFAState): String? {
         val n: Int = s.stateNumber

@@ -23,19 +23,20 @@ class LexerInterpreter(
     override val grammarFileName: String
     override val atn: ATN
 
-    @get:Deprecated
-    @Deprecated
-    override val tokenNames: Array<String?>
-    override val ruleNames: Array<String?>?
-    override val channelNames: Array<String?>?
-    override val modeNames: Array<String?>?
+    @get:Deprecated("Use vocabulary instead.")
+    @Deprecated("Use vocabulary instead.")
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    override val tokenNames: Array<String>
+    override val ruleNames: Array<String>?
+    val interpreterChannelNames: Array<String?>?
+    val interpreterModeNames: Array<String?>?
 
-    private val vocabulary: Vocabulary?
+    override var vocabulary: Vocabulary = VocabularyImpl.fromTokenNames(emptyArray())
 
     protected val _decisionToDFA: Array<DFA?>
     protected val _sharedContextCache: PredictionContextCache = PredictionContextCache()
 
-    @Deprecated
+    @Deprecated("")
     constructor(
         grammarFileName: String?,
         tokenNames: Collection<String?>,
@@ -45,7 +46,7 @@ class LexerInterpreter(
         input: CharStream?,
     ) : this(
         grammarFileName,
-        VocabularyImpl.fromTokenNames(tokenNames.toList().toTypedArray()),
+        VocabularyImpl.fromTokenNames(tokenNames.map { it ?: "" }.toTypedArray()),
         ruleNames,
         ArrayList<String?>(),
         modeNames,
@@ -53,7 +54,7 @@ class LexerInterpreter(
         input,
     )
 
-    @Deprecated
+    @Deprecated("")
     constructor(
         grammarFileName: String?,
         vocabulary: Vocabulary,
@@ -66,33 +67,24 @@ class LexerInterpreter(
     init {
         require(atn.grammarType === ATNType.LEXER) { "The ATN must be a lexer ATN." }
 
-        this.grammarFileName = grammarFileName
+        this.grammarFileName = grammarFileName!!
         this.atn = atn
-        this.tokenNames = arrayOfNulls<String>(atn.maxTokenType)
-        for (i in tokenNames.indices) {
-            tokenNames[i] = vocabulary.getDisplayName(i)
+        val tokenNamesArr = Array(atn.maxTokenType) { "" }
+        for (i in tokenNamesArr.indices) {
+            tokenNamesArr[i] = vocabulary.getDisplayName(i) ?: ""
         }
+        this.tokenNames = tokenNamesArr
 
-        this.ruleNames = ruleNames.toList().toTypedArray()
-        this.channelNames = channelNames.toList().toTypedArray()
-        this.modeNames = modeNames.toList().toTypedArray()
+        this.ruleNames = ruleNames.map { it ?: "" }.toTypedArray()
+        this.interpreterChannelNames = channelNames.map { it ?: "" }.toTypedArray()
+        this.interpreterModeNames = modeNames.map { it ?: "" }.toTypedArray()
         this.vocabulary = vocabulary
 
-        this._decisionToDFA = arrayOfNulls<DFA>(atn.numberOfDecisions)
-        for (i in _decisionToDFA.indices) {
-            _decisionToDFA[i] = DFA(atn.getDecisionState(i), i)
-        }
-        this.interpreter = LexerATNSimulator(this, atn, _decisionToDFA, _sharedContextCache)
+        val decisionToDFA = Array(atn.numberOfDecisions) { i -> DFA(atn.getDecisionState(i), i) }
+        this._decisionToDFA = arrayOfNulls(atn.numberOfDecisions)
+        for (i in decisionToDFA.indices) { this._decisionToDFA[i] = decisionToDFA[i] }
+        this.interpreter = LexerATNSimulator(this, atn, decisionToDFA, _sharedContextCache)
     }
 
-    override val atn: ATN
-        get() = atn
 
-    fun getVocabulary(): Vocabulary? {
-        if (vocabulary != null) {
-            return vocabulary
-        }
-
-        return super.vocabulary
-    }
 }

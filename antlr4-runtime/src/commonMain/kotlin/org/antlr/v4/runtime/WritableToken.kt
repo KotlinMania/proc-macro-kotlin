@@ -6,15 +6,10 @@
 package org.antlr.v4.runtime
 
 interface WritableToken : Token {
-    fun setText(text: String?)
-
-    fun setType(ttype: Int)
-
-    fun setLine(line: Int)
-
-    fun setCharPositionInLine(pos: Int)
-
-    fun setChannel(channel: Int)
-
-    fun setTokenIndex(index: Int)
+    override var text: String?
+    override var type: Int
+    override var line: Int
+    override var charPositionInLine: Int
+    override var channel: Int
+    override var tokenIndex: Int
 }

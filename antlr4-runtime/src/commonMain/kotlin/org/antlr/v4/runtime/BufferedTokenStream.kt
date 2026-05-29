@@ -8,6 +8,7 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.assert
 
 /**
  * This implementation of [TokenStream] loads tokens from a
@@ -66,8 +67,6 @@ open class BufferedTokenStream(
      *
      */
     protected var fetchedEOF: Boolean = false
-
-    fun getTokenSource(): TokenSource = tokenSource
 
     override fun index(): Int = p
 
@@ -148,7 +147,7 @@ open class BufferedTokenStream(
         for (i in 0..<n) {
             val t: Token = tokenSource.nextToken()!!
             if (t is WritableToken) {
-                (t as WritableToken).setTokenIndex(tokens.size)
+                (t as WritableToken).tokenIndex = tokens.size
             }
             tokens.add(t)
             if (t.type === Token.EOF) {
@@ -178,7 +177,7 @@ open class BufferedTokenStream(
         val subset: MutableList<Token> = ArrayList()
         if (stop >= tokens.size) stop = tokens.size - 1
         for (i in start..stop) {
-            val t: Token = tokens.get(i)!!
+            val t: Token = tokens!!.get(i)!!
             if (t.type === Token.EOF) break
             subset.add(t)
         }
@@ -235,14 +234,14 @@ open class BufferedTokenStream(
     }
 
     /** Reset this token stream by setting its token source.  */
-    fun setTokenSource(tokenSource: TokenSource) {
+    fun resetTokenSource(tokenSource: TokenSource) {
         this.tokenSource = tokenSource
         tokens.clear()
         p = -1
         fetchedEOF = false
     }
 
-    fun getTokens(): List<Token?> = tokens
+    fun allTokens(): List<Token?> = tokens
 
     fun getTokens(
         start: Int,
@@ -270,9 +269,9 @@ open class BufferedTokenStream(
         // list = tokens[start:stop]:{T t, t.type in types}
         var filteredTokens: MutableList<Token>? = ArrayList()
         for (i in start..stop) {
-            val t: Token = tokens.get(i)!!
+            val t: Token = tokens!!.get(i)!!
             if (types == null || types.contains(t.type)) {
-                filteredTokens.add(t)
+                filteredTokens!!.add(t)
             }
         }
         if (filteredTokens.isNullOrEmpty()) {
@@ -428,7 +427,7 @@ open class BufferedTokenStream(
     ): List<Token?>? {
         val hidden: MutableList<Token> = ArrayList()
         for (i in from..to) {
-            val t: Token = tokens.get(i)!!
+            val t: Token = tokens!!.get(i)!!
             if (channel == -1) {
                 if (t.channel !== Lexer.DEFAULT_TOKEN_CHANNEL) hidden.add(t)
             } else {
@@ -455,7 +454,7 @@ open class BufferedTokenStream(
 
         val buf: StringBuilder = StringBuilder()
         for (i in start..stop) {
-            val t: Token = tokens.get(i)!!
+            val t: Token = tokens!!.get(i)!!
             if (t.type === Token.EOF) break
             buf.append(t.text)
         }

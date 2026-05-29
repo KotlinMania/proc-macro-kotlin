@@ -8,6 +8,7 @@
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
 import org.antlr.v4.runtime.atn.ATNState.Companion.BLOCK_END
 import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.dfa.DFAState
@@ -16,6 +17,7 @@ import org.antlr.v4.runtime.misc.DoubleKeyMap
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.IntervalSet
 import org.antlr.v4.runtime.misc.Pair
+import org.antlr.v4.runtime.assert
 
 /**
  * The embodiment of the adaptive LL(*), ALL(*), parsing strategy.
@@ -325,7 +327,7 @@ open class ParserATNSimulator(
         }
     }
 
-    fun adaptivePredict(
+    open fun adaptivePredict(
         input: TokenStream,
         decision: Int,
         outerContext: ParserRuleContext?,
@@ -357,7 +359,7 @@ open class ParserATNSimulator(
             if (dfa.isPrecedenceDfa()) {
                 // the start state for a precedence DFA depends on the current
                 // parser precedence, and is provided by a DFA method.
-                s0 = dfa.getPrecedenceStartState(parser!!.precedence)
+                s0 = dfa.getPrecedenceStartState(parser!!.precedence!!)
             } else {
                 // the start state for a "regular" DFA is just s0
                 s0 = dfa.s0
@@ -380,17 +382,17 @@ open class ParserATNSimulator(
                      * appropriate start state for the precedence level rather
                      * than simply setting DFA.s0.
                      */
-                    dfa.s0.configs = s0_closure // not used for prediction but useful to know start configs anyway
+                    dfa.s0!!.configs = s0_closure // not used for prediction but useful to know start configs anyway
                     s0_closure = applyPrecedenceFilter(s0_closure)
                     s0 = addDFAState(dfa, DFAState(s0_closure))
-                    dfa.setPrecedenceStartState(parser!!.precedence, s0)
+                    dfa.setPrecedenceStartState(parser!!.precedence!!, s0)
                 } else {
                     s0 = addDFAState(dfa, DFAState(s0_closure))
                     dfa.s0 = s0
                 }
             }
 
-            val alt = execATN(dfa, s0, input, index, outerContext)
+            val alt = execATN(dfa, s0!!, input, index, outerContext)
             if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) {
                 println(
                     "DFA after predictATN: " +
@@ -487,7 +489,7 @@ open class ParserATNSimulator(
 
             if (D!!.requiresFullContext && mode !== PredictionMode.SLL) {
                 // IF PREDS, MIGHT RESOLVE TO SINGLE ALT => SLL (or syntax error)
-                var conflictingAlts: BitSet = D!!.configs.conflictingAlts
+                var conflictingAlts: BitSet = D!!.configs.conflictingAlts!!
                 if (D!!.predicates != null) {
                     if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) println("DFA state has preds in DFA sim LL failover")
                     val conflictIndex: Int = input.index()
@@ -495,7 +497,7 @@ open class ParserATNSimulator(
                         input.seek(startIndex)
                     }
 
-                    conflictingAlts = evalSemanticContext(D!!.predicates, outerContext, true)
+                    conflictingAlts = evalSemanticContext(D!!.predicates!!!!, outerContext, true)
                     if (conflictingAlts.cardinality() === 1) {
                         if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) println("Full LL avoided")
                         return conflictingAlts.nextSetBit(0)
@@ -540,7 +542,7 @@ open class ParserATNSimulator(
 
                 val stopIndex: Int = input.index()
                 input.seek(startIndex)
-                val alts: BitSet = evalSemanticContext(D!!.predicates, outerContext, true)
+                val alts: BitSet = evalSemanticContext(D!!.predicates!!, outerContext, true)
                 when (alts.cardinality()) {
                     0 -> throw noViableAlt(input, outerContext, D!!.configs, startIndex)
 
@@ -575,7 +577,7 @@ open class ParserATNSimulator(
      * `t`, or `null` if the target state for this edge is not
      * already cached
      */
-    protected fun getExistingTargetState(
+    open fun getExistingTargetState(
         previousD: DFAState,
         t: Int,
     ): DFAState? {
@@ -599,7 +601,7 @@ open class ParserATNSimulator(
      * `t`. If `t` does not lead to a valid DFA state, this method
      * returns [.ERROR].
      */
-    protected fun computeTargetState(
+    open fun computeTargetState(
         dfa: DFA,
         previousD: DFAState,
         t: Int,
@@ -615,10 +617,10 @@ open class ParserATNSimulator(
 
         val predictedAlt: Int =
             org.antlr.v4.runtime.atn.ParserATNSimulator.Companion
-                .getUniqueAlt(reach)
+                .getUniqueAlt(reach!!)
 
         if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) {
-            val altSubSets: Collection<BitSet> = PredictionMode.getConflictingAltSubsets(reach)
+            val altSubSets: Collection<BitSet> = PredictionMode.getConflictingAltSubsets(reach!!)
             println(
                 "SLL altSubSets=" + altSubSets +
                     ", configs=" + reach +
@@ -633,17 +635,17 @@ open class ParserATNSimulator(
             D!!.isAcceptState = true
             D!!.configs.uniqueAlt = predictedAlt
             D!!.prediction = predictedAlt
-        } else if (PredictionMode.hasSLLConflictTerminatingPrediction(mode, reach)) {
+        } else if (PredictionMode.hasSLLConflictTerminatingPrediction(mode!!, reach!!)) {
             // MORE THAN ONE VIABLE ALTERNATIVE
             D!!.configs.conflictingAlts = getConflictingAlts(reach)
             D!!.requiresFullContext = true
             // in SLL-only mode, we will stop at this state and return the minimum alt
             D!!.isAcceptState = true
-            D!!.prediction = D!!.configs.conflictingAlts.nextSetBit(0)
+            D!!.prediction = D!!.configs.conflictingAlts!!.nextSetBit(0)
         }
 
         if (D!!.isAcceptState && D!!.configs.hasSemanticContext) {
-            predicateDFAState(D, atn.getDecisionState(dfa.decision))
+            predicateDFAState(D, atn.getDecisionState(dfa.decision)!!)
             if (D!!.predicates != null) {
                 D!!.prediction = ATN.INVALID_ALT_NUMBER
             }
@@ -664,9 +666,9 @@ open class ParserATNSimulator(
         // Update DFA so reach becomes accept state with (predicate,alt)
         // pairs if preds found for conflicting alts
         val altsToCollectPredsFrom: BitSet = getConflictingAltsOrUniqueAlt(dfaState.configs)
-        val altToPred: Array<SemanticContext>? = getPredsForAmbigAlts(altsToCollectPredsFrom, dfaState.configs, nalts)
+        val altToPred: Array<SemanticContext?>? = getPredsForAmbigAlts(altsToCollectPredsFrom, dfaState.configs, nalts)
         if (altToPred != null) {
-            dfaState.predicates = getPredicatePredictions(altsToCollectPredsFrom, altToPred)
+            dfaState.predicates = getPredicatePredictions(altsToCollectPredsFrom, altToPred!!)
             dfaState.prediction = ATN.INVALID_ALT_NUMBER // make sure we use preds
         } else {
             // There are preds in configs but they might go away
@@ -676,7 +678,7 @@ open class ParserATNSimulator(
         }
     }
 
-    // comes back with reach.uniqueAlt set to a valid alt
+    // comes back with reach!!.uniqueAlt set to a valid alt
     protected fun execATNWithFullContext(
         dfa: DFA,
         D: DFAState?, // how far we got in SLL DFA before failing over
@@ -701,7 +703,7 @@ open class ParserATNSimulator(
 // 			println("LL REACH "+getLookaheadName(input)+
 // 							   " from configs.size="+previous.size+
 // 							   " line "+input.LT(1)!!.line+":"+input.LT(1)!!.charPositionInLine);
-            reach = computeReachSet(previous, t, fullCtx)
+            reach = computeReachSet(previous!!, t, fullCtx)
             if (reach == null) {
                 // if any configs in previous dipped into outer context, that
                 // means that input up to t actually finished entry rule
@@ -712,16 +714,16 @@ open class ParserATNSimulator(
                 // ATN states in SLL implies LL will also get nowhere.
                 // If conflict in states that dip out, choose min since we
                 // will get error no matter what.
-                val e: NoViableAltException = noViableAlt(input, outerContext, previous, startIndex)
+                val e: NoViableAltException = noViableAlt(input, outerContext, previous!!, startIndex)
                 input.seek(startIndex)
-                val alt = getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule(previous, outerContext)
+                val alt = getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule(previous!!, outerContext)
                 if (alt != ATN.INVALID_ALT_NUMBER) {
                     return alt
                 }
                 throw e
             }
 
-            val altSubSets: Collection<BitSet> = PredictionMode.getConflictingAltSubsets(reach)
+            val altSubSets: Collection<BitSet> = PredictionMode.getConflictingAltSubsets(reach!!)
             if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) {
                 println(
                     "LL altSubSets=" + altSubSets +
@@ -732,13 +734,13 @@ open class ParserATNSimulator(
             }
 
             // 			println("altSubSets: "+altSubSets);
-// 			println("reach="+reach+", "+reach.conflictingAlts);
-            reach.uniqueAlt =
+// 			println("reach="+reach+", "+reach!!.conflictingAlts);
+            reach!!.uniqueAlt =
                 org.antlr.v4.runtime.atn.ParserATNSimulator.Companion
-                    .getUniqueAlt(reach)
+                    .getUniqueAlt(reach!!)
             // unique prediction?
-            if (reach.uniqueAlt !== ATN.INVALID_ALT_NUMBER) {
-                predictedAlt = reach.uniqueAlt
+            if (reach!!.uniqueAlt !== ATN.INVALID_ALT_NUMBER) {
+                predictedAlt = reach!!.uniqueAlt
                 break
             }
             if (mode !== PredictionMode.LL_EXACT_AMBIG_DETECTION) {
@@ -771,7 +773,7 @@ open class ParserATNSimulator(
         // If the configuration set uniquely predicts an alternative,
         // without conflict, then we know that it's a full LL decision
         // not SLL.
-        if (reach.uniqueAlt !== ATN.INVALID_ALT_NUMBER) {
+        if (reach!!.uniqueAlt !== ATN.INVALID_ALT_NUMBER) {
             reportContextSensitivity(dfa, predictedAlt, reach, startIndex, input.index())
             return predictedAlt
         }
@@ -816,7 +818,7 @@ open class ParserATNSimulator(
         return predictedAlt
     }
 
-    protected fun computeReachSet(
+    open fun computeReachSet(
         closure: ATNConfigSet,
         t: Int,
         fullCtx: Boolean,
@@ -824,7 +826,7 @@ open class ParserATNSimulator(
         if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) println("in computeReachSet, starting closure: " + closure)
 
         if (mergeCache == null) {
-            mergeCache = DoubleKeyMap<PredictionContext?, PredictionContext?, PredictionContext?>()
+            mergeCache = DoubleKeyMap<PredictionContext, PredictionContext, PredictionContext>()
         }
 
         val intermediate: ATNConfigSet = ATNConfigSet(fullCtx)
@@ -853,7 +855,7 @@ open class ParserATNSimulator(
             }
 
             if (c.state is RuleStopState) {
-                assert(c.context.isEmpty)
+                assert(c.context!!.isEmpty)
                 if (fullCtx || t == IntStream.EOF) {
                     if (skippedStopStates == null) {
                         skippedStopStates = ArrayList()
@@ -908,7 +910,7 @@ open class ParserATNSimulator(
          */
         if (reach == null) {
             reach = ATNConfigSet(fullCtx)
-            val closureBusy: Set<ATNConfig?> = HashSet<ATNConfig?>()
+            val closureBusy: MutableSet<ATNConfig> = HashSet<ATNConfig>()
             val treatEofAsEpsilon = t == Token.EOF
             for (c in intermediate) {
                 closure(c, reach, closureBusy, false, fullCtx, treatEofAsEpsilon)
@@ -944,7 +946,7 @@ open class ParserATNSimulator(
          * chooses an alternative matching the longest overall sequence when
          * multiple alternatives are viable.
          */
-        if (skippedStopStates != null && (!fullCtx || !PredictionMode.hasConfigInRuleStopState(reach))) {
+        if (skippedStopStates != null && (!fullCtx || !PredictionMode.hasConfigInRuleStopState(reach!!))) {
             assert(!skippedStopStates.isEmpty())
             for (c in skippedStopStates) {
                 reach.add(c, mergeCache)
@@ -998,8 +1000,8 @@ open class ParserATNSimulator(
             if (lookToEndOfRule && config.state.onlyHasEpsilonTransitions()) {
                 val nextTokens: IntervalSet = atn.nextTokens(config.state)
                 if (nextTokens.contains(Token.EPSILON)) {
-                    val endOfRuleState: ATNState? = atn.ruleToStopState[config.state.ruleIndex]
-                    result.add(ATNConfig(config, endOfRuleState), mergeCache)
+                    val endOfRuleState = atn.ruleToStopState[config.state.ruleIndex]
+                    result.add(ATNConfig(config, endOfRuleState!!), mergeCache)
                 }
             }
         }
@@ -1026,9 +1028,9 @@ open class ParserATNSimulator(
         }
 
         for (i in 0..<p.numberOfTransitions) {
-            val target: ATNState? = p.transition(i).target
-            val c: ATNConfig = ATNConfig(target, i + 1, initialContext)
-            val closureBusy: Set<ATNConfig?> = HashSet<ATNConfig?>()
+            val target = p.transition(i).target
+            val c: ATNConfig = ATNConfig(target, i + 1, initialContext!!)
+            val closureBusy: MutableSet<ATNConfig> = HashSet<ATNConfig>()
             closure(c, configs, closureBusy, true, fullCtx, false)
         }
 
@@ -1201,7 +1203,7 @@ open class ParserATNSimulator(
      * calling [Parser.getPrecedence]).
      */
     protected fun applyPrecedenceFilter(configs: ATNConfigSet): ATNConfigSet {
-        val statesFromAlt1: Map<Int?, PredictionContext?> = HashMap<Int?, PredictionContext?>()
+        val statesFromAlt1: MutableMap<Int, PredictionContext?> = HashMap<Int, PredictionContext?>()
         val configSet: ATNConfigSet = ATNConfigSet(configs.fullCtx)
         for (config in configs) {
             // handle alt 1 first
@@ -1229,12 +1231,12 @@ open class ParserATNSimulator(
                 continue
             }
 
-            if (!config.isPrecedenceFilterSuppressed()) {
+            if (!config.isPrecedenceFilterSuppressed) {
                 /* In the future, this elimination step could be updated to also
                  * filter the prediction context for alternatives predicting alt>1
                  * (basically a graph subtraction algorithm).
                  */
-                val context: PredictionContext? = statesFromAlt1.get(config.state.stateNumber)
+                val context: PredictionContext? = statesFromAlt1[config.state.stateNumber]
                 if (context != null && context.equals(config.context)) {
                     // eliminated
                     continue
@@ -1262,7 +1264,7 @@ open class ParserATNSimulator(
         ambigAlts: BitSet,
         configs: ATNConfigSet,
         nalts: Int,
-    ): Array<SemanticContext>? {
+    ): Array<SemanticContext?>? {
         // REACH=[1|1|[]|0:0, 1|2|[]|0:1]
         /* altToPred starts as an array of all null contexts. The entry at index i
          * corresponds to alternative i. altToPred[i] may have one of three values:
@@ -1275,7 +1277,7 @@ open class ParserATNSimulator(
          *
          * From this, it is clear that NONE||anything==NONE.
          */
-        var altToPred: Array<SemanticContext>? = arrayOfNulls<SemanticContext>(nalts + 1)
+        var altToPred: Array<SemanticContext?>? = arrayOfNulls<SemanticContext?>(nalts + 1)
         for (c in configs) {
             if (ambigAlts.get(c.alt)) {
                 altToPred!![c.alt] = SemanticContext.or(altToPred[c.alt], c.semanticContext)
@@ -1285,8 +1287,8 @@ open class ParserATNSimulator(
         var nPredAlts = 0
         for (i in 1..nalts) {
             if (altToPred!![i] == null) {
-                altToPred[i] = SemanticContext.Empty.Instance
-            } else if (altToPred[i] !== SemanticContext.Empty.Instance) {
+                altToPred!![i] = SemanticContext.Empty.Instance
+            } else if (altToPred!![i] !== SemanticContext.Empty.Instance) {
                 nPredAlts++
             }
         }
@@ -1308,15 +1310,15 @@ open class ParserATNSimulator(
 
     protected fun getPredicatePredictions(
         ambigAlts: BitSet?,
-        altToPred: Array<SemanticContext>,
+        altToPred: Array<SemanticContext?>?,
     ): Array<DFAState.PredPrediction?>? {
-        val pairs: List<DFAState.PredPrediction?> = ArrayList<DFAState.PredPrediction?>()
+        val pairs: MutableList<DFAState.PredPrediction?> = mutableListOf()
         var containsPredicate = false
-        for (i in 1..<altToPred.size) {
-            val pred: SemanticContext = checkNotNull(altToPred[i])
+        for (i in 1..<altToPred!!.size) {
+            val pred: SemanticContext = altToPred[i]!!
 
             if (ambigAlts != null && ambigAlts.get(i)) {
-                pairs.add(PredPrediction(pred, i))
+                pairs.add(DFAState.PredPrediction(pred, i))
             }
             if (pred !== SemanticContext.Empty.Instance) containsPredicate = true
         }
@@ -1383,8 +1385,8 @@ open class ParserATNSimulator(
     ): Int {
         val sets: Pair<ATNConfigSet?, ATNConfigSet?> =
             splitAccordingToSemanticValidity(configs, outerContext)
-        val semValidConfigs: ATNConfigSet = sets.a
-        val semInvalidConfigs: ATNConfigSet = sets.b
+        val semValidConfigs: ATNConfigSet = sets.a!!
+        val semInvalidConfigs: ATNConfigSet = sets.b!!
         var alt = getAltThatFinishedDecisionEntryRule(semValidConfigs)
         if (alt != ATN.INVALID_ALT_NUMBER) { // semantically/syntactically viable path exists
             return alt
@@ -1402,12 +1404,12 @@ open class ParserATNSimulator(
     protected fun getAltThatFinishedDecisionEntryRule(configs: ATNConfigSet): Int {
         val alts: IntervalSet = IntervalSet()
         for (c in configs) {
-            if (c.getOuterContextDepth() > 0 || (c.state is RuleStopState && c.context.hasEmptyPath())) {
+            if (c.outerContextDepth > 0 || (c.state is RuleStopState && c.context!!.hasEmptyPath())) {
                 alts.add(c.alt)
             }
         }
-        if (alts.size() === 0) return ATN.INVALID_ALT_NUMBER
-        return alts.getMinElement()
+        if (alts.size() == 0) return ATN.INVALID_ALT_NUMBER
+        return alts.minElement
     }
 
     /** Walk the list of configurations and split them according to
@@ -1447,15 +1449,15 @@ open class ParserATNSimulator(
      * then we stop at the first predicate that evaluates to true. This
      * includes pairs with null predicates.
      */
-    protected fun evalSemanticContext(
-        predPredictions: Array<DFAState.PredPrediction>,
+    open fun evalSemanticContext(
+        predPredictions: Array<DFAState.PredPrediction?>,
         outerContext: ParserRuleContext?,
         complete: Boolean,
     ): BitSet {
         val predictions: BitSet = BitSet()
         for (pair in predPredictions) {
-            if (pair.pred === SemanticContext.Empty.Instance) {
-                predictions.set(pair.alt)
+            if (pair!!.pred === SemanticContext.Empty.Instance) {
+                predictions.set(pair!!.alt)
                 if (!complete) {
                     break
                 }
@@ -1463,7 +1465,7 @@ open class ParserATNSimulator(
             }
 
             val fullCtx = false // in dfa
-            val predicateEvaluationResult = evalSemanticContext(pair.pred, outerContext, pair.alt, fullCtx)
+            val predicateEvaluationResult = evalSemanticContext(pair!!.pred, outerContext, pair!!.alt, fullCtx)
             if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug ||
                 org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.dfa_debug
             ) {
@@ -1475,10 +1477,10 @@ open class ParserATNSimulator(
                     org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.dfa_debug
                 ) {
                     println(
-                        "PREDICT " + pair.alt,
+                        "PREDICT " + pair!!.alt,
                     )
                 }
-                predictions.set(pair.alt)
+                predictions.set(pair!!.alt)
                 if (!complete) {
                     break
                 }
@@ -1519,7 +1521,7 @@ open class ParserATNSimulator(
      *
      * @since 4.3
      */
-    protected fun evalSemanticContext(
+    open fun evalSemanticContext(
         pred: SemanticContext,
         parserCallStack: ParserRuleContext?,
         alt: Int,
@@ -1535,7 +1537,7 @@ open class ParserATNSimulator(
     protected fun closure(
         config: ATNConfig,
         configs: ATNConfigSet,
-        closureBusy: Set<ATNConfig?>,
+        closureBusy: MutableSet<ATNConfig>,
         collectPredicates: Boolean,
         fullCtx: Boolean,
         treatEofAsEpsilon: Boolean,
@@ -1556,7 +1558,7 @@ open class ParserATNSimulator(
     protected fun closureCheckingStopState(
         config: ATNConfig,
         configs: ATNConfigSet,
-        closureBusy: Set<ATNConfig?>,
+        closureBusy: MutableSet<ATNConfig>,
         collectPredicates: Boolean,
         fullCtx: Boolean,
         depth: Int,
@@ -1575,9 +1577,9 @@ open class ParserATNSimulator(
         if (config.state is RuleStopState) {
             // We hit rule end. If we have context info, use it
             // run thru all possible stack tops in ctx
-            if (!config.context.isEmpty) {
-                for (i in 0..<config.context.size()) {
-                    if (config.context.getReturnState(i) === PredictionContext.EMPTY_RETURN_STATE) {
+            if (!config.context!!.isEmpty) {
+                for (i in 0..<config.context!!.size()) {
+                    if (config.context!!.getReturnState(i) === PredictionContext.EMPTY_RETURN_STATE) {
                         if (fullCtx) {
                             configs.add(ATNConfig(config, config.state, EmptyPredictionContext.Instance), mergeCache)
                             continue
@@ -1601,8 +1603,8 @@ open class ParserATNSimulator(
                         }
                         continue
                     }
-                    val returnState: ATNState? = atn.states.get(config.context.getReturnState(i))
-                    val newContext: PredictionContext? = config.context.getParent(i) // "pop" return state
+                    val returnState: ATNState = atn.states[config.context!!.getReturnState(i)]
+                    val newContext: PredictionContext? = config.context!!.getParent(i) // "pop" return state
                     val c: ATNConfig =
                         ATNConfig(
                             returnState,
@@ -1660,7 +1662,7 @@ open class ParserATNSimulator(
     protected fun closure_(
         config: ATNConfig,
         configs: ATNConfigSet,
-        closureBusy: Set<ATNConfig?>,
+        closureBusy: MutableSet<ATNConfig>,
         collectPredicates: Boolean,
         fullCtx: Boolean,
         depth: Int,
@@ -1700,10 +1702,11 @@ open class ParserATNSimulator(
                     // track how far we dip into outer context.  Might
                     // come in handy and we avoid evaluating context dependent
                     // preds if this is > 0.
-                    if (_dfa != null && _dfa.isPrecedenceDfa()) {
-                        val outermostPrecedenceReturn: Int = (t as EpsilonTransition).outermostPrecedenceReturn()
-                        if (outermostPrecedenceReturn == _dfa.atnStartState.ruleIndex) {
-                            c.setPrecedenceFilterSuppressed(true)
+                    val dfa = _dfa
+                    if (dfa != null && dfa.isPrecedenceDfa()) {
+                        val outermostPrecedenceReturn: Int = (t as EpsilonTransition).outermostPrecedenceReturn
+                        if (outermostPrecedenceReturn == dfa.atnStartState.ruleIndex) {
+                            c.isPrecedenceFilterSuppressed = true
                         }
                     }
 
@@ -1720,7 +1723,7 @@ open class ParserATNSimulator(
                     newDepth--
                     if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) println("dips into outer ctx: " + c)
                 } else {
-                    if (!t.isEpsilon() && !closureBusy.add(c)) {
+                    if (!t.isEpsilon && !closureBusy.add(c)) {
                         // avoid infinite recursion for EOF* and EOF+
                         continue
                     }
@@ -1844,33 +1847,33 @@ open class ParserATNSimulator(
         if (p.stateType !== ATNState.STAR_LOOP_ENTRY ||
             !(p as StarLoopEntryState).isPrecedenceDecision ||
             // Are we the special loop entry/exit state?
-            config.context.isEmpty ||
+            config.context!!.isEmpty ||
             // If SLL wildcard
-            config.context.hasEmptyPath()
+            config.context!!.hasEmptyPath()
         ) {
             return false
         }
 
         // Require all return states to return back to the same rule
         // that p is in.
-        val numCtxs: Int = config.context.size()
+        val numCtxs: Int = config.context!!.size()
         for (i in 0..<numCtxs) { // for each stack context
-            val returnState: ATNState = atn.states.get(config.context.getReturnState(i))
+            val returnState: ATNState = atn.states[config.context!!.getReturnState(i)]
             if (returnState.ruleIndex !== p.ruleIndex) return false
         }
 
         val decisionStartState: BlockStartState = p.transition(0).target as BlockStartState
-        val blockEndStateNum: Int = decisionStartState.endState.stateNumber
-        val blockEndState: BlockEndState? = atn.states.get(blockEndStateNum) as BlockEndState?
+        val blockEndStateNum: Int = decisionStartState.endState!!.stateNumber
+        val blockEndState: BlockEndState? = atn.states[blockEndStateNum] as BlockEndState?
 
         // Verify that the top of each stack context leads to loop entry/exit
         // state through epsilon edges and w/o leaving rule.
         for (i in 0..<numCtxs) { // for each stack context
-            val returnStateNumber: Int = config.context.getReturnState(i)
-            val returnState: ATNState = atn.states.get(returnStateNumber)
+            val returnStateNumber: Int = config.context!!.getReturnState(i)
+            val returnState: ATNState = atn.states[returnStateNumber]
             // all states must have single outgoing epsilon edge
             if (returnState.numberOfTransitions !== 1 ||
-                !returnState.transition(0).isEpsilon()
+                !returnState.transition(0).isEpsilon
             ) {
                 return false
             }
@@ -1882,19 +1885,19 @@ open class ParserATNSimulator(
             // Look for 'expr op expr' or case where expr's return state is block end
             // of (...)* internal block; the block end points to loop back
             // which points to p but we don't need to check that
-            if (returnState === blockEndState) {
+            if (blockEndState != null && returnState === blockEndState!!) {
                 continue
             }
             // Look for ternary expr ? expr : expr. The return state points at block end,
             // which points at loop entry state
-            if (returnStateTarget === blockEndState) {
+            if (blockEndState != null && returnStateTarget === blockEndState!!) {
                 continue
             }
             // Look for complex prefix 'between expr and expr' case where 2nd expr's
             // return state points at block end state of (...)* internal block
             if (returnStateTarget.stateType === BLOCK_END &&
                 returnStateTarget.numberOfTransitions === 1 &&
-                returnStateTarget.transition(0).isEpsilon() &&
+                returnStateTarget.transition(0).isEpsilon &&
                 returnStateTarget.transition(0).target === p
             ) {
                 continue
@@ -1908,7 +1911,7 @@ open class ParserATNSimulator(
     }
 
     fun getRuleName(index: Int): String? {
-        if (parser != null && index >= 0) return parser!!.ruleNames[index]
+        if (parser != null && index >= 0) return parser!!.ruleNames!![index]
         return "<rule " + index + ">"
     }
 
@@ -1964,7 +1967,7 @@ open class ParserATNSimulator(
         t: ActionTransition,
     ): ATNConfig? {
         if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) println("ACTION edge " + t.ruleIndex + ":" + t.actionIndex)
-        return ATNConfig(config, t.target)
+        return ATNConfig(config!!, t.target)
     }
 
     fun precedenceTransition(
@@ -1995,17 +1998,17 @@ open class ParserATNSimulator(
                 // during closure, which dramatically reduces the size of
                 // the config sets. It also obviates the need to test predicates
                 // later during conflict resolution.
-                val currentPosition: Int = _input.index()
-                _input.seek(_startIndex)
+                val currentPosition: Int = _input!!.index()
+                _input!!.seek(_startIndex)
                 val predSucceeds = evalSemanticContext(pt.predicate, _outerContext, config.alt, fullCtx)
-                _input.seek(currentPosition)
+                _input!!.seek(currentPosition)
                 if (predSucceeds) {
                     c = ATNConfig(config, pt.target) // no pred context
                 }
             } else {
                 val newSemCtx: SemanticContext? =
                     SemanticContext.and(config.semanticContext, pt.predicate)
-                c = ATNConfig(config, pt.target, newSemCtx)
+                c = ATNConfig(config, pt.target, newSemCtx!!)
             }
         } else {
             c = ATNConfig(config, pt.target)
@@ -2045,17 +2048,17 @@ open class ParserATNSimulator(
                 // during closure, which dramatically reduces the size of
                 // the config sets. It also obviates the need to test predicates
                 // later during conflict resolution.
-                val currentPosition: Int = _input.index()
-                _input.seek(_startIndex)
+                val currentPosition: Int = _input!!.index()
+                _input!!.seek(_startIndex)
                 val predSucceeds = evalSemanticContext(pt.predicate, _outerContext, config.alt, fullCtx)
-                _input.seek(currentPosition)
+                _input!!.seek(currentPosition)
                 if (predSucceeds) {
                     c = ATNConfig(config, pt.target) // no pred context
                 }
             } else {
                 val newSemCtx: SemanticContext? =
                     SemanticContext.and(config.semanticContext, pt.predicate)
-                c = ATNConfig(config, pt.target, newSemCtx)
+                c = ATNConfig(config, pt.target, newSemCtx!!)
             }
         } else {
             c = ATNConfig(config, pt.target)
@@ -2092,7 +2095,7 @@ open class ParserATNSimulator(
      * conflicting subsets, this method returns an empty [BitSet].
      */
     protected fun getConflictingAlts(configs: ATNConfigSet?): BitSet {
-        val altsets: Collection<BitSet> = PredictionMode.getConflictingAltSubsets(configs)
+        val altsets: Collection<BitSet> = PredictionMode.getConflictingAltSubsets(configs!!)
         return PredictionMode.getAlts(altsets)
     }
 
@@ -2138,7 +2141,7 @@ open class ParserATNSimulator(
             conflictingAlts = BitSet()
             conflictingAlts.set(configs.uniqueAlt)
         } else {
-            conflictingAlts = configs.conflictingAlts
+            conflictingAlts = configs.conflictingAlts!!
         }
         return conflictingAlts
     }
@@ -2149,8 +2152,8 @@ open class ParserATNSimulator(
         }
 
         val vocabulary: Vocabulary = if (parser != null) parser!!.vocabulary else VocabularyImpl.EMPTY_VOCABULARY
-        val displayName: String = vocabulary.getDisplayName(t)
-        if (displayName.equals(Int.toString(t))) {
+        val displayName: String = vocabulary.getDisplayName(t)!!
+        if (displayName.equals(t.toString())) {
             return displayName
         }
 
@@ -2165,7 +2168,7 @@ open class ParserATNSimulator(
      */
     fun dumpDeadEndConfigs(nvae: NoViableAltException) {
         println("dead end configs: ")
-        for (c in nvae.getDeadEndConfigs()) {
+        for (c in nvae.deadEndConfigs!!) {
             var trans = "no edges"
             if (c.state.numberOfTransitions > 0) {
                 val t: Transition? = c.state.transition(0)
@@ -2174,8 +2177,8 @@ open class ParserATNSimulator(
                     trans = "Atom " + getTokenName(at.label)
                 } else if (t is SetTransition) {
                     val st: SetTransition = t as SetTransition
-                    val not = st is NotSetTransition
-                    trans = (if (not) "~" else "") + "Set " + st.set.toString()
+                    val isNot = st is NotSetTransition
+                    trans = (if (isNot) "~" else "") + "Set " + st.set.toString()
                 }
             }
             println(c.toString(parser, true) + ":" + trans)
@@ -2191,7 +2194,7 @@ open class ParserATNSimulator(
         NoViableAltException(
             parser,
             input,
-            input.get(startIndex),
+            input.get(startIndex)!!,
             input.LT(1)!!,
             configs,
             outerContext,
@@ -2238,11 +2241,11 @@ open class ParserATNSimulator(
             return to
         }
 
-        synchronized(from) {
+        antlrSynchronized(from) {
             if (from.edges == null) {
                 from.edges = arrayOfNulls<DFAState>(atn.maxTokenType + 1 + 1)
             }
-            from.edges[t + 1] = to // connect
+            from.edges!![t + 1] = to // connect
         }
 
         if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.debug) {
@@ -2276,8 +2279,8 @@ open class ParserATNSimulator(
             return D
         }
 
-        synchronized(dfa.states) {
-            val existing: DFAState? = dfa.states.get(D)
+        antlrSynchronized(dfa.states) {
+            val existing: DFAState? = dfa.states[D]
             if (existing != null) {
                 if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.trace_atn_sim) println("addDFAState " + D + " exists")
                 return existing
@@ -2285,19 +2288,19 @@ open class ParserATNSimulator(
 
             D!!.stateNumber = dfa.states.size
 
-            if (!D!!.configs.isReadonly()) {
+            if (!D!!.configs.readonlyFlag) {
                 D!!.configs.optimizeConfigs(this)
-                D!!.configs.setReadonly(true)
+                D!!.configs.readonlyFlag = true
             }
 
             if (org.antlr.v4.runtime.atn.ParserATNSimulator.Companion.trace_atn_sim) println("addDFAState new " + D)
 
-            dfa.states.put(D, D)
+            dfa.states[D] = D
             return D
         }
     }
 
-    protected fun reportAttemptingFullContext(
+    open fun reportAttemptingFullContext(
         dfa: DFA,
         conflictingAlts: BitSet?,
         configs: ATNConfigSet?,
@@ -2310,7 +2313,7 @@ open class ParserATNSimulator(
             val interval: Interval? = Interval.of(startIndex, stopIndex)
             println(
                 "reportAttemptingFullContext decision=" + dfa.decision + ":" + configs +
-                    ", input=" + parser!!.tokenStream.getText(interval),
+                    ", input=" + parser!!.tokenStream.getText(interval!!),
             )
         }
         if (parser != null) {
@@ -2320,7 +2323,7 @@ open class ParserATNSimulator(
         }
     }
 
-    protected fun reportContextSensitivity(
+    open fun reportContextSensitivity(
         dfa: DFA,
         prediction: Int,
         configs: ATNConfigSet?,
@@ -2333,7 +2336,7 @@ open class ParserATNSimulator(
             val interval: Interval? = Interval.of(startIndex, stopIndex)
             println(
                 "reportContextSensitivity decision=" + dfa.decision + ":" + configs +
-                    ", input=" + parser!!.tokenStream.getText(interval),
+                    ", input=" + parser!!.tokenStream.getText(interval!!),
             )
         }
         if (parser != null) {
@@ -2344,7 +2347,7 @@ open class ParserATNSimulator(
     }
 
     /** If context sensitive parsing, we know it's ambiguity not conflict  */
-    protected fun reportAmbiguity(
+    open fun reportAmbiguity(
         dfa: DFA?,
         D: DFAState?, // the DFA state from execATN() that had SLL conflicts
         startIndex: Int,
@@ -2360,7 +2363,7 @@ open class ParserATNSimulator(
             println(
                 "reportAmbiguity " +
                     ambigAlts + ":" + configs +
-                    ", input=" + parser!!.tokenStream.getText(interval),
+                    ", input=" + parser!!.tokenStream.getText(interval!!),
             )
         }
         if (parser != null) {
@@ -2386,7 +2389,6 @@ open class ParserATNSimulator(
     /**
      * @since 4.3
      */
-    fun getParser(): Parser? = parser
 
     companion object {
         var debug: Boolean = false
@@ -2396,10 +2398,7 @@ open class ParserATNSimulator(
 
         /** Just in case this optimization is bad, add an ENV variable to turn it off  */
         val TURN_OFF_LR_LOOP_ENTRY_BRANCH_OPT: Boolean =
-            Boolean.parseBoolean(
-                org.antlr.v4.runtime.atn.ParserATNSimulator.Companion
-                    .getSafeEnv("TURN_OFF_LR_LOOP_ENTRY_BRANCH_OPT"),
-            )
+            getSafeEnv("TURN_OFF_LR_LOOP_ENTRY_BRANCH_OPT")?.toBooleanStrictOrNull() ?: false
 
         protected fun getUniqueAlt(configs: ATNConfigSet): Int {
             var alt: Int = ATN.INVALID_ALT_NUMBER
@@ -2413,11 +2412,6 @@ open class ParserATNSimulator(
             return alt
         }
 
-        fun getSafeEnv(envName: String?): String? =
-            try {
-                null
-            } catch (_: SecurityException) {
-                null
-            }
+        fun getSafeEnv(envName: String?): String? = null
     }
 }

@@ -181,22 +181,22 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
 
         for (chunk in chunks) {
             if (chunk is TagChunk) {
-                if (chunk.getTag()[0].isUpperCase()) {
-                    val ttype = parser.getTokenType(chunk.getTag())
-                    require(ttype !== Token.INVALID_TYPE) { "Unknown token ${chunk.getTag()} in pattern: $pattern" }
-                    val t = TokenTagToken(chunk.getTag(), ttype, chunk.getLabel())
+                if (chunk.tag[0].isUpperCase()) {
+                    val ttype = parser.getTokenType(chunk.tag)
+                    require(ttype !== Token.INVALID_TYPE) { "Unknown token ${chunk.tag} in pattern: $pattern" }
+                    val t = TokenTagToken(chunk.tag, ttype, chunk.label)
                     tokens.add(t)
-                } else if (chunk.getTag()[0].isLowerCase()) {
-                    val ruleIndex = parser.getRuleIndex(chunk.getTag())
-                    require(ruleIndex != -1) { "Unknown rule ${chunk.getTag()} in pattern: $pattern" }
+                } else if (chunk.tag[0].isLowerCase()) {
+                    val ruleIndex = parser.getRuleIndex(chunk.tag)
+                    require(ruleIndex != -1) { "Unknown rule ${chunk.tag} in pattern: $pattern" }
                     val ruleImaginaryTokenType = parser.aTNWithBypassAlts!!.ruleToTokenType[ruleIndex]
-                    tokens.add(RuleTagToken(chunk.getTag(), ruleImaginaryTokenType, chunk.getLabel()))
+                    tokens.add(RuleTagToken(chunk.tag, ruleImaginaryTokenType, chunk.label))
                 } else {
-                    throw IllegalArgumentException("invalid tag: ${chunk.getTag()} in pattern: $pattern")
+                    throw IllegalArgumentException("invalid tag: ${chunk.tag} in pattern: $pattern")
                 }
             } else {
                 val textChunk = chunk as TextChunk
-                val input = ANTLRInputStream(textChunk.getText())
+                val input = ANTLRInputStream(textChunk.text)
                 lexer.setInputStream(input)
                 var t = lexer.nextToken()
                 while (t.type !== Token.EOF) {
@@ -272,8 +272,8 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
         for ((i, element) in chunks.withIndex()) {
             val c = element
             if (c is TextChunk) {
-                val unescaped = c.getText().replace(escape, "")
-                if (unescaped.length < c.getText().length) {
+                val unescaped = c.text.replace(escape, "")
+                if (unescaped.length < c.text.length) {
                     chunks[i] = TextChunk(unescaped)
                 }
             }
