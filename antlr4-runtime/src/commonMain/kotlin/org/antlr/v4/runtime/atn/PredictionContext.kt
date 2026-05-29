@@ -670,7 +670,7 @@ abstract class PredictionContext protected constructor(
                     buf.append("  s").append(s)
                     buf.append("->")
                     buf.append("s")
-                    buf.append(current.getParent(i) as PredictionContext.id)
+                    buf.append(current.getParent(i)?.id ?: -1)
                     if (current.size() > 1) {
                         buf.append(" [label=\"parent[" + i + "]\"];\n")
                     } else {

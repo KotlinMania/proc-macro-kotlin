@@ -144,7 +144,7 @@ open class BufferedTokenStream(
         }
 
         for (i in 0..<n) {
-            val t: Token = tokenSource.nextToken()
+            val t: Token? = tokenSource.nextToken()
             if (t is WritableToken) {
                 (t as WritableToken).tokenIndex = tokens.size
             }
