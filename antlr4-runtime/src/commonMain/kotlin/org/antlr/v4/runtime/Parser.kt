@@ -83,17 +83,17 @@ abstract class Parser(
         }
         val hasListener: Boolean = _parseListeners != null && !_parseListeners.isEmpty()
         if (buildParseTree || hasListener) {
-            if (_errHandler!!.inErrorRecoveryMode(this)) {
-                val node: ErrorNode = _ctx.addErrorNode(createErrorNode(_ctx, o))!!
+            if (_errHandler.inErrorRecoveryMode(this)) {
+                val node: ErrorNode = _ctx.addErrorNode(createErrorNode(_ctx, o))
                 if (_parseListeners != null) {
-                    for (listener in _parseListeners!!) {
+                    for (listener in _parseListeners) {
                         listener.visitErrorNode(node)
                     }
                 }
             } else {
                 val node: TerminalNode? = _ctx.addChild(TerminalNodeImpl(o))
                 if (_parseListeners != null) {
-                    for (listener in _parseListeners!!) {
+                    for (listener in _parseListeners) {
                         listener.visitTerminal(node)
                     }
                 }
@@ -218,7 +218,7 @@ abstract class Parser(
         _precedenceStack.push(0)
         val interp: ATNSimulator? = this.interpreter
         if (interp != null) {
-            interp!!.reset()
+            interp.reset()
         }
     }
 
@@ -252,7 +252,7 @@ abstract class Parser(
             _errHandler.reportMatch(this)
             consume()
         } else {
-            t = _errHandler.recoverInline(this)!!
+            t = _errHandler.recoverInline(this)
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
@@ -288,7 +288,7 @@ abstract class Parser(
             _errHandler.reportMatch(this)
             consume()
         } else {
-            t = _errHandler.recoverInline(this)!!
+            t = _errHandler.recoverInline(this)
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
@@ -397,7 +397,7 @@ abstract class Parser(
      * @see .addParseListener
      */
     protected fun triggerEnterRuleEvent() {
-        for (listener in _parseListeners!!) {
+        for (listener in _parseListeners) {
             listener.enterEveryRule(_ctx)
             _ctx.enterRule(listener)
         }
@@ -507,7 +507,7 @@ abstract class Parser(
         } else {
             _ctx = _parentctx
         }
-        retctx!!.setParent(_parentctx)
+        retctx.setParent(_parentctx)
         if (buildParseTree && _parentctx != null) {
             _parentctx.addChild(retctx)
         }
@@ -519,7 +519,7 @@ abstract class Parser(
     ): Boolean = precedence >= _precedenceStack.peek()
 
     val tokenStream: TokenStream
-        get() = _input!!
+        get() = _input
 
     fun getRuleInvocationStack(): List<String> = getRuleInvocationStack(_ctx)
 
@@ -568,12 +568,12 @@ abstract class Parser(
         ruleIndex: Int,
     ) {
         val previous = _ctx
-        previous!!.setParent(localctx)
-        previous!!.invokingState = state
+        previous.setParent(localctx)
+        previous.invokingState = state
         _ctx = localctx
-        _ctx.start = previous!!.start
+        _ctx.start = previous.start
         if (buildParseTree) {
-            (previous!!.parent as ParserRuleContext).addChild(previous!!)
+            (previous.parent as ParserRuleContext).addChild(previous)
         }
     }
 
@@ -594,6 +594,6 @@ abstract class Parser(
 
     protected fun addContextToParseTree() {
         val parentCtx = _ctx?.parent as? ParserRuleContext ?: return
-        parentCtx.addChild(_ctx!!)
+        parentCtx.addChild(_ctx)
     }
 }

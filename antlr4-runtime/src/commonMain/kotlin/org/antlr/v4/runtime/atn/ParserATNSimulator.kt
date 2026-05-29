@@ -610,7 +610,7 @@ open class ParserATNSimulator(
         }
 
         // create new target state; we'll add to DFA after it's complete
-        var D: DFAState? = DFAState(reach)
+        var D: DFAState = DFAState(reach)
 
         val predictedAlt: Int =
             org.antlr.v4.runtime.atn.ParserATNSimulator.Companion
