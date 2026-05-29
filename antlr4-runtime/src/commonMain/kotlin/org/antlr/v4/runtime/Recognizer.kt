@@ -57,9 +57,9 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
                 }
                 mutableResult["EOF"] = Token.EOF
                 result = mutableResult.toMap()
-                Companion.tokenTypeMapCache[vocabulary] = result!!
+                Companion.tokenTypeMapCache[vocabulary] = result
             }
-            return result!!
+            return result
         }
 
     val ruleIndexMap: Map<String, Int>
@@ -71,9 +71,9 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
             var result: Map<String, Int>? = Companion.ruleIndexMapCache[ruleNames]
             if (result == null) {
                 result = ruleNames.mapIndexed { i, name -> name to i }.toMap()
-                Companion.ruleIndexMapCache[ruleNames] = result!!
+                Companion.ruleIndexMapCache[ruleNames] = result
             }
-            return result!!
+            return result
         }
 
     fun getTokenType(tokenName: String): Int {
@@ -99,8 +99,8 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
         get() = null
 
     fun getErrorHeader(e: RecognitionException): String {
-        val line: Int = e.offendingToken!!.line
-        val charPositionInLine: Int = e.offendingToken!!.charPositionInLine
+        val line: Int = e.offendingToken.line
+        val charPositionInLine: Int = e.offendingToken.charPositionInLine
         return "line $line:$charPositionInLine"
     }
 

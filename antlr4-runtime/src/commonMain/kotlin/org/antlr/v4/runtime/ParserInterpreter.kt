@@ -100,7 +100,7 @@ class ParserInterpreter(
     init {
         this.tokenNames = Array(atn.maxTokenType) { "" }
         for (i in 0..<atn.maxTokenType) {
-            tokenNames!![i] = vocabulary.getDisplayName(i) ?: ""
+            tokenNames[i] = vocabulary.getDisplayName(i) ?: ""
         }
 
         this.ruleNames = ruleNames.map { it }.toTypedArray() as Array<String>?
@@ -109,7 +109,7 @@ class ParserInterpreter(
         val numberOfDecisions: Int = atn.numberOfDecisions
         decisionToDFA =
             Array(numberOfDecisions) { i ->
-                DFA(atn.getDecisionState(i)!!, i)
+                DFA(atn.getDecisionState(i), i)
             }
 
         // get atn simulator that knows how to do predictions
@@ -130,13 +130,13 @@ class ParserInterpreter(
 
     /** Begin parsing at startRuleIndex  */
     fun parse(startRuleIndex: Int): ParserRuleContext? {
-        val startRuleStartState: RuleStartState = atn.ruleToStartState[startRuleIndex]!!
+        val startRuleStartState: RuleStartState = atn.ruleToStartState[startRuleIndex]
 
         rootContext = createInterpreterRuleContext(null, ATNState.INVALID_STATE_NUMBER, startRuleIndex)
         if (startRuleStartState.isLeftRecursiveRule) {
-            enterRecursionRule(rootContext!!, startRuleStartState.stateNumber, startRuleIndex, 0)
+            enterRecursionRule(rootContext, startRuleStartState.stateNumber, startRuleIndex, 0)
         } else {
-            enterRule(rootContext!!, startRuleStartState.stateNumber, startRuleIndex)
+            enterRule(rootContext, startRuleStartState.stateNumber, startRuleIndex)
         }
 
         while (true) {

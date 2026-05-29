@@ -78,7 +78,7 @@ open class RecognitionException : RuntimeException {
          */
         get() {
             if (recognizer != null) {
-                return recognizer.atn!!.getExpectedTokens(offendingState, ctx)
+                return recognizer.atn.getExpectedTokens(offendingState, ctx)
             }
 
             return null

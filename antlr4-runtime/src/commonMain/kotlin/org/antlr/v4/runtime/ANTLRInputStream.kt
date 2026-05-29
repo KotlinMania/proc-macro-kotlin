@@ -73,8 +73,8 @@ open class ANTLRInputStream : CharStream {
     }
 
     override fun getText(interval: Interval?): String? {
-        val start = interval!!.a
-        var stop = interval!!.b
+        val start = interval.a
+        var stop = interval.b
         if (stop >= n) stop = n - 1
         val count = stop - start + 1
         if (start >= n) return ""

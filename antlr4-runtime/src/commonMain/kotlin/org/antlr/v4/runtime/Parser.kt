@@ -28,14 +28,14 @@ abstract class Parser(
         override fun enterEveryRule(ctx: ParserRuleContext?) {
             println(
                 "enter   " + ruleNames?.get(ctx?.ruleIndex ?: 0) +
-                    ", LT(1)=" + _input!!.LT(1)?.text,
+                    ", LT(1)=" + _input.LT(1)?.text,
             )
         }
 
         override fun visitTerminal(node: TerminalNode?) {
             println(
                 "consume " + node?.symbol + " rule " +
-                    ruleNames?.get(_ctx!!.ruleIndex),
+                    ruleNames?.get(_ctx.ruleIndex),
             )
         }
 
@@ -44,7 +44,7 @@ abstract class Parser(
         override fun exitEveryRule(ctx: ParserRuleContext?) {
             println(
                 "exit    " + ruleNames?.get(ctx?.ruleIndex ?: 0) +
-                    ", LT(1)=" + _input!!.LT(1)?.text ?: "",
+                    ", LT(1)=" + _input.LT(1)?.text ?: "",
             )
         }
     }
@@ -79,19 +79,19 @@ abstract class Parser(
     open fun consume(): Token {
         val o: Token = currentToken
         if (o.type != IntStream.EOF) {
-            _input!!.consume()
+            _input.consume()
         }
-        val hasListener: Boolean = _parseListeners != null && !_parseListeners!!.isEmpty()
+        val hasListener: Boolean = _parseListeners != null && !_parseListeners.isEmpty()
         if (buildParseTree || hasListener) {
             if (_errHandler!!.inErrorRecoveryMode(this)) {
-                val node: ErrorNode = _ctx!!.addErrorNode(createErrorNode(_ctx, o))!!
+                val node: ErrorNode = _ctx.addErrorNode(createErrorNode(_ctx, o))!!
                 if (_parseListeners != null) {
                     for (listener in _parseListeners!!) {
                         listener.visitErrorNode(node)
                     }
                 }
             } else {
-                val node: TerminalNode? = _ctx!!.addChild(TerminalNodeImpl(o))
+                val node: TerminalNode? = _ctx.addChild(TerminalNodeImpl(o))
                 if (_parseListeners != null) {
                     for (listener in _parseListeners!!) {
                         listener.visitTerminal(node)
@@ -119,7 +119,7 @@ abstract class Parser(
 
     /** Current input token. */
     val currentToken: Token
-        get() = _input!!.LT(1)!!
+        get() = _input.LT(1)!!
 
     protected val _precedenceStack: IntStack
 
@@ -256,7 +256,7 @@ abstract class Parser(
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
-                _ctx!!.addErrorNode(createErrorNode(_ctx, t))
+                _ctx.addErrorNode(createErrorNode(_ctx, t))
             }
         }
         return t
@@ -292,7 +292,7 @@ abstract class Parser(
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
-                _ctx!!.addErrorNode(createErrorNode(_ctx, t))
+                _ctx.addErrorNode(createErrorNode(_ctx, t))
             }
         }
 
@@ -357,7 +357,7 @@ abstract class Parser(
             _parseListeners = ArrayList<ParseTreeListener>()
         }
 
-        _parseListeners!!.add(listener)
+        _parseListeners.add(listener)
     }
 
     /**
@@ -374,8 +374,8 @@ abstract class Parser(
      */
     fun removeParseListener(listener: ParseTreeListener?) {
         if (_parseListeners != null) {
-            if (_parseListeners!!.remove(listener)) {
-                if (_parseListeners!!.isEmpty()) {
+            if (_parseListeners.remove(listener)) {
+                if (_parseListeners.isEmpty()) {
                     _parseListeners = null
                 }
             }
@@ -399,7 +399,7 @@ abstract class Parser(
     protected fun triggerEnterRuleEvent() {
         for (listener in _parseListeners!!) {
             listener.enterEveryRule(_ctx)
-            _ctx!!.enterRule(listener)
+            _ctx.enterRule(listener)
         }
     }
 
@@ -412,7 +412,7 @@ abstract class Parser(
         val listeners = _parseListeners ?: return
         for (i in listeners.size - 1 downTo 0) {
             val listener = listeners[i]
-            _ctx!!.exitRule(listener)
+            _ctx.exitRule(listener)
             listener.exitEveryRule(_ctx)
         }
     }
@@ -422,7 +422,7 @@ abstract class Parser(
 
     /** Tell our token source and error strategy about a new way to create tokens.  */
     override fun setTokenFactory(factory: TokenFactory<*>?) {
-        _input!!.tokenSource?.setTokenFactory(factory)
+        _input.tokenSource?.setTokenFactory(factory)
     }
 
     override fun setInputStream(input: IntStream?) {
@@ -492,17 +492,17 @@ abstract class Parser(
         _precedenceStack.push(precedence)
         this.state = state
         _ctx = localctx
-        _ctx!!.start = _input!!.LT(1)
+        _ctx.start = _input.LT(1)
     }
 
     open fun unrollRecursionContexts(_parentctx: ParserRuleContext?) {
         _precedenceStack.pop()
-        _ctx!!.stop = _input!!.LT(-1)
+        _ctx.stop = _input.LT(-1)
         val retctx = _ctx
         if (_parseListeners != null) {
             while (_ctx != _parentctx) {
                 triggerExitRuleEvent()
-                _ctx = _ctx!!.parent as ParserRuleContext
+                _ctx = _ctx.parent as ParserRuleContext
             }
         } else {
             _ctx = _parentctx
@@ -546,20 +546,20 @@ abstract class Parser(
     ) {
         this.state = state
         _ctx = localctx
-        _ctx!!.start = _input!!.LT(1)
+        _ctx.start = _input.LT(1)
         if (buildParseTree) addContextToParseTree()
         if (_parseListeners != null) triggerEnterRuleEvent()
     }
 
     fun exitRule() {
         if (isMatchedEOF) {
-            _ctx!!.stop = _input!!.LT(1)
+            _ctx.stop = _input.LT(1)
         } else {
-            _ctx!!.stop = _input!!.LT(-1)
+            _ctx.stop = _input.LT(-1)
         }
         if (_parseListeners != null) triggerExitRuleEvent()
-        state = _ctx!!.invokingState
-        _ctx = _ctx!!.parent as ParserRuleContext?
+        state = _ctx.invokingState
+        _ctx = _ctx.parent as ParserRuleContext?
     }
 
     fun pushNewRecursionContext(
@@ -571,7 +571,7 @@ abstract class Parser(
         previous!!.setParent(localctx)
         previous!!.invokingState = state
         _ctx = localctx
-        _ctx!!.start = previous!!.start
+        _ctx.start = previous!!.start
         if (buildParseTree) {
             (previous!!.parent as ParserRuleContext).addChild(previous!!)
         }

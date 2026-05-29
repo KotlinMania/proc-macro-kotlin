@@ -144,7 +144,7 @@ open class BufferedTokenStream(
         }
 
         for (i in 0..<n) {
-            val t: Token = tokenSource.nextToken()!!
+            val t: Token = tokenSource.nextToken()
             if (t is WritableToken) {
                 (t as WritableToken).tokenIndex = tokens.size
             }
@@ -176,7 +176,7 @@ open class BufferedTokenStream(
         val subset: MutableList<Token> = ArrayList()
         if (stop >= tokens.size) stop = tokens.size - 1
         for (i in start..stop) {
-            val t: Token = tokens!!.get(i)!!
+            val t: Token = tokens.get(i)!!
             if (t.type == Token.EOF) break
             subset.add(t)
         }
@@ -268,9 +268,9 @@ open class BufferedTokenStream(
         // list = tokens[start:stop]:{T t, t.type in types}
         var filteredTokens: MutableList<Token>? = ArrayList()
         for (i in start..stop) {
-            val t: Token = tokens!!.get(i)!!
+            val t: Token = tokens.get(i)!!
             if (types == null || types.contains(t.type)) {
-                filteredTokens!!.add(t)
+                filteredTokens.add(t)
             }
         }
         if (filteredTokens.isNullOrEmpty()) {
@@ -426,7 +426,7 @@ open class BufferedTokenStream(
     ): List<Token?>? {
         val hidden: MutableList<Token> = ArrayList()
         for (i in from..to) {
-            val t: Token = tokens!!.get(i)!!
+            val t: Token = tokens.get(i)!!
             if (channel == -1) {
                 if (t.channel != Lexer.DEFAULT_TOKEN_CHANNEL) hidden.add(t)
             } else {
@@ -453,7 +453,7 @@ open class BufferedTokenStream(
 
         val buf: StringBuilder = StringBuilder()
         for (i in start..stop) {
-            val t: Token = tokens!!.get(i)!!
+            val t: Token = tokens.get(i)!!
             if (t.type == Token.EOF) break
             buf.append(t.text)
         }

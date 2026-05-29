@@ -157,11 +157,11 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
     ) {
         val recognizer = recognizer!!
 // 		println("recover in "+recognizer.getRuleInvocationStack()+
-// 						   " index="+recognizer.inputStream!!.index()+
+// 						   " index="+recognizer.inputStream.index()+
 // 						   ", lastErrorIndex="+
 // 						   lastErrorIndex+
 // 						   ", states="+lastErrorStates);
-        if (lastErrorIndex == recognizer.inputStream!!.index()) {
+        if (lastErrorIndex == recognizer.inputStream.index()) {
             val les = lastErrorStates
             if (les != null && les.contains(recognizer.state)) {
                 // uh oh, another error at same token index and previously-visited
@@ -170,13 +170,13 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
                 // at least to prevent an infinite loop; this is a failsafe.
 // 			println("seen error condition before index="+
 // 							   lastErrorIndex+", states="+lastErrorStates);
-// 			println("FAILSAFE consumes "+recognizer.tokenNames[recognizer.inputStream!!.LA(1)]);
+// 			println("FAILSAFE consumes "+recognizer.tokenNames[recognizer.inputStream.LA(1)]);
                 recognizer.consume()
             }
         }
-        lastErrorIndex = recognizer.inputStream!!.index()
+        lastErrorIndex = recognizer.inputStream.index()
         if (lastErrorStates == null) lastErrorStates = IntervalSet()
-        lastErrorStates!!.add(recognizer.state)
+        lastErrorStates.add(recognizer.state)
         val followSet: IntervalSet = getErrorRecoverySet(recognizer)
         consumeUntil(recognizer, followSet)
     }
@@ -237,7 +237,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
     open override fun sync(recognizer: Parser?) {
         val recognizer = recognizer!!
         val s: ATNState =
-            recognizer.interpreter!!.atn.states[recognizer.state]
+            recognizer.interpreter.atn.states[recognizer.state]
         // 		println("sync @ "+s.stateNumber+"="+s::class.getSimpleName());
         // If already recovering, don't try to sync
         if (inErrorRecoveryMode(recognizer)) {
@@ -534,7 +534,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      * strategy for the current mismatched input, otherwise `false`
      */
     protected fun singleTokenInsertion(recognizer: Parser): Boolean {
-        val currentSymbolType: Int = recognizer.inputStream!!.LA(1)
+        val currentSymbolType: Int = recognizer.inputStream.LA(1)
         // if current token is consistent with what could come after current
         // ATN state, then we know we're missing a token; error recovery
         // is free to conjure up and insert the missing token
@@ -543,7 +543,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
                 .atn.states
                 .get(recognizer.state)
         val next: ATNState = currentState.transition(0).target
-        val atn: ATN = recognizer.interpreter!!.atn
+        val atn: ATN = recognizer.interpreter.atn
         val expectingAtLL2: IntervalSet = atn.nextTokens(next, recognizer._ctx)
         // 		println("LT(2) set="+expectingAtLL2.toString(recognizer.tokenNames));
         if (expectingAtLL2.contains(currentSymbolType)) {
@@ -574,7 +574,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      * `null`
      */
     protected fun singleTokenDeletion(recognizer: Parser): Token? {
-        val nextTokenType: Int = recognizer.inputStream!!.LA(2)
+        val nextTokenType: Int = recognizer.inputStream.LA(2)
         val expecting: IntervalSet = getExpectedTokens(recognizer)
         if (expecting.contains(nextTokenType)) {
             reportUnwantedToken(recognizer)
@@ -772,7 +772,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
      *  at run-time upon error to avoid overhead during parsing.
      */
     protected fun getErrorRecoverySet(recognizer: Parser): IntervalSet {
-        val atn: ATN = recognizer.interpreter!!.atn
+        val atn: ATN = recognizer.interpreter.atn
         var ctx: RuleContext? = recognizer._ctx
         val recoverSet: IntervalSet = IntervalSet()
         while (ctx != null && ctx.invokingState >= 0) {
@@ -794,12 +794,12 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
         set: IntervalSet,
     ) {
 // 		println("consumeUntil("+set.toString(recognizer.tokenNames)+")");
-        var ttype: Int = recognizer.inputStream!!.LA(1)
+        var ttype: Int = recognizer.inputStream.LA(1)
         while (ttype != Token.EOF && !set.contains(ttype)) {
             // println("consume during recover LA(1)="+getTokenNames()[input.LA(1)]);
-// 			recognizer.inputStream!!.consume();
+// 			recognizer.inputStream.consume();
             recognizer.consume()
-            ttype = recognizer.inputStream!!.LA(1)
+            ttype = recognizer.inputStream.LA(1)
         }
     }
 }

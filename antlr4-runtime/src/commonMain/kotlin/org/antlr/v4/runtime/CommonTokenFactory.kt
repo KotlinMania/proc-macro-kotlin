@@ -68,8 +68,8 @@ class CommonTokenFactory
             t.charPositionInLine = charPositionInLine
             if (text != null) {
                 t.text = text
-            } else if (copyText && source!!.b != null) {
-                t.text = source!!.b.getText(Interval.of(start, stop))
+            } else if (copyText && source.b != null) {
+                t.text = source.b.getText(Interval.of(start, stop))
             }
 
             return t
