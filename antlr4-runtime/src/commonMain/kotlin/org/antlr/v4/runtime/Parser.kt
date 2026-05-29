@@ -35,7 +35,7 @@ abstract class Parser(
         override fun visitTerminal(node: TerminalNode?) {
             println(
                 "consume " + node?.symbol + " rule " +
-                    ruleNames?.get(_ctx.ruleIndex),
+                    ruleNames?.get(_ctx?.ruleIndex),
             )
         }
 
@@ -84,17 +84,17 @@ abstract class Parser(
         val hasListener: Boolean = _parseListeners != null && !_parseListeners.isEmpty()
         if (buildParseTree || hasListener) {
             if (_errHandler.inErrorRecoveryMode(this)) {
-                val node: ErrorNode = _ctx.addErrorNode(createErrorNode(_ctx, o))
+                val node = _ctx?.addErrorNode(createErrorNode(_ctx, o))
                 if (_parseListeners != null) {
                     for (listener in _parseListeners) {
-                        listener.visitErrorNode(node)
+                        listener.visitErrorNode(node!!)
                     }
                 }
             } else {
-                val node: TerminalNode? = _ctx.addChild(TerminalNodeImpl(o))
+                val node = _ctx?.addChild(TerminalNodeImpl(o))
                 if (_parseListeners != null) {
                     for (listener in _parseListeners) {
-                        listener.visitTerminal(node)
+                        listener.visitTerminal(node!!)
                     }
                 }
             }
@@ -256,7 +256,7 @@ abstract class Parser(
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
-                _ctx.addErrorNode(createErrorNode(_ctx, t))
+                _ctx?.addErrorNode(createErrorNode(_ctx, t))
             }
         }
         return t
@@ -292,7 +292,7 @@ abstract class Parser(
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
-                _ctx.addErrorNode(createErrorNode(_ctx, t))
+                _ctx?.addErrorNode(createErrorNode(_ctx, t))
             }
         }
 
@@ -399,7 +399,7 @@ abstract class Parser(
     protected fun triggerEnterRuleEvent() {
         for (listener in _parseListeners) {
             listener.enterEveryRule(_ctx)
-            _ctx.enterRule(listener)
+            _ctx?.enterRule(listener)
         }
     }
 
@@ -412,7 +412,7 @@ abstract class Parser(
         val listeners = _parseListeners ?: return
         for (i in listeners.size - 1 downTo 0) {
             val listener = listeners[i]
-            _ctx.exitRule(listener)
+            _ctx?.exitRule(listener)
             listener.exitEveryRule(_ctx)
         }
     }
@@ -492,12 +492,12 @@ abstract class Parser(
         _precedenceStack.push(precedence)
         this.state = state
         _ctx = localctx
-        _ctx.start = _input.LT(1)
+        _ctx?.start = _input.LT(1)
     }
 
     open fun unrollRecursionContexts(_parentctx: ParserRuleContext?) {
         _precedenceStack.pop()
-        _ctx.stop = _input.LT(-1)
+        _ctx?.stop = _input.LT(-1)
         val retctx = _ctx
         if (_parseListeners != null) {
             while (_ctx != _parentctx) {
@@ -546,19 +546,19 @@ abstract class Parser(
     ) {
         this.state = state
         _ctx = localctx
-        _ctx.start = _input.LT(1)
+        _ctx?.start = _input.LT(1)
         if (buildParseTree) addContextToParseTree()
         if (_parseListeners != null) triggerEnterRuleEvent()
     }
 
     fun exitRule() {
         if (isMatchedEOF) {
-            _ctx.stop = _input.LT(1)
+            _ctx?.stop = _input.LT(1)
         } else {
-            _ctx.stop = _input.LT(-1)
+            _ctx?.stop = _input.LT(-1)
         }
         if (_parseListeners != null) triggerExitRuleEvent()
-        state = _ctx.invokingState
+        state = _ctx?.invokingState
         _ctx = _ctx.parent as ParserRuleContext?
     }
 
@@ -571,7 +571,7 @@ abstract class Parser(
         previous.setParent(localctx)
         previous.invokingState = state
         _ctx = localctx
-        _ctx.start = previous.start
+        _ctx?.start = previous.start
         if (buildParseTree) {
             (previous.parent as ParserRuleContext).addChild(previous)
         }
