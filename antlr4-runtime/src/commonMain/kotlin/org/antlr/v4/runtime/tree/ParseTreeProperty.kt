@@ -5,7 +5,6 @@
  */
 package org.antlr.v4.runtime.tree
 
-
 /**
  * Associate a property with a parse tree node. Useful with parse tree listeners
  * that need to associate values with particular tree nodes, kind of like
@@ -25,15 +24,14 @@ package org.antlr.v4.runtime.tree
 class ParseTreeProperty<V> {
     protected var annotations: MutableMap<ParseTree?, V?> = HashMap<ParseTree?, V?>()
 
-    fun get(node: ParseTree?): V? {
-        return annotations.get(node)
-    }
+    fun get(node: ParseTree?): V? = annotations.get(node)
 
-    fun put(node: ParseTree?, value: V?) {
+    fun put(
+        node: ParseTree?,
+        value: V?,
+    ) {
         annotations.put(node, value)
     }
 
-    fun removeFrom(node: ParseTree?): V? {
-        return annotations.remove(node)
-    }
+    fun removeFrom(node: ParseTree?): V? = annotations.remove(node)
 }

@@ -6,13 +6,11 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
-import org.antlr.v4.runtime.assert
 
 abstract class UnbufferedTokenStream<T : Token?>(
     override var tokenSource: TokenSource,
     bufferSize: Int,
 ) : TokenStream {
-
     /**
      * A moving window buffer of the data being scanned. While there's a marker,
      * we keep adding to buffer. Otherwise, [consume()][.consume] resets so
@@ -237,11 +235,12 @@ abstract class UnbufferedTokenStream<T : Token?>(
 
         p = i
         currentTokenIndex = index
-        lastToken = if (p == 0) {
-            lastTokenBufferStart
-        } else {
-            tokens[p - 1]
-        }
+        lastToken =
+            if (p == 0) {
+                lastTokenBufferStart
+            } else {
+                tokens[p - 1]
+            }
     }
 
     override fun size(): Int = throw UnsupportedOperationException("Unbuffered stream cannot know its size")

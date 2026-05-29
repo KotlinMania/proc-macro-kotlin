@@ -1,6 +1,10 @@
 package org.antlr.v4.runtime.misc
 
-class Triple<A, B, C>(val a: A?, val b: B?, val c: C?) {
+class Triple<A, B, C>(
+    val a: A?,
+    val b: B?,
+    val c: C?,
+) {
     override fun equals(obj: Any?): Boolean {
         if (obj === this) {
             return true

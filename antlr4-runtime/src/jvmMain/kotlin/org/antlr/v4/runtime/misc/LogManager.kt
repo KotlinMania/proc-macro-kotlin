@@ -6,8 +6,8 @@
 package org.antlr.v4.runtime.misc
 
 import java.io.BufferedWriter
-import java.io.IOException
 import java.io.FileWriter
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -40,7 +40,10 @@ class LogManager {
 
     protected var records: MutableList<Record>? = null
 
-    fun log(component: String?, msg: String?) {
+    fun log(
+        component: String?,
+        msg: String?,
+    ) {
         val r = Record()
         r.component = component
         r.msg = msg

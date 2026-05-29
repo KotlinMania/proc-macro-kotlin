@@ -164,14 +164,14 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
         if (lastErrorIndex == recognizer.inputStream!!.index()) {
             val les = lastErrorStates
             if (les != null && les.contains(recognizer.state)) {
-            // uh oh, another error at same token index and previously-visited
-            // state in ATN; must be a case where LT(1) is in the recovery
-            // token set so nothing got consumed. Consume a single token
-            // at least to prevent an infinite loop; this is a failsafe.
+                // uh oh, another error at same token index and previously-visited
+                // state in ATN; must be a case where LT(1) is in the recovery
+                // token set so nothing got consumed. Consume a single token
+                // at least to prevent an infinite loop; this is a failsafe.
 // 			println("seen error condition before index="+
 // 							   lastErrorIndex+", states="+lastErrorStates);
 // 			println("FAILSAFE consumes "+recognizer.tokenNames[recognizer.inputStream!!.LA(1)]);
-            recognizer.consume()
+                recognizer.consume()
             }
         }
         lastErrorIndex = recognizer.inputStream!!.index()

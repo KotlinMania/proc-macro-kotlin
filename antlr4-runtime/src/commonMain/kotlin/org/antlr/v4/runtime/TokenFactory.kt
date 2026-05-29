@@ -17,11 +17,19 @@ interface TokenFactory<Symbol : Token?> {
      * are wiped to -1 in the text override is set in the CommonToken.
      */
     fun create(
-        source: Pair<TokenSource?, CharStream?>?, type: Int, text: String?,
-        channel: Int, start: Int, stop: Int,
-        line: Int, charPositionInLine: Int
+        source: Pair<TokenSource?, CharStream?>?,
+        type: Int,
+        text: String?,
+        channel: Int,
+        start: Int,
+        stop: Int,
+        line: Int,
+        charPositionInLine: Int,
     ): Symbol?
 
     /** Generically useful  */
-    fun create(type: Int, text: String?): Symbol?
+    fun create(
+        type: Int,
+        text: String?,
+    ): Symbol?
 }

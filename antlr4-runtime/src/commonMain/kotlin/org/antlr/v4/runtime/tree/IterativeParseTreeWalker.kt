@@ -3,7 +3,10 @@ package org.antlr.v4.runtime.tree
 import org.antlr.v4.runtime.misc.IntStack
 
 class IterativeParseTreeWalker : ParseTreeWalker() {
-    override fun walk(listener: ParseTreeListener, t: ParseTree?) {
+    override fun walk(
+        listener: ParseTreeListener,
+        t: ParseTree?,
+    ) {
         val nodeStack = ArrayDeque<ParseTree?>()
         val indexStack = IntStack()
 

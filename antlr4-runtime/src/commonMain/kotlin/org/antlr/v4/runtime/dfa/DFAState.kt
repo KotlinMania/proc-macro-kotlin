@@ -47,9 +47,7 @@ class DFAState {
     val altSet: Set<Int>?
         get() {
             val alts = mutableSetOf<Int>()
-            if (configs != null) {
-                for (c in configs) alts.add(c.alt)
-            }
+            for (c in configs) alts.add(c.alt)
             if (alts.isEmpty()) return null
             return alts
         }

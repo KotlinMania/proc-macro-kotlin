@@ -7,7 +7,6 @@ package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
 import java.nio.charset.StandardCharsets
-import org.antlr.v4.runtime.assert
 
 /**
  * Alternative to [ANTLRInputStream] which treats the input
@@ -67,7 +66,7 @@ abstract class CodePointCharStream private constructor(
 
     override val sourceName: String
         get() {
-            if (name == null || name.isEmpty()) {
+            if (name.isEmpty()) {
                 return IntStream.UNKNOWN_SOURCE_NAME
             }
 

@@ -20,7 +20,10 @@ import org.antlr.v4.runtime.ParserRuleContext
  */
 interface ParseTreeListener {
     fun visitTerminal(node: TerminalNode?)
+
     fun visitErrorNode(node: ErrorNode?)
+
     fun enterEveryRule(ctx: ParserRuleContext?)
+
     fun exitEveryRule(ctx: ParserRuleContext?)
 }

@@ -16,24 +16,28 @@ import org.antlr.v4.runtime.misc.BitSet
  *
  * @author Sam Harwell
  */
-class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLRErrorListener {
+class ProxyErrorListener(
+    delegates: Collection<out ANTLRErrorListener?>,
+) : ANTLRErrorListener {
     private val delegates: Collection<out ANTLRErrorListener?>
 
     init {
         this.delegates = delegates
     }
+
     override fun syntaxError(
         recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,
         msg: String?,
-        e: RecognitionException?
+        e: RecognitionException?,
     ) {
         for (listener in delegates) {
             listener!!.syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e)
         }
     }
+
     override fun reportAmbiguity(
         recognizer: Parser?,
         dfa: DFA?,
@@ -41,31 +45,33 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
         stopIndex: Int,
         exact: Boolean,
         ambigAlts: BitSet?,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     ) {
         for (listener in delegates) {
             listener!!.reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
         }
     }
+
     override fun reportAttemptingFullContext(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
         stopIndex: Int,
         conflictingAlts: BitSet?,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     ) {
         for (listener in delegates) {
             listener!!.reportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
         }
     }
+
     override fun reportContextSensitivity(
         recognizer: Parser?,
         dfa: DFA?,
         startIndex: Int,
         stopIndex: Int,
         prediction: Int,
-        configs: ATNConfigSet?
+        configs: ATNConfigSet?,
     ) {
         for (listener in delegates) {
             listener!!.reportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)

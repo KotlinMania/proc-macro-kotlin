@@ -12,7 +12,6 @@ import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.dfa.DFAState
 import org.antlr.v4.runtime.misc.BitSet
 
-
 /**
  * @since 4.3
  */
@@ -60,9 +59,17 @@ class ProfilingATNSimulator(
             this._sllStopIndex = -1
             this._llStopIndex = -1
             this.currentDecision = decision
-            val start: Long = kotlin.time.TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds
+            val start: Long =
+                kotlin.time.TimeSource.Monotonic
+                    .markNow()
+                    .elapsedNow()
+                    .inWholeNanoseconds
             val alt: Int = super.adaptivePredict(input, decision, outerContext)
-            val stop: Long = kotlin.time.TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds
+            val stop: Long =
+                kotlin.time.TimeSource.Monotonic
+                    .markNow()
+                    .elapsedNow()
+                    .inWholeNanoseconds
             decisions[decision].timeInPrediction += (stop - start)
             decisions[decision].invocations++
 
@@ -250,6 +257,4 @@ class ProfilingATNSimulator(
     val decisionInfo: Array<DecisionInfo>
         // ---------------------------------------------------------------------
         get() = decisions
-
-
 }

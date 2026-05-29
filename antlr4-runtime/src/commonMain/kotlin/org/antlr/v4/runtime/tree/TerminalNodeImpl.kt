@@ -5,14 +5,17 @@ import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.Interval
 
-open class TerminalNodeImpl(override var symbol: Token?) : TerminalNode {
+open class TerminalNodeImpl(
+    override var symbol: Token?,
+) : TerminalNode {
     private var _parent: ParseTree? = null
     override val parent: ParseTree? get() = _parent
 
-    override fun setParent(parent: RuleContext?) { _parent = parent }
+    override fun setParent(parent: RuleContext?) {
+        _parent = parent
+    }
 
     override fun getChild(i: Int): ParseTree? = null
-
 
     override val payload: Token?
         get() = symbol
@@ -26,20 +29,14 @@ open class TerminalNodeImpl(override var symbol: Token?) : TerminalNode {
 
     override val childCount: Int get() = 0
 
-    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? {
-        return visitor?.visitTerminal(this)
-    }
+    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? = visitor?.visitTerminal(this)
 
     override val text: String?
         get() = symbol?.text
 
-    override fun toStringTree(parser: Parser?): String {
-        return toString()
-    }
+    override fun toStringTree(parser: Parser?): String = toString()
 
-    override fun toStringTree(): String {
-        return toString()
-    }
+    override fun toStringTree(): String = toString()
 
     override fun toString(): String {
         if (symbol?.type == Token.EOF) return "<EOF>"

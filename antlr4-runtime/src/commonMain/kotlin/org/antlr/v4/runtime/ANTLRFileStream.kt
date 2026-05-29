@@ -14,7 +14,7 @@ package org.antlr.v4.runtime
 @Deprecated("as of 4.7 Please use {@link CharStreams} interface.")
 class ANTLRFileStream(
     override var sourceName: String?,
-    encoding: String?,
+    @Suppress("UNUSED_PARAMETER") encoding: String?,
 ) : ANTLRInputStream() {
     constructor(fileName: String?) : this(fileName, null)
 

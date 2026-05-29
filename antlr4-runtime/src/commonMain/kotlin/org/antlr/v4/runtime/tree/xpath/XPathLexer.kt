@@ -2,17 +2,19 @@ package org.antlr.v4.runtime.tree.xpath
 
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.CommonToken
+import org.antlr.v4.runtime.IntStream
 import org.antlr.v4.runtime.Lexer
 import org.antlr.v4.runtime.LexerNoViableAltException
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.Vocabulary
 import org.antlr.v4.runtime.VocabularyImpl
-import org.antlr.v4.runtime.IntStream
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.atn.ATNType
 import org.antlr.v4.runtime.misc.Interval
 
-open class XPathLexer(input: CharStream) : Lexer(input) {
+open class XPathLexer(
+    input: CharStream,
+) : Lexer(input) {
     override val grammarFileName: String = "XPathLexer.g4"
 
     override val ruleNames: Array<String>
@@ -121,9 +123,17 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
 
         val modeNames: Array<String> = arrayOf("DEFAULT_MODE")
 
-        val ruleNames: Array<String> = arrayOf(
-            "ANYWHERE", "ROOT", "WILDCARD", "BANG", "ID", "NameChar", "NameStartChar", "STRING"
-        )
+        val ruleNames: Array<String> =
+            arrayOf(
+                "ANYWHERE",
+                "ROOT",
+                "WILDCARD",
+                "BANG",
+                "ID",
+                "NameChar",
+                "NameStartChar",
+                "STRING",
+            )
 
         private val _LITERAL_NAMES: Array<String?> = arrayOf(null, null, null, "'//'", "'/'", "'*'", "'!'")
         private val _SYMBOLIC_NAMES: Array<String?> =
@@ -131,8 +141,9 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
 
         val VOCABULARY: Vocabulary = VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES, null)
 
-        val tokenNames: Array<String> = Array(_SYMBOLIC_NAMES.size) { i ->
-            VOCABULARY.getLiteralName(i) ?: VOCABULARY.getSymbolicName(i) ?: "<INVALID>"
-        }
+        val tokenNames: Array<String> =
+            Array(_SYMBOLIC_NAMES.size) { i ->
+                VOCABULARY.getLiteralName(i) ?: VOCABULARY.getSymbolicName(i) ?: "<INVALID>"
+            }
     }
 }

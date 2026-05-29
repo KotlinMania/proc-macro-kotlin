@@ -21,7 +21,7 @@ package org.antlr.v4.runtime
 class InterpreterRuleContext : ParserRuleContext {
     /** This is the backing field for [.getRuleIndex].  */
     var altNum: Int = -1
-        override var ruleIndex: Int = -1
+    override var ruleIndex: Int = -1
 
     constructor()
 

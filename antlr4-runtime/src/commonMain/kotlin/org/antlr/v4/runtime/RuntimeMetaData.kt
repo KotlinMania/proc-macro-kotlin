@@ -72,7 +72,7 @@ object RuntimeMetaData {
      * omitted.
      *
      */
-    val VERSION: String = "4.13.2"
+    const val VERSION = "4.13.2"
 
     val runtimeVersion: String
         /**
@@ -150,7 +150,10 @@ object RuntimeMetaData {
      * compiled against. This should always be passed using a direct reference
      * to [.VERSION].
      */
-    fun checkVersion(generatingToolVersion: String?, compileTimeVersion: String) {
+    fun checkVersion(
+        generatingToolVersion: String?,
+        compileTimeVersion: String,
+    ) {
         val runtimeVersion: String = VERSION
         var runtimeConflictsWithGeneratingTool = false
         var runtimeConflictsWithCompileTimeTool = false
@@ -158,12 +161,12 @@ object RuntimeMetaData {
         if (generatingToolVersion != null) {
             runtimeConflictsWithGeneratingTool =
                 !runtimeVersion.equals(generatingToolVersion) &&
-                        getMajorMinorVersion(runtimeVersion) != getMajorMinorVersion(generatingToolVersion)
+                getMajorMinorVersion(runtimeVersion) != getMajorMinorVersion(generatingToolVersion)
         }
 
         runtimeConflictsWithCompileTimeTool =
             !runtimeVersion.equals(compileTimeVersion) &&
-                    getMajorMinorVersion(runtimeVersion) != getMajorMinorVersion(compileTimeVersion)
+            getMajorMinorVersion(runtimeVersion) != getMajorMinorVersion(compileTimeVersion)
 
         if (runtimeConflictsWithGeneratingTool) {
             println("...")

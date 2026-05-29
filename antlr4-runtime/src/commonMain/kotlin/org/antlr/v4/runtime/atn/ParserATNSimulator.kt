@@ -8,7 +8,7 @@
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
+import org.antlr.v4.runtime.assert
 import org.antlr.v4.runtime.atn.ATNState.Companion.BLOCK_END
 import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.dfa.DFAState
@@ -17,7 +17,7 @@ import org.antlr.v4.runtime.misc.DoubleKeyMap
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.IntervalSet
 import org.antlr.v4.runtime.misc.Pair
-import org.antlr.v4.runtime.assert
+import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
 
 /**
  * The embodiment of the adaptive LL(*), ALL(*), parsing strategy.

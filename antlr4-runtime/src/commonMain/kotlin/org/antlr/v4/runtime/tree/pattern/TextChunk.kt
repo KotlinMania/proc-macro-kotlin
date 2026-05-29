@@ -1,6 +1,8 @@
 package org.antlr.v4.runtime.tree.pattern
 
-class TextChunk(text: String) : Chunk() {
+class TextChunk(
+    text: String,
+) : Chunk() {
     val text: String
 
     init {
@@ -9,5 +11,4 @@ class TextChunk(text: String) : Chunk() {
     }
 
     override fun toString(): String = "'$text'"
-
 }

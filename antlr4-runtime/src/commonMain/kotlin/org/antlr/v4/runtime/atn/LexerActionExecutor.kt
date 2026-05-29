@@ -192,7 +192,10 @@ class LexerActionExecutor(
             }
 
             val lexerActions: Array<LexerAction> =
-                lexerActionExecutor.lexerActions.copyOf(lexerActionExecutor.lexerActions.size + 1).map { it!! }.toTypedArray()
+                lexerActionExecutor.lexerActions
+                    .copyOf(lexerActionExecutor.lexerActions.size + 1)
+                    .map { it!! }
+                    .toTypedArray()
             lexerActions[lexerActions.size - 1] = lexerAction!!
             return LexerActionExecutor(lexerActions)
         }

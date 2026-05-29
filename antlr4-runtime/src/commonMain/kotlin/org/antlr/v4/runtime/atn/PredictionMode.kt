@@ -5,14 +5,13 @@
  */
 package org.antlr.v4.runtime.atn
 
-import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Recognizer
-import org.antlr.v4.runtime.atn.SemanticContext
+import org.antlr.v4.runtime.RuleContext
+import org.antlr.v4.runtime.dfa.DFAState
 import org.antlr.v4.runtime.misc.AbstractEqualityComparator
 import org.antlr.v4.runtime.misc.BitSet
 import org.antlr.v4.runtime.misc.FlexibleHashMap
 import org.antlr.v4.runtime.misc.MurmurHash
-import org.antlr.v4.runtime.dfa.DFAState
 
 enum class PredictionMode {
     SLL,

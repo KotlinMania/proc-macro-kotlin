@@ -10,9 +10,9 @@ package org.antlr.v4.runtime.atn
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.RuleContext
+import org.antlr.v4.runtime.assert
 import org.antlr.v4.runtime.misc.DoubleKeyMap
 import org.antlr.v4.runtime.misc.MurmurHash
-import org.antlr.v4.runtime.assert
 
 abstract class PredictionContext protected constructor(
     cachedHashCode: Int,
@@ -63,7 +63,7 @@ abstract class PredictionContext protected constructor(
 
     override fun hashCode(): Int = cachedHashCode
 
-    override abstract fun equals(other: Any?): Boolean
+    abstract override fun equals(other: Any?): Boolean
 
     fun toString(recog: Recognizer<*, *>?): String? {
         return toString()

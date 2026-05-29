@@ -357,7 +357,7 @@ class ATNDeserializer
                     set.add(-1)
                 }
 
-                for (j in 0..<nintervals) {
+                for (idx in 0..<nintervals) {
                     val a = data[p++]
                     val b = data[p++]
                     set.add(a, b)
@@ -397,10 +397,6 @@ class ATNDeserializer
         protected fun verifyATN(atn: ATN) {
             // verify assumptions
             for (state in atn.states) {
-                if (state == null) {
-                    continue
-                }
-
                 checkCondition(state.onlyHasEpsilonTransitions() || state.numberOfTransitions <= 1)
 
                 if (state is PlusBlockStartState) {
@@ -572,7 +568,7 @@ class ATNDeserializer
         }
 
         companion object {
-            val SERIALIZED_VERSION: Int = 4
+            const val SERIALIZED_VERSION = 4
 
             protected fun toInt(c: Char): Int = c.code
 

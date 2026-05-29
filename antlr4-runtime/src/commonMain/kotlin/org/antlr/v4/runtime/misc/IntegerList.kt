@@ -314,9 +314,14 @@ open class IntList {
             return charArrayOf(codePoint.toChar())
         }
 
-        private fun charCount(codePoint: Int): Int {
-            return if (codePoint < 0) 0 else if (codePoint <= Char.MAX_VALUE.code) 1 else 2
-        }
+        private fun charCount(codePoint: Int): Int =
+            if (codePoint < 0) {
+                0
+            } else if (codePoint <= Char.MAX_VALUE.code) {
+                1
+            } else {
+                2
+            }
 
         private val EMPTY_DATA = IntArray(0)
 

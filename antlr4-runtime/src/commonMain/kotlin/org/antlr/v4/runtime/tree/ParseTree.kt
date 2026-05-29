@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.RuleContext
 
 interface ParseTree : SyntaxTree {
     override val parent: ParseTree?
+
     override fun getChild(i: Int): ParseTree?
 
     fun setParent(parent: RuleContext?)

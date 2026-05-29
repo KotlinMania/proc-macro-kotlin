@@ -1,7 +1,10 @@
 package org.antlr.v4.runtime.misc
 
 internal object CommonUtils {
-    fun <T> join(iter: Iterator<T?>, separator: String?): String {
+    fun <T> join(
+        iter: Iterator<T?>,
+        separator: String?,
+    ): String {
         val buf = StringBuilder()
         while (iter.hasNext()) {
             buf.append(iter.next())
@@ -10,7 +13,10 @@ internal object CommonUtils {
         return buf.toString()
     }
 
-    fun <T> join(array: Array<T?>, separator: String?): String {
+    fun <T> join(
+        array: Array<T?>,
+        separator: String?,
+    ): String {
         val builder = StringBuilder()
         for (i in array.indices) {
             builder.append(array[i])
@@ -26,12 +32,18 @@ internal object CommonUtils {
         return n
     }
 
-    fun <T> removeAllElements(data: MutableCollection<T?>?, value: T?) {
+    fun <T> removeAllElements(
+        data: MutableCollection<T?>?,
+        value: T?,
+    ) {
         if (data == null) return
         while (data.contains(value)) data.remove(value)
     }
 
-    fun escapeWhitespace(s: String, escapeSpaces: Boolean): String {
+    fun escapeWhitespace(
+        s: String,
+        escapeSpaces: Boolean,
+    ): String {
         val buf = StringBuilder()
         for (c in s) {
             when {
@@ -55,7 +67,10 @@ internal object CommonUtils {
         return s
     }
 
-    fun expandTabs(s: String?, tabSize: Int): String? {
+    fun expandTabs(
+        s: String?,
+        tabSize: Int,
+    ): String? {
         if (s == null) return null
         val buf = StringBuilder()
         var col = 0
@@ -80,13 +95,20 @@ internal object CommonUtils {
     }
 
     fun spaces(n: Int): String = sequence(n, " ")
+
     fun newlines(n: Int): String = sequence(n, "\n")
 
-    fun sequence(n: Int, s: String?): String {
+    fun sequence(
+        n: Int,
+        s: String?,
+    ): String {
         val buf = StringBuilder()
         repeat(n) { buf.append(s) }
         return buf.toString()
     }
 
-    fun count(s: String, x: Char): Int = s.count { it == x }
+    fun count(
+        s: String,
+        x: Char,
+    ): Int = s.count { it == x }
 }

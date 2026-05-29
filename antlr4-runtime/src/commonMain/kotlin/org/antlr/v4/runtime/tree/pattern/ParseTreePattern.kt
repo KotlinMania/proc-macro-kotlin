@@ -7,7 +7,7 @@ class ParseTreePattern(
     matcher: ParseTreePatternMatcher,
     pattern: String?,
     patternRuleIndex: Int,
-    patternTree: ParseTree?
+    patternTree: ParseTree?,
 ) {
     val patternRuleIndex: Int
     val pattern: String?
@@ -25,7 +25,10 @@ class ParseTreePattern(
 
     fun matches(tree: ParseTree?): Boolean = matcher.matches(tree!!, this)
 
-    fun findAll(tree: ParseTree?, xpath: String?): List<ParseTreeMatch> {
+    fun findAll(
+        tree: ParseTree?,
+        xpath: String?,
+    ): List<ParseTreeMatch> {
         val subtrees = XPath.findAll(tree, xpath ?: "", matcher.getParser())
         val matches = mutableListOf<ParseTreeMatch>()
         for (t in subtrees) {

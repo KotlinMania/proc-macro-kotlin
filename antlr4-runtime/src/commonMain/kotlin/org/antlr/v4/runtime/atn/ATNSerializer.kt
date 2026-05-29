@@ -8,8 +8,8 @@
 package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.Token
-import org.antlr.v4.runtime.misc.IntList
 import org.antlr.v4.runtime.assert
+import org.antlr.v4.runtime.misc.IntList
 import org.antlr.v4.runtime.misc.IntervalSet
 
 /** This class represents a target neutral serializer for ATNs. An ATN is converted to a list of integers
@@ -163,11 +163,6 @@ class ATNSerializer(
     ) {
         data.add(nedges)
         for (s in atn.states) {
-            if (s == null) {
-                // might be optimized away
-                continue
-            }
-
             if (s.stateType == ATNState.RULE_STOP) {
                 continue
             }
@@ -296,11 +291,6 @@ class ATNSerializer(
         var nedges = 0
         data.add(atn.states.size)
         for (s in atn.states) {
-            if (s == null) { // might be optimized away
-                data.add(ATNState.INVALID_TYPE)
-                continue
-            }
-
             val stateType: Int = s.stateType
             if (s is DecisionState && (s as DecisionState).nonGreedy) {
                 nonGreedyStates.add(s.stateNumber)

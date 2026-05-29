@@ -66,7 +66,8 @@ abstract class ATNSimulator(
         antlrSynchronized(sharedContextCache) {
             val visited: MutableMap<PredictionContext?, PredictionContext?> =
                 HashMap<PredictionContext?, PredictionContext?>()
-            return PredictionContext.getCachedContext(context!!,
+            return PredictionContext.getCachedContext(
+                context!!,
                 sharedContextCache,
                 visited,
             )
@@ -75,8 +76,9 @@ abstract class ATNSimulator(
 
     companion object {
         /** Must distinguish between missing edge and edge we know leads nowhere  */
-        val ERROR: DFAState = DFAState(ATNConfigSet()).apply {
-            stateNumber = Int.MAX_VALUE
-        }
+        val ERROR: DFAState =
+            DFAState(ATNConfigSet()).apply {
+                stateNumber = Int.MAX_VALUE
+            }
     }
 }
