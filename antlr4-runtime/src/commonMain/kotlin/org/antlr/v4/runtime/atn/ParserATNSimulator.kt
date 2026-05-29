@@ -463,10 +463,7 @@ open class ParserATNSimulator(
         var t: Int = input.LA(1)
 
         while (true) { // while more work
-            var D: DFAState? = getExistingTargetState(previousD, t)
-            if (D == null) {
-                D = computeTargetState(dfa, previousD, t)
-            }
+            var D: DFAState = getExistingTargetState(previousD, t) ?: computeTargetState(dfa, previousD, t)
 
             if (D === ERROR) {
                 // if any configs in previous dipped into outer context, that
