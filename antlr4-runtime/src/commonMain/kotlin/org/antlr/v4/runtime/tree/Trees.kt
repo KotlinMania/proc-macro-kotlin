@@ -23,7 +23,7 @@ object Trees {
 
     fun toStringTree(t: Tree, ruleNames: List<String?>?): String? {
         var s: String = CommonUtils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
-        if (t.childCount === 0) return s
+        if (t.childCount == 0) return s
         val buf: StringBuilder = StringBuilder()
         buf.append("(")
         s = CommonUtils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
@@ -120,10 +120,10 @@ object Trees {
     ) {
         if (findTokens && t is TerminalNode) {
             val tnode: TerminalNode = t
-            if (tnode.symbol?.type === index) nodes.add(t)
+            if (tnode.symbol?.type == index) nodes.add(t)
         } else if (!findTokens && t is ParserRuleContext) {
             val ctx: ParserRuleContext = t
-            if (ctx.ruleIndex === index) nodes.add(t)
+            if (ctx.ruleIndex == index) nodes.add(t)
         }
         for (i in 0..<t.childCount) {
             val child = t.getChild(i) ?: continue

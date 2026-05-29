@@ -270,7 +270,7 @@ class IntervalSet : IntSet {
     }
 
     @Deprecated("Use {@link #toString(Vocabulary)} instead.")
-    fun toString(tokenNames: Array<String>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
+    fun toString(tokenNames: Array<String?>?): String? = toString(VocabularyImpl.fromTokenNames(tokenNames))
 
     fun toString(vocabulary: Vocabulary): String? {
         val buf: StringBuilder = StringBuilder()
@@ -304,7 +304,7 @@ class IntervalSet : IntSet {
     }
 
     @Deprecated("Use {@link #elementName(Vocabulary, int)} instead.")
-    protected fun elementName(tokenNames: Array<String>?, a: Int): String? =
+    protected fun elementName(tokenNames: Array<String?>?, a: Int): String? =
         elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
 
     protected fun elementName(vocabulary: Vocabulary, a: Int): String? {

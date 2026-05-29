@@ -322,7 +322,7 @@ class LexerATNSimulator(
             return dfaState.prediction
         } else {
             // if no accept and EOF is first char, return EOF
-            if (t == IntStream.EOF && input.index() === startIndex) {
+            if (t == IntStream.EOF && input.index() == startIndex) {
                 return Token.EOF
             }
 
@@ -344,7 +344,7 @@ class LexerATNSimulator(
         // than a config that already reached an accept state for the same rule
         var skipAlt: Int = ATN.INVALID_ALT_NUMBER
         for (c in closure) {
-            val currentAltReachedAcceptState = c.alt === skipAlt
+            val currentAltReachedAcceptState = c.alt == skipAlt
             if (currentAltReachedAcceptState && (c as LexerATNConfig).hasPassedThroughNonGreedyDecision()) {
                 continue
             }
@@ -476,7 +476,7 @@ class LexerATNSimulator(
 
             if (config.context != null && !config.context!!.isEmpty) {
                 for (i in 0..<config.context!!.size()) {
-                    if (config.context!!.getReturnState(i) !== PredictionContext.EMPTY_RETURN_STATE) {
+                    if (config.context!!.getReturnState(i) != PredictionContext.EMPTY_RETURN_STATE) {
                         val newContext: PredictionContext? = config.context!!.getParent(i) // "pop" return state
                         val returnState: ATNState? = atn?.states?.get(config.context!!.getReturnState(i))
                         val c: LexerATNConfig = LexerATNConfig(config, returnState, newContext)

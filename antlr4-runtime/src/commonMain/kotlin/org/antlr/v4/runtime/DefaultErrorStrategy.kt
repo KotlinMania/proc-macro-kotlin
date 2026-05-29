@@ -306,7 +306,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
         val tokens: TokenStream? = recognizer.inputStream as? TokenStream
         val input: String?
         if (tokens != null) {
-            if (e.startToken!!.type === Token.EOF) {
+            if (e.startToken!!.type == Token.EOF) {
                 input = "<EOF>"
             } else {
                 input = tokens.getText(e.startToken!!, e.offendingToken)
@@ -627,7 +627,7 @@ open class DefaultErrorStrategy : ANTLRErrorStrategy {
         }
         var current: Token? = currentSymbol
         val lookback: Token? = (recognizer.inputStream as? TokenStream)?.LT(-1)
-        if (current!!.type === Token.EOF && lookback != null) {
+        if (current!!.type == Token.EOF && lookback != null) {
             current = lookback
         }
         val safeCurrent: Token = current!!

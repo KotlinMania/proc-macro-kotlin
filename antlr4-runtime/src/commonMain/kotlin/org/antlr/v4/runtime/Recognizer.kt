@@ -32,7 +32,7 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     var state: Int = -1
 
     @Deprecated("Use vocabulary instead.")
-    abstract val tokenNames: Array<String>?
+    abstract val tokenNames: Array<String?>?
 
     abstract val ruleNames: Array<String>?
 

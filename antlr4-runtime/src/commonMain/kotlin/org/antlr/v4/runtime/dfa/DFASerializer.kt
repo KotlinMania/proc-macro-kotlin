@@ -19,7 +19,7 @@ open class DFASerializer(
 
     @Deprecated("Use {@link #DFASerializer(DFA, Vocabulary)} instead.")
     @Suppress("UNCHECKED_CAST")
-    constructor(dfa: DFA?, tokenNames: Array<out String?>?) : this(dfa!!, VocabularyImpl.fromTokenNames(tokenNames as Array<String>?))
+    constructor(dfa: DFA?, tokenNames: Array<out String?>?) : this(dfa!!, VocabularyImpl.fromTokenNames(tokenNames as Array<String?>?))
 
     init {
         this.dfa = dfa

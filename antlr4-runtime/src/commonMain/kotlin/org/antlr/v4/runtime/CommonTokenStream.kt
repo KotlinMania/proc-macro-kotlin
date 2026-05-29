@@ -109,8 +109,8 @@ class CommonTokenStream
             fill()
             for (i in 0..<tokens.size) {
                 val t: Token = tokens.get(i)!!
-                if (t.channel === channel) n++
-                if (t.type === Token.EOF) break
+                if (t.channel == channel) n++
+                if (t.type == Token.EOF) break
             }
             return n
         }

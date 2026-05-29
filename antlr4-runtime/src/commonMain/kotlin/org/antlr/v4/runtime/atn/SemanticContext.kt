@@ -162,9 +162,9 @@ abstract class SemanticContext {
             val operands = mutableListOf<SemanticContext>()
             for (context in this.operands) {
                 val evaluated = context.evalPrecedence(parser, parserCallStack)
-                differs = differs or (evaluated !== context)
+                differs = differs or (evaluated != context)
                 if (evaluated == null) return null
-                if (evaluated !== Empty.Instance) operands.add(evaluated)
+                if (evaluated != Empty.Instance) operands.add(evaluated)
             }
 
             if (!differs) return this
@@ -227,7 +227,7 @@ abstract class SemanticContext {
             val operands = mutableListOf<SemanticContext>()
             for (context in this.operands) {
                 val evaluated = context.evalPrecedence(parser, parserCallStack)
-                differs = differs or (evaluated !== context)
+                differs = differs or (evaluated != context)
                 if (evaluated === Empty.Instance) return Empty.Instance
                 if (evaluated != null) operands.add(evaluated)
             }

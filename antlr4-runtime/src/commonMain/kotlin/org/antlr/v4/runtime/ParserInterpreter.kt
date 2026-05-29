@@ -47,7 +47,7 @@ class ParserInterpreter(
     protected val sharedContextCache: PredictionContextCache = PredictionContextCache()
 
     @Deprecated("")
-    override var tokenNames: Array<String>? = null
+    override var tokenNames: Array<String?>? = null
     override var ruleNames: Array<String>? = null
 
     /** This stack corresponds to the _parentctx, _parentState pair of locals
@@ -182,7 +182,7 @@ class ParserInterpreter(
 
         val transition: Transition = p.transition(predictedAlt - 1)
         when (transition.serializationType) {
-            Transition.EPSILON -> if (p.stateType === ATNState.STAR_LOOP_ENTRY &&
+            Transition.EPSILON -> if (p.stateType == ATNState.STAR_LOOP_ENTRY &&
                 (p as StarLoopEntryState).isPrecedenceDecision && (transition.target !is LoopEndState)
             ) {
                 // We are at the start of a left recursive rule's (...)* loop
@@ -259,7 +259,7 @@ class ParserInterpreter(
         if (p.numberOfTransitions > 1) {
             errorHandler.sync(this)
             val decision: Int = p.decision
-            if (decision == overrideDecision && _input!!!!.index() === overrideDecisionInputIndex && !overrideDecisionReached) {
+            if (decision == overrideDecision && _input!!!!.index() == overrideDecisionInputIndex && !overrideDecisionReached) {
                 predictedAlt = overrideDecisionAlt
                 overrideDecisionReached = true
             } else {
@@ -349,7 +349,7 @@ class ParserInterpreter(
     protected fun recover(e: RecognitionException) {
         val i: Int = _input!!!!.index()
         errorHandler.recover(this, e)
-        if (_input!!!!.index() === i) {
+        if (_input!!!!.index() == i) {
             // no input consumed, better add an error node
             if (e is InputMismatchException) {
                 val ime: InputMismatchException? = e as InputMismatchException?

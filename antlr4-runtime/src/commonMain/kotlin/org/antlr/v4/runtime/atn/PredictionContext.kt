@@ -91,7 +91,7 @@ abstract class PredictionContext protected constructor(
             var stateNumber = currentState
             val localBuffer: StringBuilder = StringBuilder()
             localBuffer.append("[")
-            while (!p.isEmpty && p !== stop) {
+            while (!p.isEmpty && p != stop) {
                 var index = 0
                 if (p.size() > 0) {
                     var bits = 1
@@ -315,7 +315,7 @@ abstract class PredictionContext protected constructor(
                 return rootMerge
             }
 
-            if (a.returnState === b.returnState) { // a == b
+            if (a.returnState == b.returnState) { // a == b
                 val parent: PredictionContext? =
                     merge(
                         a.parent,
@@ -509,7 +509,7 @@ abstract class PredictionContext protected constructor(
             while (i < a.returnStates.size && j < b.returnStates.size) {
                 val a_parent: PredictionContext? = a.parents[i]
                 val b_parent: PredictionContext? = b.parents[j]
-                if (a.returnStates[i] === b.returnStates[j]) {
+                if (a.returnStates[i] == b.returnStates[j]) {
                     // same payload (stack tops are equal), must yield merged singleton
                     val payload: Int = a.returnStates[i]
                     // $+$ = $
@@ -714,7 +714,7 @@ abstract class PredictionContext protected constructor(
                         contextCache,
                         visited,
                     )
-                if (changed || parent !== context.getParent(i)) {
+                if (changed || parent != context.getParent(i)) {
                     if (!changed) {
                         parents = arrayOfNulls<PredictionContext>(context.size())
                         for (j in 0..<context.size()) {

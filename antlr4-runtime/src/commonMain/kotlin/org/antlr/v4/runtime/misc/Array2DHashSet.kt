@@ -148,7 +148,7 @@ open class Array2DHashSet<T>
             var changed = false
             for (o in elements) {
                 val existing = getOrAdd(o)
-                if (existing !== o) changed = true
+                if (existing != o) changed = true
             }
             return changed
         }

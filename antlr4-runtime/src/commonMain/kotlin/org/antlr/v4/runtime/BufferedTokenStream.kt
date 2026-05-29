@@ -150,7 +150,7 @@ open class BufferedTokenStream(
                 (t as WritableToken).tokenIndex = tokens.size
             }
             tokens.add(t)
-            if (t.type === Token.EOF) {
+            if (t.type == Token.EOF) {
                 fetchedEOF = true
                 return i + 1
             }
@@ -178,7 +178,7 @@ open class BufferedTokenStream(
         if (stop >= tokens.size) stop = tokens.size - 1
         for (i in start..stop) {
             val t: Token = tokens!!.get(i)!!
-            if (t.type === Token.EOF) break
+            if (t.type == Token.EOF) break
             subset.add(t)
         }
         return subset
@@ -308,7 +308,7 @@ open class BufferedTokenStream(
 
         var token: Token = tokens.get(i)!!
         while (token.channel != channel) {
-            if (token.type === Token.EOF) {
+            if (token.type == Token.EOF) {
                 return i
             }
 
@@ -344,7 +344,7 @@ open class BufferedTokenStream(
 
         while (i >= 0) {
             val token: Token = tokens.get(i)!!
-            if (token.type === Token.EOF || token.channel === channel) {
+            if (token.type == Token.EOF || token.channel == channel) {
                 return i
             }
 
@@ -429,12 +429,12 @@ open class BufferedTokenStream(
         for (i in from..to) {
             val t: Token = tokens!!.get(i)!!
             if (channel == -1) {
-                if (t.channel !== Lexer.DEFAULT_TOKEN_CHANNEL) hidden.add(t)
+                if (t.channel != Lexer.DEFAULT_TOKEN_CHANNEL) hidden.add(t)
             } else {
-                if (t.channel === channel) hidden.add(t)
+                if (t.channel == channel) hidden.add(t)
             }
         }
-        if (hidden.size === 0) return null
+        if (hidden.size == 0) return null
         return hidden
     }
 
@@ -455,7 +455,7 @@ open class BufferedTokenStream(
         val buf: StringBuilder = StringBuilder()
         for (i in start..stop) {
             val t: Token = tokens!!.get(i)!!
-            if (t.type === Token.EOF) break
+            if (t.type == Token.EOF) break
             buf.append(t.text)
         }
         return buf.toString()

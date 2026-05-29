@@ -82,7 +82,7 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
             throw CannotInvokeStartRule(e)
         }
 
-        if (tokens.LA(1) !== Token.EOF) {
+        if (tokens.LA(1) != Token.EOF) {
             throw StartRuleDoesNotConsumeFullPattern()
         }
 
@@ -183,7 +183,7 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
             if (chunk is TagChunk) {
                 if (chunk.tag[0].isUpperCase()) {
                     val ttype = parser.getTokenType(chunk.tag)
-                    require(ttype !== Token.INVALID_TYPE) { "Unknown token ${chunk.tag} in pattern: $pattern" }
+                    require(ttype != Token.INVALID_TYPE) { "Unknown token ${chunk.tag} in pattern: $pattern" }
                     val t = TokenTagToken(chunk.tag, ttype, chunk.label)
                     tokens.add(t)
                 } else if (chunk.tag[0].isLowerCase()) {
@@ -199,7 +199,7 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
                 val input = ANTLRInputStream(textChunk.text)
                 lexer.setInputStream(input)
                 var t = lexer.nextToken()
-                while (t.type !== Token.EOF) {
+                while (t.type != Token.EOF) {
                     tokens.add(t)
                     t = lexer.nextToken()
                 }

@@ -20,8 +20,8 @@ open class XPathLexer(input: CharStream) : Lexer(input) {
 
     @Suppress("DEPRECATION")
     @get:Deprecated("Use vocabulary instead")
-    override val tokenNames: Array<String>
-        get() = Companion.tokenNames
+    override val tokenNames: Array<String?>?
+        get() = Companion.tokenNames as Array<String?>?
 
     @Suppress("DEPRECATION")
     override val vocabulary: Vocabulary

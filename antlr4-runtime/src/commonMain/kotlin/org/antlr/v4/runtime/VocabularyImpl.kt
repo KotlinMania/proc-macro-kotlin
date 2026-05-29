@@ -140,7 +140,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
          * @return A [Vocabulary] instance which uses `tokenNames` for
          * the display names of tokens.
          */
-        fun fromTokenNames(tokenNames: Array<String>?): Vocabulary {
+        fun fromTokenNames(tokenNames: Array<String?>?): Vocabulary {
             if (tokenNames == null || tokenNames.size == 0) {
                 return org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_VOCABULARY
             }

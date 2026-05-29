@@ -45,7 +45,7 @@ abstract class CodePointCharStream private constructor(
 
     override fun consume() {
         if (size - position == 0) {
-            assert(LA(1) === IntStream.EOF)
+            assert(LA(1) == IntStream.EOF)
             throw IllegalStateException("cannot consume EOF")
         }
         position = position + 1
