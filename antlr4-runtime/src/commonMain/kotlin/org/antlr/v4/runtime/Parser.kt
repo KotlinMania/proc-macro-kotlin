@@ -119,7 +119,7 @@ abstract class Parser(
 
     /** Current input token. */
     val currentToken: Token
-        get() = _input.LT(1)!!
+        get() = _input.LT(1) ?: throw IllegalStateException("No current token available")
 
     protected val _precedenceStack: IntStack
 
@@ -430,7 +430,7 @@ abstract class Parser(
     }
 
     override val inputStream: IntStream?
-        get() = _input
+        get() = _input ?: throw IllegalStateException("No input stream available")
 
     /**
      * Notify error listeners of a syntax error.
@@ -519,7 +519,7 @@ abstract class Parser(
     ): Boolean = precedence >= _precedenceStack.peek()
 
     val tokenStream: TokenStream
-        get() = _input
+        get() = _input ?: throw IllegalStateException("No input stream available")
 
     fun getRuleInvocationStack(): List<String> = getRuleInvocationStack(_ctx)
 
