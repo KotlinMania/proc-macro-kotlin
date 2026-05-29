@@ -35,7 +35,7 @@ abstract class Parser(
         override fun visitTerminal(node: TerminalNode?) {
             println(
                 "consume " + node?.symbol + " rule " +
-                    ruleNames?.get(_ctx?.ruleIndex),
+                    ruleNames?.get(_ctx?.ruleIndex ?: 0),
             )
         }
 
@@ -81,19 +81,19 @@ abstract class Parser(
         if (o.type != IntStream.EOF) {
             _input?.consume()
         }
-        val hasListener: Boolean = _parseListeners != null && !_parseListeners.isEmpty()
+        val hasListener: Boolean = _parseListeners != null && !_parseListeners?.isEmpty()
         if (buildParseTree || hasListener) {
             if (_errHandler.inErrorRecoveryMode(this)) {
                 val node = _ctx?.addErrorNode(createErrorNode(_ctx, o))
                 if (_parseListeners != null) {
-                    for (listener in _parseListeners) {
+                    for (listener in _parseListeners ?: emptyList()) {
                         listener.visitErrorNode(node!!)
                     }
                 }
             } else {
                 val node = _ctx?.addChild(TerminalNodeImpl(o))
                 if (_parseListeners != null) {
-                    for (listener in _parseListeners) {
+                    for (listener in _parseListeners ?: emptyList()) {
                         listener.visitTerminal(node!!)
                     }
                 }
@@ -357,7 +357,7 @@ abstract class Parser(
             _parseListeners = ArrayList<ParseTreeListener>()
         }
 
-        _parseListeners.add(listener)
+        _parseListeners?.add(listener)
     }
 
     /**
@@ -374,8 +374,8 @@ abstract class Parser(
      */
     fun removeParseListener(listener: ParseTreeListener?) {
         if (_parseListeners != null) {
-            if (_parseListeners.remove(listener)) {
-                if (_parseListeners.isEmpty()) {
+            if (_parseListeners?.remove(listener)) {
+                if (_parseListeners?.isEmpty()) {
                     _parseListeners = null
                 }
             }
@@ -397,7 +397,7 @@ abstract class Parser(
      * @see .addParseListener
      */
     protected fun triggerEnterRuleEvent() {
-        for (listener in _parseListeners) {
+        for (listener in _parseListeners ?: emptyList()) {
             listener.enterEveryRule(_ctx)
             _ctx?.enterRule(listener)
         }
@@ -559,7 +559,7 @@ abstract class Parser(
         }
         if (_parseListeners != null) triggerExitRuleEvent()
         state = _ctx?.invokingState
-        _ctx = _ctx.parent as ParserRuleContext?
+        _ctx = _ctx?.parent as? ParserRuleContext
     }
 
     fun pushNewRecursionContext(
@@ -568,12 +568,12 @@ abstract class Parser(
         ruleIndex: Int,
     ) {
         val previous = _ctx
-        previous.setParent(localctx)
-        previous.invokingState = state
+        previous?.setParent(localctx)
+        previous?.invokingState = state
         _ctx = localctx
-        _ctx?.start = previous.start
+        _ctx?.start = previous?.start
         if (buildParseTree) {
-            (previous.parent as ParserRuleContext).addChild(previous)
+            (previous?.parent as? ParserRuleContext)?.addChild(previous)
         }
     }
 
@@ -594,6 +594,6 @@ abstract class Parser(
 
     protected fun addContextToParseTree() {
         val parentCtx = _ctx?.parent as? ParserRuleContext ?: return
-        parentCtx.addChild(_ctx)
+        parentCtx?.addChild(_ctx)
     }
 }
