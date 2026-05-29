@@ -20,10 +20,6 @@ class ProxyErrorListener(delegates: Collection<out ANTLRErrorListener?>) : ANTLR
     private val delegates: Collection<out ANTLRErrorListener?>
 
     init {
-        if (delegates == null) {
-            throw NullPointerException("delegates")
-        }
-
         this.delegates = delegates
     }
     override fun syntaxError(

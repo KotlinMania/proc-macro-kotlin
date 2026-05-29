@@ -168,7 +168,7 @@ class ATNSerializer(
                 continue
             }
 
-            if (s.stateType === ATNState.RULE_STOP) {
+            if (s.stateType == ATNState.RULE_STOP) {
                 continue
             }
 
@@ -314,13 +314,13 @@ class ATNSerializer(
 
             data.add(s.ruleIndex)
 
-            if (s.stateType === ATNState.LOOP_END) {
+            if (s.stateType == ATNState.LOOP_END) {
                 data.add((s as LoopEndState).loopBackState!!.stateNumber)
             } else if (s is BlockStartState) {
                 data.add((s as BlockStartState).endState!!.stateNumber)
             }
 
-            if (s.stateType !== ATNState.RULE_STOP) {
+            if (s.stateType != ATNState.RULE_STOP) {
                 // the deserializer can trivially derive these edges, so there's no need to serialize them
                 nedges += s.numberOfTransitions
             }
@@ -348,7 +348,7 @@ class ATNSerializer(
             for (set in sets) {
                 val s = set!!
                 val containsEof: Boolean = s.contains(Token.EOF)
-                if (containsEof && s.intervals.get(0).b === Token.EOF) {
+                if (containsEof && s.intervals.get(0).b == Token.EOF) {
                     data.add(s.intervals.size - 1)
                 } else {
                     data.add(s.intervals.size)
@@ -356,8 +356,8 @@ class ATNSerializer(
 
                 data.add(if (containsEof) 1 else 0)
                 for (I in s.intervals) {
-                    if (I.a === Token.EOF) {
-                        if (I.b === Token.EOF) {
+                    if (I.a == Token.EOF) {
+                        if (I.b == Token.EOF) {
                             continue
                         } else {
                             data.add(0)

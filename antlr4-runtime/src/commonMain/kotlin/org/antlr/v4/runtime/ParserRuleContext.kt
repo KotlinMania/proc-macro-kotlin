@@ -237,7 +237,7 @@ open class ParserRuleContext : RuleContext {
             if (o is TerminalNode) {
                 val tnode: TerminalNode = o as TerminalNode
                 val symbol: Token = tnode.symbol!!
-                if (symbol.type === ttype) {
+                if (symbol.type == ttype) {
                     if (tokens == null) {
                         tokens = ArrayList()
                     }

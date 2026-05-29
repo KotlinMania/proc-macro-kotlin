@@ -81,10 +81,6 @@ class ListTokenSource(
      * @exception NullPointerException if `tokens` is `null`
      */
     init {
-        if (tokens == null) {
-            throw NullPointerException("tokens cannot be null")
-        }
-
         this.tokens = tokens
         // _sourceName is set via constructor parameter
     }
@@ -150,7 +146,7 @@ class ListTokenSource(
         }
 
         val t: Token = tokens.get(i)!!
-        if (i == tokens.size - 1 && t.type === Token.EOF) {
+        if (i == tokens.size - 1 && t.type == Token.EOF) {
             eofToken = t
         }
 
@@ -176,7 +172,7 @@ class ListTokenSource(
                 val tokenText: String? = lastToken.text
                 if (tokenText != null) {
                     for (i in 0..<tokenText.length) {
-                        if (tokenText[i] === '\n') {
+                        if (tokenText[i] == '\n') {
                             line++
                         }
                     }

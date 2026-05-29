@@ -201,7 +201,7 @@ open class RuleContext : RuleNode {
         val buf: StringBuilder = StringBuilder()
         var p: RuleContext? = this
         buf.append("[")
-        while (p != null && p !== stop) {
+        while (p != null && p != stop) {
             if (ruleNames == null) {
                 if (!p.isEmpty) {
                     buf.append(p.invokingState)

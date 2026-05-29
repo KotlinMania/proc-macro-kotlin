@@ -249,7 +249,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
     @kotlin.Throws(RecognitionException::class)
     fun match(ttype: Int): Token {
         var t: Token = this.currentToken
-        if (t.type === ttype) {
+        if (t.type == ttype) {
             if (ttype == Token.EOF) {
                 this.isMatchedEOF = true
             }
@@ -257,7 +257,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             consume()
         } else {
             t = _errHandler.recoverInline(this)!!
-            if (this.buildParseTree && t.tokenIndex === -1) {
+            if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
                 _ctx!!.addErrorNode(createErrorNode(_ctx, t))
@@ -293,7 +293,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             consume()
         } else {
             t = _errHandler.recoverInline(this)!!
-            if (this.buildParseTree && t.tokenIndex === -1) {
+            if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
                 _ctx!!.addErrorNode(createErrorNode(_ctx, t))
@@ -358,10 +358,6 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
      * @throws NullPointerException if `` listener is `null`
      */
     fun addParseListener(listener: ParseTreeListener) {
-        if (listener == null) {
-            throw NullPointerException("listener")
-        }
-
         if (_parseListeners == null) {
             _parseListeners = ArrayList<ParseTreeListener>()
         }
@@ -467,10 +463,6 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
     val aTNWithBypassAlts: ATN?
         get() {
             val serializedAtn = serializedATN
-            if (serializedAtn == null) {
-                throw UnsupportedOperationException("The current parser does not support an ATN with bypass alternatives.")
-            }
-
             if (bypassAltsAtnCache == null) {
                 val deserializationOptions: ATNDeserializationOptions = ATNDeserializationOptions()
                 deserializationOptions.setGenerateRuleBypassTransitions(true)

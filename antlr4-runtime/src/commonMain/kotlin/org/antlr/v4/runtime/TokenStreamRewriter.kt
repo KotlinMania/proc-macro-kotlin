@@ -129,7 +129,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
         override fun execute(buf: StringBuilder): Int {
             buf.append(text)
             val token = tokens.get(index)
-            if (token != null && token.type !== Token.EOF) {
+            if (token != null && token.type != Token.EOF) {
                 buf.append(token.text)
             }
             return index + 1
@@ -376,7 +376,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
             val t: Token = tokens.get(i)!!
             if (op == null) {
                 // no operation at that index, just dump token
-                if (t.type !== Token.EOF) buf.append(t.text)
+                if (t.type != Token.EOF) buf.append(t.text)
                 i++ // move to next token
             } else {
                 i = op.execute(buf) // execute operation and skip
@@ -468,13 +468,13 @@ class TokenStreamRewriter(tokens: TokenStream) {
                 getKindOfOps<ReplaceOp>(rewrites, i)
             for (prevRop in prevReplaces) {
                 if (prevRop.index >= rop.index && prevRop.lastIndex <= rop.lastIndex) {
-                    rewrites[prevRop.instructionIndex] = null as RewriteOperation
+                    rewrites[prevRop.instructionIndex] = null
                     continue
                 }
                 val disjoint =
                     prevRop.lastIndex < rop.index || prevRop.index > rop.lastIndex
                 if (prevRop.text == null && rop.text == null && !disjoint) {
-                    rewrites[prevRop.instructionIndex] = null as RewriteOperation
+                    rewrites[prevRop.instructionIndex] = null
                     rop.index = minOf(prevRop.index, rop.index)
                     rop.lastIndex = maxOf(prevRop.lastIndex, rop.lastIndex)
                     println("new rop " + rop)
@@ -493,10 +493,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
                 if (prevIop.index == iop.index) {
                     if (prevIop is InsertAfterOp) {
                         iop.text = catOpText(prevIop.text, iop.text)
-                        rewrites[prevIop.instructionIndex] = null as RewriteOperation
+                        rewrites[prevIop.instructionIndex] = null
                     } else if (prevIop is InsertBeforeOp) {
                         iop.text = catOpText(iop.text, prevIop.text)
-                        rewrites[prevIop.instructionIndex] = null as RewriteOperation
+                        rewrites[prevIop.instructionIndex] = null
                     }
                 }
             }

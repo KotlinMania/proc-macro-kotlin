@@ -42,7 +42,7 @@ open class TerminalNodeImpl(override var symbol: Token?) : TerminalNode {
     }
 
     override fun toString(): String {
-        if (symbol?.type === Token.EOF) return "<EOF>"
+        if (symbol?.type == Token.EOF) return "<EOF>"
         return symbol?.text ?: "<null>"
     }
 }

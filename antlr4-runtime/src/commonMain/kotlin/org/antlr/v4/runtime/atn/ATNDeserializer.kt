@@ -172,7 +172,7 @@ class ATNDeserializer
                     val ruleTransition: RuleTransition = t as RuleTransition
                     var outermostPrecedenceReturn = -1
                     if (atn.ruleToStartState[ruleTransition.target.ruleIndex]!!.isLeftRecursiveRule) {
-                        if (ruleTransition.precedence === 0) {
+                        if (ruleTransition.precedence == 0) {
                             outermostPrecedenceReturn = ruleTransition.target.ruleIndex
                         }
                     }
@@ -272,7 +272,7 @@ class ATNDeserializer
                         // wrap from the beginning of the rule to the StarLoopEntryState
                         endState = null
                         for (state in atn.states) {
-                            if (state.ruleIndex !== i) {
+                            if (state.ruleIndex != i) {
                                 continue
                             }
 
@@ -410,7 +410,7 @@ class ATNDeserializer
                 if (state is StarLoopEntryState) {
                     val starLoopEntryState: StarLoopEntryState = state as StarLoopEntryState
                     checkCondition(starLoopEntryState.loopBackState != null)
-                    checkCondition(starLoopEntryState.numberOfTransitions === 2)
+                    checkCondition(starLoopEntryState.numberOfTransitions == 2)
 
                     if (starLoopEntryState.transition(0).target is StarBlockStartState) {
                         checkCondition(starLoopEntryState.transition(1).target is LoopEndState)
@@ -424,7 +424,7 @@ class ATNDeserializer
                 }
 
                 if (state is StarLoopbackState) {
-                    checkCondition(state.numberOfTransitions === 1)
+                    checkCondition(state.numberOfTransitions == 1)
                     checkCondition(state.transition(0).target is StarLoopEntryState)
                 }
 
@@ -603,7 +603,7 @@ class ATNDeserializer
              * into the runtime). Used only for Java Target.
              */
             fun encodeIntsWith16BitWords(data: IntList): IntList {
-                val data16: IntList = IntList((data.size() * 1.5) as Int)
+                val data16: IntList = IntList((data.size() * 1.5).toInt())
                 for (i in 0..<data.size()) {
                     var v: Int = data.get(i)
                     if (v == -1) { // use two max uint16 for -1

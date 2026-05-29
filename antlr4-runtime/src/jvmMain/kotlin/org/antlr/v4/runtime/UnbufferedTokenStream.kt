@@ -153,7 +153,7 @@ abstract class UnbufferedTokenStream<T : Token?>(
      */
     protected fun fill(n: Int): Int {
         for (i in 0..<n) {
-            if (this.n > 0 && tokens[this.n - 1]?.type === Token.EOF) {
+            if (this.n > 0 && tokens[this.n - 1]?.type == Token.EOF) {
                 return i
             }
 

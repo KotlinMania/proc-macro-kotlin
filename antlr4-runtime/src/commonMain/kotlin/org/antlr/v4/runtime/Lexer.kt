@@ -127,7 +127,7 @@ abstract class Lexer :
                         recover(e)
                         ttype = org.antlr.v4.runtime.Lexer.Companion.SKIP
                     }
-                    if (_input!!.LA(1) === IntStream.EOF) {
+                    if (_input!!.LA(1) == IntStream.EOF) {
                         _hitEOF = true
                     }
                     if (this.type == Token.INVALID_TYPE) this.type = ttype
@@ -296,7 +296,7 @@ abstract class Lexer :
 
     @Suppress("DEPRECATION")
     @get:Deprecated("Use vocabulary instead.", ReplaceWith("vocabulary"))
-    override val tokenNames: Array<String>?
+    override val tokenNames: Array<String?>?
         /** Used to print out token names like ID during debugging and
          * error reporting.  The generated parsers implement a method
          * that overrides this to point to their String[] tokenNames.
@@ -310,7 +310,7 @@ abstract class Lexer :
         get() {
             val tokens: MutableList<Token> = ArrayList()
             var t: Token = nextToken()
-            while (t.type !== Token.EOF) {
+            while (t.type != Token.EOF) {
                 tokens.add(t)
                 t = nextToken()
             }
@@ -318,7 +318,7 @@ abstract class Lexer :
         }
 
     open fun recover(e: LexerNoViableAltException?) {
-        if (_input!!.LA(1) !== IntStream.EOF) {
+        if (_input!!.LA(1) != IntStream.EOF) {
             // skip a char and try again
             interpreter!!.consume(_input!!)
         }

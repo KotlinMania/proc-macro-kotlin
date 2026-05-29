@@ -72,7 +72,7 @@ open class ATNConfigSet
             mergeCache: DoubleKeyMap<PredictionContext, PredictionContext, PredictionContext>?,
         ): Boolean {
             check(!readonly) { "This set is readonly" }
-            if (config.semanticContext !== SemanticContext.Empty.Instance) {
+            if (config.semanticContext != SemanticContext.Empty.Instance) {
                 hasSemanticContext = true
             }
             if (config.reachesIntoOuterContext > 0) {
@@ -133,7 +133,7 @@ open class ATNConfigSet
         }
 
         val predicates: List<SemanticContext>
-            get() = configs.filter { it.semanticContext !== SemanticContext.Empty.Instance }.map { it.semanticContext }
+            get() = configs.filter { it.semanticContext != SemanticContext.Empty.Instance }.map { it.semanticContext }
 
         fun get(i: Int): ATNConfig = configs[i]
 

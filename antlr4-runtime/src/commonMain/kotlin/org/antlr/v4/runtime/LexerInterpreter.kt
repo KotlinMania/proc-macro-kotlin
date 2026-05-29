@@ -26,7 +26,7 @@ class LexerInterpreter(
     @get:Deprecated("Use vocabulary instead.")
     @Deprecated("Use vocabulary instead.")
     @Suppress("CAST_NEVER_SUCCEEDS")
-    override val tokenNames: Array<String>
+    override val tokenNames: Array<String?>?
     override val ruleNames: Array<String>?
     val interpreterChannelNames: Array<String?>?
     val interpreterModeNames: Array<String?>?
@@ -73,7 +73,7 @@ class LexerInterpreter(
         for (i in tokenNamesArr.indices) {
             tokenNamesArr[i] = vocabulary.getDisplayName(i) ?: ""
         }
-        this.tokenNames = tokenNamesArr
+        this.tokenNames = tokenNamesArr as Array<String?>?
 
         this.ruleNames = ruleNames.map { it ?: "" }.toTypedArray()
         this.interpreterChannelNames = channelNames.map { it ?: "" }.toTypedArray()
