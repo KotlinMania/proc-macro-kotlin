@@ -9,7 +9,6 @@ import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.atn.ATNSimulator
 import org.antlr.v4.runtime.atn.ParseInfo
 
-
 abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     private val _listeners: MutableList<ANTLRErrorListener> = mutableListOf(ConsoleErrorListener.INSTANCE)
 
@@ -134,11 +133,22 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
     val errorListenerDispatch: ANTLRErrorListener
         get() = ProxyErrorListener(this.errorListeners)
 
-    open fun sempred(_localctx: RuleContext?, ruleIndex: Int, actionIndex: Int): Boolean = true
+    open fun sempred(
+        _localctx: RuleContext?,
+        ruleIndex: Int,
+        actionIndex: Int,
+    ): Boolean = true
 
-    open fun precpred(localctx: RuleContext?, precedence: Int): Boolean = true
+    open fun precpred(
+        localctx: RuleContext?,
+        precedence: Int,
+    ): Boolean = true
 
-    fun action(_localctx: RuleContext?, ruleIndex: Int, actionIndex: Int) {}
+    fun action(
+        _localctx: RuleContext?,
+        ruleIndex: Int,
+        actionIndex: Int,
+    ) {}
 
     abstract val inputStream: IntStream?
 

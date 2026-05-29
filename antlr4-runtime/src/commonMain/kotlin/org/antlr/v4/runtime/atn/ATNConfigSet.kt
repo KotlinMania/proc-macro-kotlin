@@ -124,7 +124,6 @@ open class ATNConfigSet
             return labels
         }
 
-
         fun getConflictingAltsResolved(): BitSet {
             if (conflictingAlts != null) return conflictingAlts!!
             val alts = BitSet()

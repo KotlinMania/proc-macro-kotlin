@@ -4,7 +4,11 @@ import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenSource
 
-class RuleTagToken(ruleName: String, bypassTokenType: Int, label: String?) : Token {
+class RuleTagToken(
+    ruleName: String,
+    bypassTokenType: Int,
+    label: String?,
+) : Token {
     val ruleName: String
     override val type: Int
     val label: String?

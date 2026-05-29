@@ -62,7 +62,7 @@ open class ParserRuleContext : RuleContext {
      *
      * This does not trace states visited during prediction.
      */
-    //	public List<Int> states;
+    // 	public List<Int> states;
     var start: Token? = null
     var stop: Token? = null
 
@@ -109,6 +109,7 @@ open class ParserRuleContext : RuleContext {
 
     // Double dispatch methods for listeners
     fun enterRule(listener: ParseTreeListener?) {}
+
     fun exitRule(listener: ParseTreeListener?) {}
 
     /** Add a parse tree node to this as a child.  Works for
@@ -128,9 +129,7 @@ open class ParserRuleContext : RuleContext {
         return t
     }
 
-    fun addChild(ruleInvocation: RuleContext): RuleContext {
-        return addAnyChild(ruleInvocation)
-    }
+    fun addChild(ruleInvocation: RuleContext): RuleContext = addAnyChild(ruleInvocation)
 
     /** Add a token leaf node child and force its parent to be this node.  */
     fun addChild(t: TerminalNode): TerminalNode? {
@@ -173,10 +172,11 @@ open class ParserRuleContext : RuleContext {
         return t
     }
 
-    //	public void trace(int s) {
-    //		if ( states==null ) states = new ArrayList<Int>();
-    //		states.add(s);
-    //	}
+    // 	public void trace(int s) {
+    // 		if ( states==null ) states = new ArrayList<Int>();
+    // 		states.add(s);
+    // 	}
+
     /** Used by enterOuterAlt to toss out a RuleContext previously added as
      * we entered a rule. If we have # label, we will need to remove
      * generic ruleContext object.
@@ -186,10 +186,13 @@ open class ParserRuleContext : RuleContext {
             children!!.removeAt(children!!.size - 1)
         }
     }
+
     val parserRuleContextParent: ParserRuleContext?
         get() = super.parent as ParserRuleContext?
+
     override fun getChild(i: Int): ParseTree? {
-        val c = children; return if (c != null && i >= 0 && i < c.size) c[i] else null
+        val c = children
+        return if (c != null && i >= 0 && i < c.size) c[i] else null
     }
 
     inline fun <reified T : ParseTree> getChildOfType(i: Int): T? {
@@ -205,8 +208,12 @@ open class ParserRuleContext : RuleContext {
         return null
     }
 
-    fun getToken(ttype: Int, i: Int): TerminalNode? {
-        val c = children; if (c == null || i < 0 || i >= c.size) {
+    fun getToken(
+        ttype: Int,
+        i: Int,
+    ): TerminalNode? {
+        val c = children
+        if (c == null || i < 0 || i >= c.size) {
             return null
         }
 
@@ -253,9 +260,7 @@ open class ParserRuleContext : RuleContext {
         return tokens
     }
 
-    inline fun <reified T : ParserRuleContext> getRuleContextOfType(i: Int): T? {
-        return getChildOfType(i)
-    }
+    inline fun <reified T : ParserRuleContext> getRuleContextOfType(i: Int): T? = getChildOfType(i)
 
     inline fun <reified T : ParserRuleContext> getRuleContextsOfType(): List<T> {
         val c = children ?: return emptyList()
@@ -267,6 +272,7 @@ open class ParserRuleContext : RuleContext {
         }
         return contexts
     }
+
     override val childCount: Int
         get() = children?.size ?: 0
     override val sourceInterval: Interval
@@ -274,7 +280,9 @@ open class ParserRuleContext : RuleContext {
             if (start == null) {
                 return Interval.INVALID
             }
-            val s = start!!; val st = stop; if (st == null || st.tokenIndex < s.tokenIndex) {
+            val s = start!!
+            val st = stop
+            if (st == null || st.tokenIndex < s.tokenIndex) {
                 return Interval.of(s.tokenIndex, s.tokenIndex - 1) // empty
             }
             return Interval.of(s.tokenIndex, st.tokenIndex)
@@ -286,26 +294,26 @@ open class ParserRuleContext : RuleContext {
      * (for example, zero length or error productions) this token may exceed stop.
      */
 
-
     /**
      * Get the final token in this context.
      * Note that the range from start to stop is inclusive, so for rules that do not consume anything
      * (for example, zero length or error productions) this token may precede start.
      */
 
-
     /** Used for rule context info debugging during parse-time, not so much for ATN debugging  */
     fun toInfoString(recognizer: Parser): String? {
         val rules: List<String?>? = recognizer.getRuleInvocationStack(this)
-        val mutableRules = rules?.toMutableList(); mutableRules?.reverse()
+        val mutableRules = rules?.toMutableList()
+        mutableRules?.reverse()
         return "ParserRuleContext" + mutableRules + "{" +
-                "start=" + start +
-                ", stop=" + stop +
-                '}'
+            "start=" + start +
+            ", stop=" + stop +
+            '}'
     }
 
     companion object {
-        val EMPTY: ParserRuleContext = org.antlr.v4.runtime.ParserRuleContext()
+        val EMPTY: ParserRuleContext =
+            org.antlr.v4.runtime
+                .ParserRuleContext()
     }
 }
-

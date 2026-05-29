@@ -1,9 +1,7 @@
 package org.antlr.v4.runtime.tree
 
 abstract class AbstractParseTreeVisitor<T> : ParseTreeVisitor<T?> {
-    override fun visit(tree: ParseTree?): T? {
-        return tree?.accept(this)
-    }
+    override fun visit(tree: ParseTree?): T? = tree?.accept(this)
 
     override fun visitChildren(node: RuleNode?): T? {
         var result = defaultResult()
@@ -21,15 +19,19 @@ abstract class AbstractParseTreeVisitor<T> : ParseTreeVisitor<T?> {
         return result
     }
 
-    override fun visitTerminal(node: TerminalNode?): T? {
-        return defaultResult()
-    }
+    override fun visitTerminal(node: TerminalNode?): T? = defaultResult()
 
-    override fun visitErrorNode(node: ErrorNode?): T? {
-        return defaultResult()
-    }
+    override fun visitErrorNode(node: ErrorNode?): T? = defaultResult()
 
     protected fun defaultResult(): T? = null
-    protected fun aggregateResult(aggregate: T?, nextResult: T?): T? = nextResult
-    protected fun shouldVisitNextChild(node: RuleNode?, currentResult: T?): Boolean = true
+
+    protected fun aggregateResult(
+        aggregate: T?,
+        nextResult: T?,
+    ): T? = nextResult
+
+    protected fun shouldVisitNextChild(
+        node: RuleNode?,
+        currentResult: T?,
+    ): Boolean = true
 }

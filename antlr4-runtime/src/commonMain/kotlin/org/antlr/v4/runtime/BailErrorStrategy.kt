@@ -43,7 +43,10 @@ class BailErrorStrategy : DefaultErrorStrategy() {
      * rule function catches.  Use [Exception.getCause] to get the
      * original [RecognitionException].
      */
-    override fun recover(recognizer: Parser?, e: RecognitionException?) {
+    override fun recover(
+        recognizer: Parser?,
+        e: RecognitionException?,
+    ) {
         var context: ParserRuleContext? = recognizer?._ctx
         while (context != null) {
             context.exception = e
@@ -72,7 +75,8 @@ class BailErrorStrategy : DefaultErrorStrategy() {
     override fun sync(recognizer: Parser?) {
     }
 
-    override fun reportError(recognizer: Parser?, e: RecognitionException?) {
-        throw ParseCancellationException(e)
-    }
+    override fun reportError(
+        recognizer: Parser?,
+        e: RecognitionException?,
+    ): Unit = throw ParseCancellationException(e)
 }

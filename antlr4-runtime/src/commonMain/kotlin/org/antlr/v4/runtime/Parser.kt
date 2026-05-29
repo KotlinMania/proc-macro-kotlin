@@ -9,15 +9,8 @@ import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.atn.ATNDeserializationOptions
 import org.antlr.v4.runtime.atn.ATNDeserializer
 import org.antlr.v4.runtime.atn.ATNSimulator
-import org.antlr.v4.runtime.atn.ATNState
-import org.antlr.v4.runtime.atn.ParseInfo
 import org.antlr.v4.runtime.atn.ParserATNSimulator
-import org.antlr.v4.runtime.atn.PredictionMode
-import org.antlr.v4.runtime.atn.ProfilingATNSimulator
-import org.antlr.v4.runtime.atn.RuleTransition
-import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.misc.IntStack
-import org.antlr.v4.runtime.misc.IntervalSet
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ErrorNodeImpl
 import org.antlr.v4.runtime.tree.ParseTreeListener
@@ -25,30 +18,33 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.tree.TerminalNodeImpl
 
 /** This is all the parsing support code essentially; most of it is error recovery stuff.  */
-abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulator>() {
+abstract class Parser(
+    input: TokenStream?,
+) : Recognizer<Token, ParserATNSimulator>() {
     override val grammarFileName: String
         get() = "unknown"
-
 
     open inner class TraceListener : ParseTreeListener {
         override fun enterEveryRule(ctx: ParserRuleContext?) {
             println(
                 "enter   " + ruleNames?.get(ctx?.ruleIndex ?: 0) +
-                        ", LT(1)=" + _input!!.LT(1)?.text
+                    ", LT(1)=" + _input!!.LT(1)?.text,
             )
         }
+
         override fun visitTerminal(node: TerminalNode?) {
             println(
                 "consume " + node?.symbol + " rule " +
-                        ruleNames?.get(_ctx!!.ruleIndex)
+                    ruleNames?.get(_ctx!!.ruleIndex),
             )
         }
+
         override fun visitErrorNode(node: ErrorNode?) {}
 
         override fun exitEveryRule(ctx: ParserRuleContext?) {
             println(
                 "exit    " + ruleNames?.get(ctx?.ruleIndex ?: 0) +
-                        ", LT(1)=" + _input!!.LT(1)?.text ?: ""
+                    ", LT(1)=" + _input!!.LT(1)?.text ?: "",
             )
         }
     }
@@ -56,8 +52,10 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
     open class TrimToSizeListener : ParseTreeListener {
         override fun enterEveryRule(ctx: ParserRuleContext?) {
         }
+
         override fun visitTerminal(node: TerminalNode?) {
         }
+
         override fun visitErrorNode(node: ErrorNode?) {}
 
         override fun exitEveryRule(ctx: ParserRuleContext?) {
@@ -70,10 +68,6 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             val INSTANCE: TrimToSizeListener = TrimToSizeListener()
         }
     }
-
-
-
-
 
     /** The input stream (set via constructor or setInputStream). */
     protected var _input: TokenStream? = null
@@ -109,13 +103,16 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
     }
 
     /** Create error node during recovery. */
-    open fun createErrorNode(ctx: ParserRuleContext?, t: Token): ErrorNode = ErrorNodeImpl(t)
+    open fun createErrorNode(
+        ctx: ParserRuleContext?,
+        t: Token,
+    ): ErrorNode = ErrorNodeImpl(t)
 
     /** Serialized ATN for bypass-alts cache. */
     open override val serializedATN: String get() = throw UnsupportedOperationException("there is no serialized ATN")
 
     /** Trace flag. */
-    protected var isTrace: Boolean = false
+    private var _trace: Boolean = false
 
     /** Bypass alts ATN cache (lazy, unsynchronized). */
     private var bypassAltsAtnCache: ATN? = null
@@ -171,7 +168,6 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
      */
     var buildParseTree: Boolean = true
 
-
     /**
      * When [.setTrace]`(true)` is called, a reference to the
      * [TraceListener] is stored here so it can be easily removed in a
@@ -217,7 +213,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         _ctx = null
         this.numberOfSyntaxErrors = 0
         this.isMatchedEOF = false
-        this.isTrace = false
+        setTrace(false)
         _precedenceStack.clear()
         _precedenceStack.push(0)
         val interp: ATNSimulator? = this.interpreter
@@ -314,7 +310,6 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             removeParseListener(Parser.TrimToSizeListener.INSTANCE)
         }
     }
-
 
     val parseListeners: List<ParseTreeListener>
         get() {
@@ -421,6 +416,7 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             listener.exitEveryRule(_ctx)
         }
     }
+
     override val tokenFactory: TokenFactory<*>?
         get() = _input?.tokenSource?.tokenFactory
 
@@ -446,7 +442,11 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
     /**
      * Notify error listeners of a syntax error with a specific token and exception.
      */
-    fun notifyErrorListeners(offendingToken: Token?, msg: String?, e: RecognitionException?) {
+    fun notifyErrorListeners(
+        offendingToken: Token?,
+        msg: String?,
+        e: RecognitionException?,
+    ) {
         numberOfSyntaxErrors++
         val line = offendingToken?.line ?: 0
         val charPositionInLine = offendingToken?.charPositionInLine ?: 0
@@ -483,7 +483,12 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
             return _precedenceStack.peek()
         }
 
-    open fun enterRecursionRule(localctx: ParserRuleContext?, state: Int, ruleIndex: Int, precedence: Int) {
+    open fun enterRecursionRule(
+        localctx: ParserRuleContext?,
+        state: Int,
+        ruleIndex: Int,
+        precedence: Int,
+    ) {
         _precedenceStack.push(precedence)
         this.state = state
         _ctx = localctx
@@ -508,12 +513,14 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         }
     }
 
-    override fun precpred(localctx: RuleContext?, precedence: Int): Boolean {
-        return precedence >= _precedenceStack.peek()
-    }
+    override fun precpred(
+        localctx: RuleContext?,
+        precedence: Int,
+    ): Boolean = precedence >= _precedenceStack.peek()
 
     val tokenStream: TokenStream
         get() = _input!!
+
     fun getRuleInvocationStack(): List<String> = getRuleInvocationStack(_ctx)
 
     fun getRuleInvocationStack(p: RuleContext?): List<String> {
@@ -522,14 +529,21 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         var ctx: RuleContext? = p
         while (ctx != null) {
             val ruleIndex = ctx.ruleIndex
-            if (ruleIndex < 0) stack.add("n/a")
-            else stack.add(ruleNames[ruleIndex])
+            if (ruleIndex < 0) {
+                stack.add("n/a")
+            } else {
+                stack.add(ruleNames[ruleIndex])
+            }
             ctx = ctx.parent as? RuleContext
         }
         return stack
     }
 
-    fun enterRule(localctx: ParserRuleContext, state: Int, ruleIndex: Int) {
+    fun enterRule(
+        localctx: ParserRuleContext,
+        state: Int,
+        ruleIndex: Int,
+    ) {
         this.state = state
         _ctx = localctx
         _ctx!!.start = _input!!.LT(1)
@@ -548,7 +562,11 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
         _ctx = _ctx!!.parent as ParserRuleContext?
     }
 
-    fun pushNewRecursionContext(localctx: ParserRuleContext, state: Int, ruleIndex: Int) {
+    fun pushNewRecursionContext(
+        localctx: ParserRuleContext,
+        state: Int,
+        ruleIndex: Int,
+    ) {
         val previous = _ctx
         previous!!.setParent(localctx)
         previous!!.invokingState = state
@@ -561,11 +579,21 @@ abstract class Parser(input: TokenStream?) : Recognizer<Token, ParserATNSimulato
 
     fun getContext(): ParserRuleContext? = _ctx
 
+    fun setTrace(trace: Boolean) {
+        if (!trace) {
+            _tracer?.let { removeParseListener(it) }
+            _tracer = null
+        } else {
+            _tracer?.let { removeParseListener(it) }
+            if (_tracer == null) _tracer = TraceListener()
+            _tracer?.let { addParseListener(it) }
+        }
+    }
 
+    fun isTrace(): Boolean = _tracer != null
 
     protected fun addContextToParseTree() {
         val parentCtx = _ctx?.parent as? ParserRuleContext ?: return
         parentCtx.addChild(_ctx!!)
     }
-
 }

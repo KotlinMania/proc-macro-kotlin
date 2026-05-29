@@ -7,7 +7,7 @@ class ParseTreeMatch(
     tree: ParseTree,
     pattern: ParseTreePattern,
     labels: MultiMap<String, ParseTree>,
-    mismatchedNode: ParseTree?
+    mismatchedNode: ParseTree?,
 ) {
     private val tree: ParseTree
     private val pattern: ParseTreePattern

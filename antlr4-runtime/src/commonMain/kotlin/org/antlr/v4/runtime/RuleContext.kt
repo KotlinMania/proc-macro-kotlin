@@ -69,7 +69,9 @@ open class RuleContext : RuleNode {
     private var _parent: RuleContext? = null
     override val parent: ParseTree? get() = _parent
 
-    override fun setParent(parent: RuleContext?) { _parent = parent }
+    override fun setParent(parent: RuleContext?) {
+        _parent = parent
+    }
 
     /** What state invoked the rule associated with this context?
      * The "return address" is the followState of invokingState
@@ -82,7 +84,7 @@ open class RuleContext : RuleNode {
 
     constructor(parent: RuleContext?, invokingState: Int) {
         this.setParent(parent)
-        //if ( parent!=null ) println("invoke "+stateNumber+" from "+parent);
+        // if ( parent!=null ) println("invoke "+stateNumber+" from "+parent);
         this.invokingState = invokingState
     }
 
@@ -143,6 +145,7 @@ open class RuleContext : RuleNode {
          * @since 4.5.3
          */
         get() = ATN.INVALID_ALT_NUMBER
+
         /** Set the outer alternative number for this context node. Default
          * implementation does nothing to avoid backing field overhead for
          * trees that don't need it.  Create
@@ -152,52 +155,47 @@ open class RuleContext : RuleNode {
          * @since 4.5.3
          */
         set(altNumber) {}
-    override fun getChild(i: Int): ParseTree? {
-        return null
-    }
+
+    override fun getChild(i: Int): ParseTree? = null
+
     override val childCount: Int
         get() = 0
-    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? {
-        return visitor?.visitChildren(this) ?: null
-    }
+
+    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? = visitor?.visitChildren(this) ?: null
 
     /** Print out a whole tree, not just a node, in LISP format
      * (root child1 .. childN). Print just a node if this is a leaf.
      * We have to know the recognizer so we can get rule names.
      */
-    override fun toStringTree(recog: Parser?): String {
-        return Trees.toStringTree(this, recog)!!
-    }
+    override fun toStringTree(recog: Parser?): String = Trees.toStringTree(this, recog)!!
 
     /** Print out a whole tree, not just a node, in LISP format
      * (root child1 .. childN). Print just a node if this is a leaf.
      */
-    fun toStringTree(ruleNames: List<String?>?): String {
-        return Trees.toStringTree(this, ruleNames)!!
-    }
-    override fun toStringTree(): String {
-        return toStringTree(null as List<String?>?)
-    }
-    override fun toString(): String {
-        return toString(null as List<String?>?, null as RuleContext?)
-    }
+    fun toStringTree(ruleNames: List<String?>?): String = Trees.toStringTree(this, ruleNames)!!
 
-    fun toString(recog: Recognizer<*, *>?): String? {
-        return toString(recog, ParserRuleContext.EMPTY)
-    }
+    override fun toStringTree(): String = toStringTree(null as List<String?>?)
 
-    fun toString(ruleNames: List<String?>?): String {
-        return toString(ruleNames, null)
-    }
+    override fun toString(): String = toString(null as List<String?>?, null as RuleContext?)
+
+    fun toString(recog: Recognizer<*, *>?): String? = toString(recog, ParserRuleContext.EMPTY)
+
+    fun toString(ruleNames: List<String?>?): String = toString(ruleNames, null)
 
     // recog null unless ParserRuleContext, in which case we use subclass toString(...)
-    fun toString(recog: Recognizer<*, *>?, stop: RuleContext?): String {
+    fun toString(
+        recog: Recognizer<*, *>?,
+        stop: RuleContext?,
+    ): String {
         val ruleNames: Array<String>? = if (recog != null) recog.ruleNames else null
         val ruleNamesList: List<String?>? = if (ruleNames != null) ruleNames.map { it as String? } else null
         return toString(ruleNamesList, stop)
     }
 
-    fun toString(ruleNames: List<String?>?, stop: RuleContext?): String {
+    fun toString(
+        ruleNames: List<String?>?,
+        stop: RuleContext?,
+    ): String {
         val buf: StringBuilder = StringBuilder()
         var p: RuleContext? = this
         buf.append("[")

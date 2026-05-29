@@ -3,7 +3,6 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
-import org.antlr.v4.runtime.assert
 
 @Deprecated("as of 4.7 Please use CharStreams interface.")
 open class ANTLRInputStream : CharStream {
@@ -85,7 +84,7 @@ open class ANTLRInputStream : CharStream {
     override val sourceName: String?
         get() {
             val n = name
-        if (n == null || n.isEmpty()) {
+            if (n == null || n.isEmpty()) {
                 return IntStream.UNKNOWN_SOURCE_NAME
             }
             return name

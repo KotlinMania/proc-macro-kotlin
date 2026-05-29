@@ -16,8 +16,14 @@ import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.RuleNode
 import org.antlr.v4.runtime.tree.TerminalNode
 
-open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
-    class CannotInvokeStartRule(e: Throwable?) : RuntimeException(e)
+open class ParseTreePatternMatcher(
+    private val lexer: Lexer,
+    parser: Parser,
+) {
+    class CannotInvokeStartRule(
+        e: Throwable?,
+    ) : RuntimeException(e)
+
     class StartRuleDoesNotConsumeFullPattern : RuntimeException()
 
     private val parser: Parser = parser
@@ -26,7 +32,11 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
     protected var stop: String = ">"
     protected var escape: String = "\\"
 
-    fun setDelimiters(start: String, stop: String, escapeLeft: String) {
+    fun setDelimiters(
+        start: String,
+        stop: String,
+        escapeLeft: String,
+    ) {
         require(start.isNotEmpty()) { "start cannot be null or empty" }
         require(stop.isNotEmpty()) { "stop cannot be null or empty" }
         this.start = start
@@ -34,40 +44,58 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
         this.escape = escapeLeft
     }
 
-    fun matches(tree: ParseTree, pattern: String, patternRuleIndex: Int): Boolean {
+    fun matches(
+        tree: ParseTree,
+        pattern: String,
+        patternRuleIndex: Int,
+    ): Boolean {
         val p = compile(pattern, patternRuleIndex)
         return matches(tree, p)
     }
 
-    fun matches(tree: ParseTree, pattern: ParseTreePattern): Boolean {
+    fun matches(
+        tree: ParseTree,
+        pattern: ParseTreePattern,
+    ): Boolean {
         val labels = MultiMap<String, ParseTree>()
         val mismatchedNode = matchImpl(tree, pattern.getPatternTree()!!, labels)
         return mismatchedNode == null
     }
 
-    fun match(tree: ParseTree, pattern: String, patternRuleIndex: Int): ParseTreeMatch {
+    fun match(
+        tree: ParseTree,
+        pattern: String,
+        patternRuleIndex: Int,
+    ): ParseTreeMatch {
         val p = compile(pattern, patternRuleIndex)
         return match(tree, p)
     }
 
-    fun match(tree: ParseTree, pattern: ParseTreePattern): ParseTreeMatch {
+    fun match(
+        tree: ParseTree,
+        pattern: ParseTreePattern,
+    ): ParseTreeMatch {
         val labels = MultiMap<String, ParseTree>()
         val mismatchedNode = matchImpl(tree, pattern.getPatternTree()!!, labels)
         return ParseTreeMatch(tree, pattern, labels, mismatchedNode)
     }
 
-    fun compile(pattern: String, patternRuleIndex: Int): ParseTreePattern {
+    fun compile(
+        pattern: String,
+        patternRuleIndex: Int,
+    ): ParseTreePattern {
         val tokenList = tokenize(pattern)
         val tokenSrc = ListTokenSource(tokenList)
         val tokens = CommonTokenStream(tokenSrc)
 
-        val parserInterp = ParserInterpreter(
-            parser.grammarFileName,
-            parser.vocabulary,
-            listOf(*(parser.ruleNames ?: emptyArray())),
-            parser.aTNWithBypassAlts!!,
-            tokens
-        )
+        val parserInterp =
+            ParserInterpreter(
+                parser.grammarFileName,
+                parser.vocabulary,
+                parser.ruleNames?.toList() ?: emptyList(),
+                parser.aTNWithBypassAlts!!,
+                tokens,
+            )
 
         var tree: ParseTree?
         try {
@@ -96,9 +124,8 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
     protected fun matchImpl(
         tree: ParseTree,
         patternTree: ParseTree,
-        labels: MultiMap<String, ParseTree>
+        labels: MultiMap<String, ParseTree>,
     ): ParseTree? {
-
         if (tree is TerminalNode && patternTree is TerminalNode) {
             var mismatchedNode: ParseTree? = null
 
@@ -220,8 +247,14 @@ open class ParseTreePatternMatcher(private val lexer: Lexer, parser: Parser) {
             when (p) {
                 pattern.indexOf(escape + start, p) -> p += escape.length + start.length
                 pattern.indexOf(escape + stop, p) -> p += escape.length + stop.length
-                pattern.indexOf(start, p) -> { starts.add(p); p += start.length }
-                pattern.indexOf(stop, p) -> { stops.add(p); p += stop.length }
+                pattern.indexOf(start, p) -> {
+                    starts.add(p)
+                    p += start.length
+                }
+                pattern.indexOf(stop, p) -> {
+                    stops.add(p)
+                    p += stop.length
+                }
                 else -> p++
             }
         }

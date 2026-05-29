@@ -5,15 +5,17 @@
  */
 package org.antlr.v4.runtime
 
-
 /**
  * This class provides a default implementation of the [Vocabulary]
  * interface.
  *
  * @author Sam Harwell
  */
-class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?>?, displayNames: Array<String?>?) :
-    Vocabulary {
+class VocabularyImpl(
+    literalNames: Array<String?>?,
+    symbolicNames: Array<String?>?,
+    displayNames: Array<String?>?,
+) : Vocabulary {
     // Because this is an actual implementation object, we can provide access methods for vocabulary symbols
     val literalNames: Array<String?>
 
@@ -64,9 +66,10 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
         this.maxTokenType =
             maxOf(
                 this.displayNames.size,
-                maxOf(this.literalNames.size, this.symbolicNames.size)
+                maxOf(this.literalNames.size, this.symbolicNames.size),
             ) - 1
     }
+
     override fun getLiteralName(tokenType: Int): String? {
         if (tokenType >= 0 && tokenType < literalNames.size) {
             return literalNames[tokenType]
@@ -74,6 +77,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
 
         return null
     }
+
     override fun getSymbolicName(tokenType: Int): String? {
         if (tokenType >= 0 && tokenType < symbolicNames.size) {
             return symbolicNames[tokenType]
@@ -85,6 +89,7 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
 
         return null
     }
+
     override fun getDisplayName(tokenType: Int): String? {
         if (tokenType >= 0 && tokenType < displayNames.size) {
             val displayName = displayNames[tokenType]
@@ -118,12 +123,12 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
          * [.getDisplayName] returns the numeric value for all tokens
          * except [Token.EOF].
          */
-        val EMPTY_VOCABULARY: VocabularyImpl = org.antlr.v4.runtime.VocabularyImpl(
-            org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_NAMES,
-            org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_NAMES,
-            org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_NAMES
-        )
-
+        val EMPTY_VOCABULARY: VocabularyImpl =
+            org.antlr.v4.runtime.VocabularyImpl(
+                org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_NAMES,
+                org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_NAMES,
+                org.antlr.v4.runtime.VocabularyImpl.Companion.EMPTY_NAMES,
+            )
 
         /**
          * Returns a [VocabularyImpl] instance from the specified set of token
@@ -169,7 +174,8 @@ class VocabularyImpl(literalNames: Array<String?>?, symbolicNames: Array<String?
                 symbolicNames[i] = null
             }
 
-            return org.antlr.v4.runtime.VocabularyImpl(literalNames, symbolicNames, tokenNames as Array<String?>?)
+            return org.antlr.v4.runtime
+                .VocabularyImpl(literalNames, symbolicNames, tokenNames as Array<String?>?)
         }
     }
 }

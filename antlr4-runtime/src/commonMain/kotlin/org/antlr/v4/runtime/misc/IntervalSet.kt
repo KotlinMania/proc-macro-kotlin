@@ -32,7 +32,10 @@ class IntervalSet : IntSet {
         add(el, el)
     }
 
-    fun add(a: Int, b: Int) {
+    fun add(
+        a: Int,
+        b: Int,
+    ) {
         add(Interval.of(a, b))
     }
 
@@ -90,18 +93,21 @@ class IntervalSet : IntSet {
         return this
     }
 
-    fun complement(minElement: Int, maxElement: Int): IntervalSet? =
-        this.complement(of(minElement, maxElement))
+    fun complement(
+        minElement: Int,
+        maxElement: Int,
+    ): IntervalSet? = this.complement(of(minElement, maxElement))
 
     override fun complement(elements: IntSet?): IntervalSet? {
         if (elements == null || elements.isNil) {
             return null
         }
-        val vocabularyIS: IntervalSet = if (elements is IntervalSet) {
-            elements
-        } else {
-            IntervalSet().also { it.addAll(elements) }
-        }
+        val vocabularyIS: IntervalSet =
+            if (elements is IntervalSet) {
+                elements
+            } else {
+                IntervalSet().also { it.addAll(elements) }
+            }
         return vocabularyIS.subtract(this)
     }
 
@@ -254,7 +260,12 @@ class IntervalSet : IntSet {
                 }
             } else {
                 if (elemAreChar) {
-                    buf.append("'").append(a.toChar()).append("'..'").append(b.toChar()).append("'")
+                    buf
+                        .append("'")
+                        .append(a.toChar())
+                        .append("'..'")
+                        .append(b.toChar())
+                        .append("'")
                 } else {
                     buf.append(a).append("..").append(b)
                 }
@@ -304,10 +315,15 @@ class IntervalSet : IntSet {
     }
 
     @Deprecated("Use {@link #elementName(Vocabulary, int)} instead.")
-    protected fun elementName(tokenNames: Array<String?>?, a: Int): String? =
-        elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
+    protected fun elementName(
+        tokenNames: Array<String?>?,
+        a: Int,
+    ): String? = elementName(VocabularyImpl.fromTokenNames(tokenNames), a)
 
-    protected fun elementName(vocabulary: Vocabulary, a: Int): String? {
+    protected fun elementName(
+        vocabulary: Vocabulary,
+        a: Int,
+    ): String? {
         if (a == Token.EOF) {
             return "<EOF>"
         } else if (a == Token.EPSILON) {
@@ -449,7 +465,10 @@ class IntervalSet : IntSet {
             return s
         }
 
-        fun of(a: Int, b: Int): IntervalSet {
+        fun of(
+            a: Int,
+            b: Int,
+        ): IntervalSet {
             val s: IntervalSet = IntervalSet()
             s.add(a, b)
             return s
@@ -461,7 +480,10 @@ class IntervalSet : IntSet {
             return r
         }
 
-        fun subtract(left: IntervalSet?, right: IntervalSet?): IntervalSet {
+        fun subtract(
+            left: IntervalSet?,
+            right: IntervalSet?,
+        ): IntervalSet {
             if (left == null || left.isNil) {
                 return IntervalSet()
             }

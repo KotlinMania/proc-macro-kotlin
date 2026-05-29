@@ -7,9 +7,8 @@ import org.antlr.v4.runtime.TokenSource
 class TokenTagToken(
     val tokenName: String?,
     override val type: Int,
-    val label: String?
+    val label: String?,
 ) : Token {
-
     constructor(tokenName: String?, type: Int) : this(tokenName, type, null)
 
     override val text: String?

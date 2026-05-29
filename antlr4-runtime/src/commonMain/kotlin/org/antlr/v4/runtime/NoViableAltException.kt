@@ -44,6 +44,4 @@ class NoViableAltException(
         this.startToken = startToken
         this.offendingToken = offendingToken
     }
-
-
 }

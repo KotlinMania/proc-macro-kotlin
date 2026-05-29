@@ -9,7 +9,6 @@ import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.IntBuffer
 import kotlin.math.pow
-import org.antlr.v4.runtime.assert
 
 /**
  * Wrapper for [ByteBuffer] / [CharBuffer] / [IntBuffer].
@@ -29,11 +28,12 @@ class CodePointBuffer private constructor(
         INT,
     }
 
-    fun position(): Int = when (type) {
-        Type.BYTE -> byteBuffer!!.position()
-        Type.CHAR -> charBuffer!!.position()
-        Type.INT -> intBuffer!!.position()
-    }
+    fun position(): Int =
+        when (type) {
+            Type.BYTE -> byteBuffer!!.position()
+            Type.CHAR -> charBuffer!!.position()
+            Type.INT -> intBuffer!!.position()
+        }
 
     fun position(newPosition: Int) {
         when (type) {
@@ -43,25 +43,28 @@ class CodePointBuffer private constructor(
         }
     }
 
-    fun remaining(): Int = when (type) {
-        Type.BYTE -> byteBuffer!!.remaining()
-        Type.CHAR -> charBuffer!!.remaining()
-        Type.INT -> intBuffer!!.remaining()
-    }
+    fun remaining(): Int =
+        when (type) {
+            Type.BYTE -> byteBuffer!!.remaining()
+            Type.CHAR -> charBuffer!!.remaining()
+            Type.INT -> intBuffer!!.remaining()
+        }
 
-    fun get(offset: Int): Int = when (type) {
-        Type.BYTE -> byteBuffer!!.get(offset).toInt() and 0xFF
-        Type.CHAR -> charBuffer!!.get(offset).toInt()
-        Type.INT -> intBuffer!!.get(offset)
-    }
+    fun get(offset: Int): Int =
+        when (type) {
+            Type.BYTE -> byteBuffer!!.get(offset).toInt() and 0xFF
+            Type.CHAR -> charBuffer!!.get(offset).toInt()
+            Type.INT -> intBuffer!!.get(offset)
+        }
 
     internal fun getType(): Type = type
 
-    internal fun arrayOffset(): Int = when (type) {
-        Type.BYTE -> byteBuffer!!.arrayOffset()
-        Type.CHAR -> charBuffer!!.arrayOffset()
-        Type.INT -> intBuffer!!.arrayOffset()
-    }
+    internal fun arrayOffset(): Int =
+        when (type) {
+            Type.BYTE -> byteBuffer!!.arrayOffset()
+            Type.CHAR -> charBuffer!!.arrayOffset()
+            Type.INT -> intBuffer!!.arrayOffset()
+        }
 
     internal fun byteArray(): ByteArray {
         assert(type == Type.BYTE)
@@ -80,22 +83,21 @@ class CodePointBuffer private constructor(
 
     companion object {
         @JvmStatic
-        fun withBytes(byteBuffer: ByteBuffer): CodePointBuffer =
-            CodePointBuffer(Type.BYTE, byteBuffer, null, null)
+        fun withBytes(byteBuffer: ByteBuffer): CodePointBuffer = CodePointBuffer(Type.BYTE, byteBuffer, null, null)
 
         @JvmStatic
-        fun withChars(charBuffer: CharBuffer): CodePointBuffer =
-            CodePointBuffer(Type.CHAR, null, charBuffer, null)
+        fun withChars(charBuffer: CharBuffer): CodePointBuffer = CodePointBuffer(Type.CHAR, null, charBuffer, null)
 
         @JvmStatic
-        fun withInts(intBuffer: IntBuffer): CodePointBuffer =
-            CodePointBuffer(Type.INT, null, null, intBuffer)
+        fun withInts(intBuffer: IntBuffer): CodePointBuffer = CodePointBuffer(Type.INT, null, null, intBuffer)
 
         @JvmStatic
         fun builder(initialBufferSize: Int): Builder = Builder(initialBufferSize)
     }
 
-    class Builder internal constructor(initialBufferSize: Int) {
+    class Builder internal constructor(
+        initialBufferSize: Int,
+    ) {
         private var type: Type = Type.BYTE
         private var byteBuffer: ByteBuffer = ByteBuffer.allocate(initialBufferSize)
         private var charBuffer: CharBuffer? = null
@@ -282,9 +284,10 @@ class CodePointBuffer private constructor(
 
         private fun byteToCharBuffer(toAppend: Int) {
             byteBuffer.flip()
-            val newBuffer = CharBuffer.allocate(
-                maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 2)
-            )
+            val newBuffer =
+                CharBuffer.allocate(
+                    maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 2),
+                )
             while (byteBuffer.hasRemaining()) {
                 newBuffer.put((byteBuffer.get().toInt() and 0xFF).toChar())
             }
@@ -295,9 +298,10 @@ class CodePointBuffer private constructor(
 
         private fun byteToIntBuffer(toAppend: Int) {
             byteBuffer.flip()
-            val newBuffer = IntBuffer.allocate(
-                maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 4)
-            )
+            val newBuffer =
+                IntBuffer.allocate(
+                    maxOf(byteBuffer.remaining() + toAppend, byteBuffer.capacity() / 4),
+                )
             while (byteBuffer.hasRemaining()) {
                 newBuffer.put(byteBuffer.get().toInt() and 0xFF)
             }
@@ -308,9 +312,10 @@ class CodePointBuffer private constructor(
 
         private fun charToIntBuffer(toAppend: Int) {
             charBuffer!!.flip()
-            val newBuffer = IntBuffer.allocate(
-                maxOf(charBuffer!!.remaining() + toAppend, charBuffer!!.capacity() / 2)
-            )
+            val newBuffer =
+                IntBuffer.allocate(
+                    maxOf(charBuffer!!.remaining() + toAppend, charBuffer!!.capacity() / 2),
+                )
             while (charBuffer!!.hasRemaining()) {
                 newBuffer.put(charBuffer!!.get().toInt() and 0xFFFF)
             }

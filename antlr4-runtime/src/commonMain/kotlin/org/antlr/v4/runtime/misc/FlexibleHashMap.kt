@@ -23,6 +23,7 @@ open class FlexibleHashMap<K, V>
                 value = newValue
                 return oldValue
             }
+
             override fun toString(): String = "$key:$value"
         }
 

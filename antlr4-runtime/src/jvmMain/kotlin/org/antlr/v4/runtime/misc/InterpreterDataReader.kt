@@ -39,10 +39,11 @@ object InterpreterDataReader {
                     symbolicNames.add(if (line == "null") "" else line)
                 }
 
-                result.vocabulary = VocabularyImpl(
-                    literalNames.toTypedArray(),
-                    symbolicNames.toTypedArray()
-                )
+                result.vocabulary =
+                    VocabularyImpl(
+                        literalNames.toTypedArray(),
+                        symbolicNames.toTypedArray(),
+                    )
 
                 line = br.readLine() ?: throw RuntimeException("Unexpected data entry")
                 if (line != "rule names:") throw RuntimeException("Unexpected data entry")

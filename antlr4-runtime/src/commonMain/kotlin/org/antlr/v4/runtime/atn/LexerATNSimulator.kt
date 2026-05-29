@@ -8,17 +8,16 @@
 package org.antlr.v4.runtime.atn
 
 import kotlinx.coroutines.InternalCoroutinesApi
-import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
-import kotlinx.coroutines.internal.SynchronizedObject
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.IntStream
 import org.antlr.v4.runtime.Lexer
 import org.antlr.v4.runtime.LexerNoViableAltException
 import org.antlr.v4.runtime.Token
+import org.antlr.v4.runtime.assert
 import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.dfa.DFAState
 import org.antlr.v4.runtime.misc.Interval
-import org.antlr.v4.runtime.assert
+import org.antlr.v4.runtime.internal.synchronized as antlrSynchronized
 
 /** "dup" of ParserInterpreter  */
 class LexerATNSimulator(
@@ -133,8 +132,9 @@ class LexerATNSimulator(
     }
 
     protected fun matchATN(input: CharStream): Int {
-        val startState: ATNState = atn?.modeToStartState?.get(mode)
-            ?: throw IllegalStateException("No/Invalid ATN state for mode $mode")
+        val startState: ATNState =
+            atn?.modeToStartState?.get(mode)
+                ?: throw IllegalStateException("No/Invalid ATN state for mode $mode")
 
         if (org.antlr.v4.runtime.atn.LexerATNSimulator.Companion.debug) {
             println("matchATN mode $mode start: $startState")
@@ -583,7 +583,7 @@ class LexerATNSimulator(
                     // ignore actions in referenced rules
                     c = LexerATNConfig(config, t.target)
                 }
-                }
+            }
 
             Transition.EPSILON -> c = LexerATNConfig(config, t.target)
             Transition.ATOM, Transition.RANGE, Transition.SET ->

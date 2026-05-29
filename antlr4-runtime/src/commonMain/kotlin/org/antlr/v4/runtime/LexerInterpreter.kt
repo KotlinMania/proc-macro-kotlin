@@ -82,9 +82,9 @@ class LexerInterpreter(
 
         val decisionToDFA = Array(atn.numberOfDecisions) { i -> DFA(atn.getDecisionState(i), i) }
         this._decisionToDFA = arrayOfNulls(atn.numberOfDecisions)
-        for (i in decisionToDFA.indices) { this._decisionToDFA[i] = decisionToDFA[i] }
+        for (i in decisionToDFA.indices) {
+            this._decisionToDFA[i] = decisionToDFA[i]
+        }
         this.interpreter = LexerATNSimulator(this, atn, decisionToDFA, _sharedContextCache)
     }
-
-
 }

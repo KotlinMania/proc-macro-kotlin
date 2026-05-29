@@ -203,8 +203,6 @@ class ListTokenSource(
             return null
         }
 
-
-
     /**
      * {@inheritDoc}
      */

@@ -5,8 +5,8 @@
  */
 package org.antlr.v4.runtime
 
-import java.io.InputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.Reader
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
@@ -25,8 +25,7 @@ object CharStreams {
     private const val DEFAULT_BUFFER_SIZE = 4096
 
     @kotlin.Throws(IOException::class)
-    fun fromPath(path: Path): CharStream =
-        fromPath(path, StandardCharsets.UTF_8)
+    fun fromPath(path: Path): CharStream = fromPath(path, StandardCharsets.UTF_8)
 
     @kotlin.Throws(IOException::class)
     fun fromPath(
@@ -47,19 +46,16 @@ object CharStreams {
     }
 
     @kotlin.Throws(IOException::class)
-    fun fromFileName(fileName: String): CharStream =
-        fromPath(Paths.get(fileName), StandardCharsets.UTF_8)
+    fun fromFileName(fileName: String): CharStream = fromPath(Paths.get(fileName), StandardCharsets.UTF_8)
 
     @kotlin.Throws(IOException::class)
     fun fromFileName(
         fileName: String,
         charset: Charset,
-    ): CharStream =
-        fromPath(Paths.get(fileName), charset)
+    ): CharStream = fromPath(Paths.get(fileName), charset)
 
     @kotlin.Throws(IOException::class)
-    fun fromStream(`is`: InputStream): CodePointCharStream =
-        fromStream(`is`, IntStream.UNKNOWN_SOURCE_NAME)
+    fun fromStream(`is`: InputStream): CodePointCharStream = fromStream(`is`, IntStream.UNKNOWN_SOURCE_NAME)
 
     @kotlin.Throws(IOException::class)
     fun fromStream(
@@ -76,8 +72,7 @@ object CharStreams {
         )
 
     @kotlin.Throws(IOException::class)
-    fun fromReader(r: Reader): CodePointCharStream =
-        fromReader(r, IntStream.UNKNOWN_SOURCE_NAME)
+    fun fromReader(r: Reader): CodePointCharStream = fromReader(r, IntStream.UNKNOWN_SOURCE_NAME)
 
     @kotlin.Throws(IOException::class)
     fun fromReader(
@@ -99,8 +94,7 @@ object CharStreams {
         }
     }
 
-    fun fromString(s: String): CodePointCharStream =
-        fromString(s, IntStream.UNKNOWN_SOURCE_NAME)
+    fun fromString(s: String): CodePointCharStream = fromString(s, IntStream.UNKNOWN_SOURCE_NAME)
 
     fun fromString(
         s: String,
@@ -120,8 +114,7 @@ object CharStreams {
         bufferSize: Int,
         decodingErrorAction: CodingErrorAction,
         sourceName: String,
-    ): CodePointCharStream =
-        fromChannel(channel, StandardCharsets.UTF_8, bufferSize, decodingErrorAction, sourceName, -1)
+    ): CodePointCharStream = fromChannel(channel, StandardCharsets.UTF_8, bufferSize, decodingErrorAction, sourceName, -1)
 
     @kotlin.Throws(IOException::class)
     fun fromChannel(

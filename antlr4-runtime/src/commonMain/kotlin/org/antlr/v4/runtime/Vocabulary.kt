@@ -34,23 +34,23 @@ interface Vocabulary {
      * <th>Rule</th>
      * <th>Literal Name</th>
      * <th>Java String Literal</th>
-    </tr> *
+     </tr> *
      * <tr>
      * <td>`THIS : 'this';`</td>
      * <td>`'this'`</td>
      * <td>`"'this'"`</td>
-    </tr> *
+     </tr> *
      * <tr>
      * <td>`SQUOTE : '\'';`</td>
      * <td>`'\''`</td>
      * <td>`"'\\''"`</td>
-    </tr> *
+     </tr> *
      * <tr>
      * <td>`ID : [A-Z]+;`</td>
      * <td>n/a</td>
      * <td>`null`</td>
-    </tr> *
-    </table> *
+     </tr> *
+     </table> *
      *
      * @param tokenType The token type.
      *
@@ -84,20 +84,20 @@ interface Vocabulary {
      * <tr>
      * <th>Rule</th>
      * <th>Symbolic Name</th>
-    </tr> *
+     </tr> *
      * <tr>
      * <td>`THIS : 'this';`</td>
      * <td>`THIS`</td>
-    </tr> *
+     </tr> *
      * <tr>
      * <td>`SQUOTE : '\'';`</td>
      * <td>`SQUOTE`</td>
-    </tr> *
+     </tr> *
      * <tr>
      * <td>`ID : [A-Z]+;`</td>
      * <td>`ID`</td>
-    </tr> *
-    </table> *
+     </tr> *
+     </table> *
      *
      * @param tokenType The token type.
      *

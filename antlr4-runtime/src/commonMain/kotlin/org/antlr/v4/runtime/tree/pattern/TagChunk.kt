@@ -1,6 +1,9 @@
 package org.antlr.v4.runtime.tree.pattern
 
-class TagChunk(label: String?, tag: String) : Chunk() {
+class TagChunk(
+    label: String?,
+    tag: String,
+) : Chunk() {
     val tag: String
     val label: String?
 
@@ -16,5 +19,4 @@ class TagChunk(label: String?, tag: String) : Chunk() {
         if (label != null) return "$label:$tag"
         return tag
     }
-
 }

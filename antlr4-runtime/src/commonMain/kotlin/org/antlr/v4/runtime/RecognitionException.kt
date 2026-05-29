@@ -44,7 +44,7 @@ open class RecognitionException : RuntimeException {
     constructor(
         recognizer: Recognizer<*, *>?,
         input: IntStream?,
-        ctx: ParserRuleContext?
+        ctx: ParserRuleContext?,
     ) {
         this.recognizer = recognizer
         this.input = input
@@ -56,7 +56,7 @@ open class RecognitionException : RuntimeException {
         message: String?,
         recognizer: Recognizer<*, *>?,
         input: IntStream?,
-        ctx: ParserRuleContext?
+        ctx: ParserRuleContext?,
     ) : super(message) {
         this.recognizer = recognizer
         this.input = input
@@ -108,10 +108,6 @@ open class RecognitionException : RuntimeException {
          */
         get() = input
 
-
-
-
-
     /**
      * Gets the [Recognizer] where this exception occurred.
      *
@@ -121,5 +117,4 @@ open class RecognitionException : RuntimeException {
      * @return The recognizer where this exception occurred, or `null` if
      * the recognizer is not available.
      */
-
 }

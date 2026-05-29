@@ -1,7 +1,6 @@
 package org.antlr.v4.runtime.tree.xpath
 
 import org.antlr.v4.runtime.tree.ParseTree
-import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
 
 class XPathWildcardElement : XPathElement(WILDCARD) {

@@ -8,7 +8,6 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.misc.Interval
-import org.antlr.v4.runtime.assert
 
 /**
  * This implementation of [TokenStream] loads tokens from a

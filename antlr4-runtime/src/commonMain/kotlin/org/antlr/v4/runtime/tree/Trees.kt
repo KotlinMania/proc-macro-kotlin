@@ -6,22 +6,26 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.atn.ATN
+import org.antlr.v4.runtime.misc.CommonUtils
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.Predicate
-import org.antlr.v4.runtime.misc.CommonUtils
 import org.antlr.v4.runtime.tree.Trees.toStringTree
 
 object Trees {
-    fun toStringTree(t: Tree): String? {
-        return toStringTree(t, null as List<String?>?)
-    }
+    fun toStringTree(t: Tree): String? = toStringTree(t, null as List<String?>?)
 
-    fun toStringTree(t: Tree, recog: Parser?): String? {
+    fun toStringTree(
+        t: Tree,
+        recog: Parser?,
+    ): String? {
         val ruleNamesList: List<String?>? = recog?.ruleNames?.toList()
         return toStringTree(t, ruleNamesList)
     }
 
-    fun toStringTree(t: Tree, ruleNames: List<String?>?): String? {
+    fun toStringTree(
+        t: Tree,
+        ruleNames: List<String?>?,
+    ): String? {
         var s: String = CommonUtils.escapeWhitespace(getNodeText(t, ruleNames) ?: "null", false)
         if (t.childCount == 0) return s
         val buf: StringBuilder = StringBuilder()
@@ -38,12 +42,18 @@ object Trees {
         return buf.toString()
     }
 
-    fun getNodeText(t: Tree, recog: Parser?): String? {
+    fun getNodeText(
+        t: Tree,
+        recog: Parser?,
+    ): String? {
         val ruleNamesList: List<String?>? = recog?.ruleNames?.toList()
         return getNodeText(t, ruleNamesList)
     }
 
-    fun getNodeText(t: Tree, ruleNames: List<String?>?): String? {
+    fun getNodeText(
+        t: Tree,
+        ruleNames: List<String?>?,
+    ): String? {
         if (ruleNames != null) {
             if (t is RuleContext) {
                 val ruleIndex: Int = t.ruleContext.ruleIndex
@@ -90,7 +100,10 @@ object Trees {
         return ancestors
     }
 
-    fun isAncestorOf(t: Tree?, u: Tree?): Boolean {
+    fun isAncestorOf(
+        t: Tree?,
+        u: Tree?,
+    ): Boolean {
         if (t == null || u == null || t.parent == null) return false
         var p: Tree? = u.parent
         while (p != null) {
@@ -100,23 +113,31 @@ object Trees {
         return false
     }
 
-    fun findAllTokenNodes(t: ParseTree, ttype: Int): Collection<ParseTree?> {
-        return findAllNodes(t, ttype, true)
-    }
+    fun findAllTokenNodes(
+        t: ParseTree,
+        ttype: Int,
+    ): Collection<ParseTree?> = findAllNodes(t, ttype, true)
 
-    fun findAllRuleNodes(t: ParseTree, ruleIndex: Int): Collection<ParseTree?> {
-        return findAllNodes(t, ruleIndex, false)
-    }
+    fun findAllRuleNodes(
+        t: ParseTree,
+        ruleIndex: Int,
+    ): Collection<ParseTree?> = findAllNodes(t, ruleIndex, false)
 
-    fun findAllNodes(t: ParseTree, index: Int, findTokens: Boolean): List<ParseTree?> {
+    fun findAllNodes(
+        t: ParseTree,
+        index: Int,
+        findTokens: Boolean,
+    ): List<ParseTree?> {
         val nodes: MutableList<ParseTree?> = ArrayList()
         _findAllNodes(t, index, findTokens, nodes)
         return nodes
     }
 
     fun _findAllNodes(
-        t: ParseTree, index: Int, findTokens: Boolean,
-        nodes: MutableList<in ParseTree?>
+        t: ParseTree,
+        index: Int,
+        findTokens: Boolean,
+        nodes: MutableList<in ParseTree?>,
     ) {
         if (findTokens && t is TerminalNode) {
             val tnode: TerminalNode = t
@@ -144,14 +165,12 @@ object Trees {
     }
 
     @Deprecated("")
-    fun descendants(t: ParseTree): List<ParseTree?> {
-        return getDescendants(t)
-    }
+    fun descendants(t: ParseTree): List<ParseTree?> = getDescendants(t)
 
     fun getRootOfSubtreeEnclosingRegion(
         t: ParseTree,
         startTokenIndex: Int,
-        stopTokenIndex: Int
+        stopTokenIndex: Int,
     ): ParserRuleContext? {
         val n: Int = t.childCount
         for (i in 0..<n) {
@@ -163,7 +182,8 @@ object Trees {
         if (t is ParserRuleContext) {
             val r: ParserRuleContext = t
             val startToken = r.start
-            if (startToken != null && startTokenIndex >= startToken.tokenIndex &&
+            if (startToken != null &&
+                startTokenIndex >= startToken.tokenIndex &&
                 (r.stop == null || stopTokenIndex <= r.stop!!.tokenIndex)
             ) {
                 return r
@@ -176,7 +196,7 @@ object Trees {
         t: ParserRuleContext?,
         root: ParserRuleContext?,
         startIndex: Int,
-        stopIndex: Int
+        stopIndex: Int,
     ) {
         if (t == null) return
         for (i in 0..<t.childCount) {
@@ -191,7 +211,10 @@ object Trees {
         }
     }
 
-    fun findNodeSuchThat(t: Tree?, pred: Predicate<Tree?>): Tree? {
+    fun findNodeSuchThat(
+        t: Tree?,
+        pred: Predicate<Tree?>,
+    ): Tree? {
         if (pred.test(t)) return t
 
         if (t == null) return null

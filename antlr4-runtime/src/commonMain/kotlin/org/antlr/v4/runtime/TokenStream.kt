@@ -62,7 +62,7 @@ interface TokenStream : IntStream {
      * for (int i = interval.a; i &lt;= interval.b; i++) {
      * text += stream.get(i).text;
      * }
-    </pre> *
+     </pre> *
      *
      * @param interval The interval of tokens within this stream to get text
      * for.
@@ -82,7 +82,7 @@ interface TokenStream : IntStream {
      * <pre>
      * TokenStream stream = ...;
      * String text = stream.getText(new Interval(0, stream.size));
-    </pre> *
+     </pre> *
      *
      * @return The text of all tokens in the stream.
      */
@@ -101,7 +101,7 @@ interface TokenStream : IntStream {
      * <pre>
      * TokenStream stream = ...;
      * String text = stream.getText(ctx.sourceInterval);
-    </pre> *
+     </pre> *
      *
      * @param ctx The context providing the source interval of tokens to get
      * text for.
@@ -130,7 +130,7 @@ interface TokenStream : IntStream {
      * for (int i = start.tokenIndex; i &lt;= stop.tokenIndex; i++) {
      * text += stream.get(i).text;
      * }
-    </pre> *
+     </pre> *
      *
      * @param start The first token in the interval to get text for.
      * @param stop The last token in the interval to get text for (inclusive).
@@ -140,5 +140,8 @@ interface TokenStream : IntStream {
      * @throws UnsupportedOperationException if this stream does not support
      * this method for the specified tokens
      */
-    fun getText(start: Token?, stop: Token?): String?
+    fun getText(
+        start: Token?,
+        stop: Token?,
+    ): String?
 }

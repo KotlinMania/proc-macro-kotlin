@@ -8,9 +8,9 @@ package org.antlr.v4.runtime.misc
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.io.IOException
 
 object Utils {
     fun <T> join(
@@ -42,8 +42,8 @@ object Utils {
     }
 
     fun numNonnull(data: Array<Any?>?): Int {
+        if (data == null) return 0
         var n = 0
-        if (data == null) return n
         for (o in data) {
             if (o != null) n++
         }
@@ -54,7 +54,6 @@ object Utils {
         data: MutableCollection<T>,
         value: T,
     ) {
-        if (data == null) return
         while (data.contains(value)) data.remove(value)
     }
 
@@ -110,8 +109,7 @@ object Utils {
     }
 
     @Throws(IOException::class)
-    fun readFile(fileName: String?): CharArray? =
-        readFile(fileName, null)
+    fun readFile(fileName: String?): CharArray? = readFile(fileName, null)
 
     @Throws(IOException::class)
     fun readFile(
@@ -202,7 +200,7 @@ object Utils {
         s: String?,
     ): String {
         val buf: StringBuilder = StringBuilder()
-        for (sp in 1..n) buf.append(s)
+        for (i in 1..n) buf.append(s)
         return buf.toString()
     }
 

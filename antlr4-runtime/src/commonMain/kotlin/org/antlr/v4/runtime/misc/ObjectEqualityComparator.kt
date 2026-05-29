@@ -8,7 +8,10 @@ class AnyEqualityComparator : AbstractEqualityComparator<Any?>() {
         return obj.hashCode()
     }
 
-    override fun equals(a: Any?, b: Any?): Boolean {
+    override fun equals(
+        a: Any?,
+        b: Any?,
+    ): Boolean {
         if (a == null) {
             return b == null
         }

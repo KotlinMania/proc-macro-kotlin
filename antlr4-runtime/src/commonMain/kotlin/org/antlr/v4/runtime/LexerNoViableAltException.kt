@@ -6,9 +6,8 @@
 package org.antlr.v4.runtime
 
 import org.antlr.v4.runtime.atn.ATNConfigSet
-import org.antlr.v4.runtime.CharStream
-import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.CommonUtils
+import org.antlr.v4.runtime.misc.Interval
 
 class LexerNoViableAltException(
     lexer: Lexer?,
@@ -23,7 +22,6 @@ class LexerNoViableAltException(
     init {
         this.deadEndConfigs = deadEndConfigs
     }
-
 
     val charStream: CharStream?
         get() = super.inputStream as CharStream?

@@ -91,9 +91,11 @@ import org.antlr.v4.runtime.misc.Interval
  * If you don't use named rewrite streams, a "default" stream is used as the
  * first example shows.
  */
-class TokenStreamRewriter(tokens: TokenStream) {
+class TokenStreamRewriter(
+    tokens: TokenStream,
+) {
     // Define the rewrite operation hierarchy
-    inner open class RewriteOperation {
+    open inner class RewriteOperation {
         /** What index into rewrites List are we?  */
         var instructionIndex: Int = 0
 
@@ -113,19 +115,21 @@ class TokenStreamRewriter(tokens: TokenStream) {
         /** Execute the rewrite operation by possibly adding to the buffer.
          * Return the index of the next token to operate on.
          */
-        open fun execute(buf: StringBuilder): Int {
-            return index
-        }
+        open fun execute(buf: StringBuilder): Int = index
+
         override fun toString(): String {
             var opName: String = this::class.simpleName ?: "RewriteOperation"
             val dollarIndex: Int = opName.indexOf("$")
             opName = opName.substring(dollarIndex + 1, opName.length)
             return "<" + opName + "@" + tokens.get(index) +
-                    ":\"" + text + "\">"
+                ":\"" + text + "\">"
         }
     }
 
-    internal inner open class InsertBeforeOp(index: Int, text: Any?) : RewriteOperation(index, text) {
+    internal open inner class InsertBeforeOp(
+        index: Int,
+        text: Any?,
+    ) : RewriteOperation(index, text) {
         override fun execute(buf: StringBuilder): Int {
             buf.append(text)
             val token = tokens.get(index)
@@ -140,25 +144,33 @@ class TokenStreamRewriter(tokens: TokenStream) {
      * first and then the "insert befores" at same index. Implementation
      * of "insert after" is "insert before index+1".
      */
-    internal inner class InsertAfterOp(index: Int, text: Any?) : InsertBeforeOp(index + 1, text)
+    internal inner class InsertAfterOp(
+        index: Int,
+        text: Any?,
+    ) : InsertBeforeOp(index + 1, text)
 
     /** I'm going to try replacing range from x..y with (y-x)+1 ReplaceOp
      * instructions.
      */
-    internal inner class ReplaceOp(from: Int, var lastIndex: Int, text: Any?) : RewriteOperation(from, text) {
+    internal inner class ReplaceOp(
+        from: Int,
+        var lastIndex: Int,
+        text: Any?,
+    ) : RewriteOperation(from, text) {
         override fun execute(buf: StringBuilder): Int {
             if (text != null) {
                 buf.append(text)
             }
             return lastIndex + 1
         }
+
         public override fun toString(): String {
             if (text == null) {
                 return "<DeleteOp@" + tokens.get(index) +
-                        ".." + tokens.get(lastIndex) + ">"
+                    ".." + tokens.get(lastIndex) + ">"
             }
             return "<ReplaceOp@" + tokens.get(index) +
-                    ".." + tokens.get(lastIndex) + ":\"" + text + "\">"
+                ".." + tokens.get(lastIndex) + ":\"" + text + "\">"
         }
     }
 
@@ -179,7 +191,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
         programs = HashMap()
         programs.put(
             DEFAULT_PROGRAM_NAME,
-            ArrayList<RewriteOperation?>(PROGRAM_INIT_SIZE)
+            ArrayList<RewriteOperation?>(PROGRAM_INIT_SIZE),
         )
         lastRewriteTokenIndexes = HashMap()
     }
@@ -195,12 +207,15 @@ class TokenStreamRewriter(tokens: TokenStream) {
      * the indicated instruction (via instructionIndex) is no
      * longer in the stream. UNTESTED!
      */
-    fun rollback(programName: String, instructionIndex: Int) {
+    fun rollback(
+        programName: String,
+        instructionIndex: Int,
+    ) {
         val `is` = programs.get(programName)
         if (`is` != null) {
             programs.put(
                 programName,
-                `is`.subList(MIN_TOKEN_INDEX, instructionIndex).toMutableList()
+                `is`.subList(MIN_TOKEN_INDEX, instructionIndex).toMutableList(),
             )
         }
     }
@@ -211,19 +226,33 @@ class TokenStreamRewriter(tokens: TokenStream) {
         rollback(programName, MIN_TOKEN_INDEX)
     }
 
-    fun insertAfter(t: Token, text: Any?) {
+    fun insertAfter(
+        t: Token,
+        text: Any?,
+    ) {
         insertAfter(DEFAULT_PROGRAM_NAME, t, text)
     }
 
-    fun insertAfter(index: Int, text: Any?) {
+    fun insertAfter(
+        index: Int,
+        text: Any?,
+    ) {
         insertAfter(DEFAULT_PROGRAM_NAME, index, text)
     }
 
-    fun insertAfter(programName: String, t: Token, text: Any?) {
+    fun insertAfter(
+        programName: String,
+        t: Token,
+        text: Any?,
+    ) {
         insertAfter(programName, t.tokenIndex, text)
     }
 
-    fun insertAfter(programName: String, index: Int, text: Any?) {
+    fun insertAfter(
+        programName: String,
+        index: Int,
+        text: Any?,
+    ) {
         // to insert after, just insert before next index (even if past end)
         val op: RewriteOperation = InsertAfterOp(index, text)
         val rewrites = getProgram(programName)
@@ -231,55 +260,97 @@ class TokenStreamRewriter(tokens: TokenStream) {
         rewrites.add(op)
     }
 
-    fun insertBefore(t: Token, text: Any?) {
+    fun insertBefore(
+        t: Token,
+        text: Any?,
+    ) {
         insertBefore(DEFAULT_PROGRAM_NAME, t, text)
     }
 
-    fun insertBefore(index: Int, text: Any?) {
+    fun insertBefore(
+        index: Int,
+        text: Any?,
+    ) {
         insertBefore(DEFAULT_PROGRAM_NAME, index, text)
     }
 
-    fun insertBefore(programName: String, t: Token, text: Any?) {
+    fun insertBefore(
+        programName: String,
+        t: Token,
+        text: Any?,
+    ) {
         insertBefore(programName, t.tokenIndex, text)
     }
 
-    fun insertBefore(programName: String, index: Int, text: Any?) {
+    fun insertBefore(
+        programName: String,
+        index: Int,
+        text: Any?,
+    ) {
         val op: RewriteOperation = InsertBeforeOp(index, text)
         val rewrites = getProgram(programName)
         op.instructionIndex = rewrites.size
         rewrites.add(op)
     }
 
-    fun replace(index: Int, text: Any?) {
+    fun replace(
+        index: Int,
+        text: Any?,
+    ) {
         replace(DEFAULT_PROGRAM_NAME, index, index, text)
     }
 
-    fun replace(from: Int, to: Int, text: Any?) {
+    fun replace(
+        from: Int,
+        to: Int,
+        text: Any?,
+    ) {
         replace(DEFAULT_PROGRAM_NAME, from, to, text)
     }
 
-    fun replace(indexT: Token, text: Any?) {
+    fun replace(
+        indexT: Token,
+        text: Any?,
+    ) {
         replace(DEFAULT_PROGRAM_NAME, indexT, indexT, text)
     }
 
-    fun replace(from: Token, to: Token, text: Any?) {
+    fun replace(
+        from: Token,
+        to: Token,
+        text: Any?,
+    ) {
         replace(DEFAULT_PROGRAM_NAME, from, to, text)
     }
 
-    fun replace(programName: String, from: Int, to: Int, text: Any?) {
-        require(!(from > to || from < 0 || to < 0 || to >= tokens.size())) { "replace: range invalid: " + from + ".." + to + "(size=" + tokens.size() + ")" }
+    fun replace(
+        programName: String,
+        from: Int,
+        to: Int,
+        text: Any?,
+    ) {
+        require(!(from > to || from < 0 || to < 0 || to >= tokens.size())) {
+            "replace: range invalid: " + from + ".." + to + "(size=" +
+                tokens.size() +
+                ")"
+        }
         val op: RewriteOperation = ReplaceOp(from, to, text)
         val rewrites = getProgram(programName)
         op.instructionIndex = rewrites.size
         rewrites.add(op)
     }
 
-    fun replace(programName: String, from: Token, to: Token, text: Any?) {
+    fun replace(
+        programName: String,
+        from: Token,
+        to: Token,
+        text: Any?,
+    ) {
         replace(
             programName,
             from.tokenIndex,
             to.tokenIndex,
-            text
+            text,
         )
     }
 
@@ -287,7 +358,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
         delete(DEFAULT_PROGRAM_NAME, index, index)
     }
 
-    fun delete(from: Int, to: Int) {
+    fun delete(
+        from: Int,
+        to: Int,
+    ) {
         delete(DEFAULT_PROGRAM_NAME, from, to)
     }
 
@@ -295,15 +369,26 @@ class TokenStreamRewriter(tokens: TokenStream) {
         delete(DEFAULT_PROGRAM_NAME, indexT, indexT)
     }
 
-    fun delete(from: Token, to: Token) {
+    fun delete(
+        from: Token,
+        to: Token,
+    ) {
         delete(DEFAULT_PROGRAM_NAME, from, to)
     }
 
-    fun delete(programName: String, from: Int, to: Int) {
+    fun delete(
+        programName: String,
+        from: Int,
+        to: Int,
+    ) {
         replace(programName, from, to, null)
     }
 
-    fun delete(programName: String, from: Token, to: Token) {
+    fun delete(
+        programName: String,
+        from: Token,
+        to: Token,
+    ) {
         replace(programName, from, to, null)
     }
 
@@ -318,7 +403,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
         return I
     }
 
-    protected fun setLastRewriteTokenIndex(programName: String, i: Int) {
+    protected fun setLastRewriteTokenIndex(
+        programName: String,
+        i: Int,
+    ) {
         lastRewriteTokenIndexes[programName] = i
     }
 
@@ -338,20 +426,20 @@ class TokenStreamRewriter(tokens: TokenStream) {
     }
 
     val text: String
-        get() = getText(
-            DEFAULT_PROGRAM_NAME,
-            Interval.of(0, tokens.size() - 1)
-        )
+        get() =
+            getText(
+                DEFAULT_PROGRAM_NAME,
+                Interval.of(0, tokens.size() - 1),
+            )
 
-    fun getText(programName: String): String {
-        return getText(programName, Interval.of(0, tokens.size() - 1))
-    }
+    fun getText(programName: String): String = getText(programName, Interval.of(0, tokens.size() - 1))
 
-    fun getText(interval: Interval): String {
-        return getText(DEFAULT_PROGRAM_NAME, interval)
-    }
+    fun getText(interval: Interval): String = getText(DEFAULT_PROGRAM_NAME, interval)
 
-    fun getText(programName: String, interval: Interval): String {
+    fun getText(
+        programName: String,
+        interval: Interval,
+    ): String {
         val rewrites = programs.get(programName)
         var start: Int = interval.a
         var stop: Int = interval.b
@@ -478,7 +566,9 @@ class TokenStreamRewriter(tokens: TokenStream) {
                     rop.index = minOf(prevRop.index, rop.index)
                     rop.lastIndex = maxOf(prevRop.lastIndex, rop.lastIndex)
                     println("new rop " + rop)
-                } else require(disjoint) { "replace op boundaries of " + rop + " overlap with previous " + prevRop }
+                } else {
+                    require(disjoint) { "replace op boundaries of " + rop + " overlap with previous " + prevRop }
+                }
             }
         }
         // WALK INSERTS
@@ -508,7 +598,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
                     rewrites[i] = null
                     continue
                 }
-                require(!(iop.index >= rop.index && iop.index <= rop.lastIndex)) { "insert op " + iop + " within boundaries of previous " + rop }
+                require(!(iop.index >= rop.index && iop.index <= rop.lastIndex)) {
+                    "insert op " + iop + " within boundaries of previous " +
+                        rop
+                }
             }
         }
         val m: MutableMap<Int, RewriteOperation> = HashMap()
@@ -523,7 +616,10 @@ class TokenStreamRewriter(tokens: TokenStream) {
         return m
     }
 
-    protected fun catOpText(a: Any?, b: Any?): String? {
+    protected fun catOpText(
+        a: Any?,
+        b: Any?,
+    ): String? {
         var x: String? = ""
         var y: String? = ""
         if (a != null) x = a.toString()
@@ -534,7 +630,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
     /** Get all operations before an index of a particular kind  */
     protected inline fun <reified T : RewriteOperation> getKindOfOps(
         rewrites: List<RewriteOperation?>,
-        before: Int
+        before: Int,
     ): List<T> {
         val ops = ArrayList<T>()
         for (i in 0 until minOf(before, rewrites.size)) {
@@ -547,7 +643,7 @@ class TokenStreamRewriter(tokens: TokenStream) {
     }
 
     companion object {
-        val DEFAULT_PROGRAM_NAME: String = "default"
+        const val DEFAULT_PROGRAM_NAME = "default"
         const val PROGRAM_INIT_SIZE: Int = 100
         const val MIN_TOKEN_INDEX: Int = 0
     }

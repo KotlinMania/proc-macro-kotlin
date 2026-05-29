@@ -8,7 +8,10 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ParseTree
 
-open class XPath(protected var parser: Parser, path: String) {
+open class XPath(
+    protected var parser: Parser,
+    path: String,
+) {
     protected var elements: Array<XPathElement>
 
     companion object {
@@ -16,7 +19,11 @@ open class XPath(protected var parser: Parser, path: String) {
         const val NOT: String = "!"
         const val TOKEN_EXT: String = "//"
 
-        fun findAll(tree: ParseTree?, xpath: String, parser: Parser): Collection<ParseTree?> {
+        fun findAll(
+            tree: ParseTree?,
+            xpath: String,
+            parser: Parser,
+        ): Collection<ParseTree?> {
             val p = XPath(parser, xpath)
             return p.evaluate(tree!!)
         }
@@ -28,11 +35,12 @@ open class XPath(protected var parser: Parser, path: String) {
 
     fun split(path: String): Array<XPathElement> {
         val `in` = ANTLRInputStream(path)
-        val lexer: XPathLexer = object : XPathLexer(`in`) {
-            override fun recover(e: LexerNoViableAltException?) {
-                if (e != null) throw e
+        val lexer: XPathLexer =
+            object : XPathLexer(`in`) {
+                override fun recover(e: LexerNoViableAltException?) {
+                    if (e != null) throw e
+                }
             }
-        }
         lexer.removeErrorListeners()
         lexer.addErrorListener(XPathLexerErrorListener)
         val tokenStream = CommonTokenStream(lexer)
@@ -80,7 +88,10 @@ open class XPath(protected var parser: Parser, path: String) {
         return elements.toTypedArray()
     }
 
-    protected fun getXPathElement(wordToken: Token?, anywhere: Boolean): XPathElement {
+    protected fun getXPathElement(
+        wordToken: Token?,
+        anywhere: Boolean,
+    ): XPathElement {
         val token = wordToken ?: throw IllegalArgumentException("Null token")
         require(token.type != Token.EOF) { "Missing path element at end of path" }
         val word = token.text ?: throw IllegalArgumentException("Null token text")
@@ -91,7 +102,7 @@ open class XPath(protected var parser: Parser, path: String) {
             XPathLexer.TOKEN_REF, XPathLexer.STRING -> {
                 if (ttype == Token.INVALID_TYPE) {
                     throw IllegalArgumentException(
-                        "$word at index ${token.startIndex} isn't a valid token name"
+                        "$word at index ${token.startIndex} isn't a valid token name",
                     )
                 }
                 if (anywhere) XPathTokenAnywhereElement(word, ttype) else XPathTokenElement(word, ttype)
@@ -99,7 +110,7 @@ open class XPath(protected var parser: Parser, path: String) {
             else -> {
                 if (ruleIndex == -1) {
                     throw IllegalArgumentException(
-                        "$word at index ${token.startIndex} isn't a valid rule name"
+                        "$word at index ${token.startIndex} isn't a valid rule name",
                     )
                 }
                 if (anywhere) XPathRuleAnywhereElement(word, ruleIndex) else XPathRuleElement(word, ruleIndex)

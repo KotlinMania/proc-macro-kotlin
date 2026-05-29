@@ -7,8 +7,8 @@ package org.antlr.v4.runtime.atn
 
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.RuleContext
-import org.antlr.v4.runtime.misc.MurmurHash
 import org.antlr.v4.runtime.misc.CommonUtils
+import org.antlr.v4.runtime.misc.MurmurHash
 
 abstract class SemanticContext {
     abstract fun eval(

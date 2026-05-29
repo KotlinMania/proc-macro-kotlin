@@ -221,6 +221,6 @@ interface IntStream {
          * The value returned by [.getSourceName] when the actual name of the
          * underlying source is not known.
          */
-        val UNKNOWN_SOURCE_NAME: String = "<unknown>"
+        const val UNKNOWN_SOURCE_NAME = "<unknown>"
     }
 }

@@ -96,8 +96,6 @@ abstract class ATNState {
 
     fun onlyHasEpsilonTransitions(): Boolean = epsilonOnlyTransitions
 
-
-
     companion object {
         const val INITIAL_NUM_TRANSITIONS: Int = 4
 
