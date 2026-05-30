@@ -48,6 +48,13 @@ __pycache__/
 .android-sdk/
 local.properties
 
+# Local scratch / debugging artifacts (per workspace hygiene: scratch lives
+# under automation-artifacts/, not tracked at the repo root)
+*.bak
+errors.txt
+antlr4_warnings.txt
+antlr4_current_errors.txt
+
 # Swift Package Manager / Xcode workspace state.
 #
 # `swift-test-harness/` is a real SPM package that exercises the Kotlin
