@@ -72,7 +72,7 @@ class LogManager {
     fun save(): String {
         val dir = "."
         val defaultFilename =
-            dir.toString() + "/antlr-" +
+            dir + "/antlr-" +
                 SimpleDateFormat("yyyy-MM-dd-HH.mm.ss").format(Date()) + ".log"
         save(defaultFilename)
         return defaultFilename

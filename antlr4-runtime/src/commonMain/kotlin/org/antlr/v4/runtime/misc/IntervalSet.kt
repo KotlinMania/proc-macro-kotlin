@@ -277,7 +277,7 @@ class IntervalSet : IntSet {
         if (this.size() > 1) {
             buf.append("}")
         }
-        return buf.toString()!!
+        return buf.toString()
     }
 
     @Deprecated("Use {@link #toString(Vocabulary)} instead.")
@@ -311,7 +311,7 @@ class IntervalSet : IntSet {
         if (this.size() > 1) {
             buf.append("}")
         }
-        return buf.toString()!!
+        return buf.toString()
     }
 
     @Deprecated("Use {@link #elementName(Vocabulary, int)} instead.")

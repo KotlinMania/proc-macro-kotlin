@@ -169,7 +169,7 @@ class ATNDeserializer
                         continue
                     }
 
-                    val ruleTransition: RuleTransition = t as RuleTransition
+                    val ruleTransition: RuleTransition = t
                     var outermostPrecedenceReturn = -1
                     if (atn.ruleToStartState[ruleTransition.target.ruleIndex]!!.isLeftRecursiveRule) {
                         if (ruleTransition.precedence == 0) {
@@ -186,28 +186,28 @@ class ATNDeserializer
             for (state in atn.states) {
                 if (state is BlockStartState) {
                     // we need to know the end state to set its start state
-                    checkNotNull((state as BlockStartState).endState)
+                    checkNotNull((state).endState)
 
                     // block end states can only be associated to a single block start state
-                    check((state as BlockStartState).endState!!.startState == null)
+                    check((state).endState!!.startState == null)
 
-                    (state as BlockStartState).endState!!.startState = state as BlockStartState
+                    (state).endState!!.startState = state
                 }
 
                 if (state is PlusLoopbackState) {
-                    val loopbackState: PlusLoopbackState = state as PlusLoopbackState
+                    val loopbackState: PlusLoopbackState = state
                     for (i in 0..<loopbackState.numberOfTransitions) {
                         val target: ATNState = loopbackState.transition(i).target
                         if (target is PlusBlockStartState) {
-                            (target as PlusBlockStartState).loopBackState = loopbackState
+                            (target).loopBackState = loopbackState
                         }
                     }
                 } else if (state is StarLoopbackState) {
-                    val loopbackState: StarLoopbackState = state as StarLoopbackState
+                    val loopbackState: StarLoopbackState = state
                     for (i in 0..<loopbackState.numberOfTransitions) {
                         val target: ATNState = loopbackState.transition(i).target
                         if (target is StarLoopEntryState) {
-                            (target as StarLoopEntryState).loopBackState = loopbackState
+                            (target).loopBackState = loopbackState
                         }
                     }
                 }
@@ -246,7 +246,7 @@ class ATNDeserializer
                 verifyATN(atn)
             }
 
-            if (deserializationOptions!!.isGenerateRuleBypassTransitions() && atn.grammarType === ATNType.PARSER) {
+            if (deserializationOptions.isGenerateRuleBypassTransitions() && atn.grammarType === ATNType.PARSER) {
                 atn.ruleToTokenType = IntArray(atn.ruleToStartState.size)
                 for (i in 0..<atn.ruleToStartState.size) {
                     atn.ruleToTokenType[i] = atn.maxTokenType + i + 1
@@ -330,7 +330,7 @@ class ATNDeserializer
                     bypassStart.addTransition(EpsilonTransition(matchState))
                 }
 
-                if (deserializationOptions!!.isVerifyATN()) {
+                if (deserializationOptions.isVerifyATN()) {
                     // reverify after modification
                     verifyATN(atn)
                 }
@@ -387,7 +387,7 @@ class ATNDeserializer
                     val maybeLoopEndState: ATNState = state.transition(state.numberOfTransitions - 1).target
                     if (maybeLoopEndState is LoopEndState) {
                         if (maybeLoopEndState.epsilonOnlyTransitions && maybeLoopEndState.transition(0).target is RuleStopState) {
-                            (state as StarLoopEntryState).isPrecedenceDecision = true
+                            (state).isPrecedenceDecision = true
                         }
                     }
                 }
@@ -400,11 +400,11 @@ class ATNDeserializer
                 checkCondition(state.onlyHasEpsilonTransitions() || state.numberOfTransitions <= 1)
 
                 if (state is PlusBlockStartState) {
-                    checkCondition((state as PlusBlockStartState).loopBackState != null)
+                    checkCondition((state).loopBackState != null)
                 }
 
                 if (state is StarLoopEntryState) {
-                    val starLoopEntryState: StarLoopEntryState = state as StarLoopEntryState
+                    val starLoopEntryState: StarLoopEntryState = state
                     checkCondition(starLoopEntryState.loopBackState != null)
                     checkCondition(starLoopEntryState.numberOfTransitions == 2)
 
@@ -425,23 +425,23 @@ class ATNDeserializer
                 }
 
                 if (state is LoopEndState) {
-                    checkCondition((state as LoopEndState).loopBackState != null)
+                    checkCondition((state).loopBackState != null)
                 }
 
                 if (state is RuleStartState) {
-                    checkCondition((state as RuleStartState).stopState != null)
+                    checkCondition((state).stopState != null)
                 }
 
                 if (state is BlockStartState) {
-                    checkCondition((state as BlockStartState).endState != null)
+                    checkCondition((state).endState != null)
                 }
 
                 if (state is BlockEndState) {
-                    checkCondition((state as BlockEndState).startState != null)
+                    checkCondition((state).startState != null)
                 }
 
                 if (state is DecisionState) {
-                    val decisionState: DecisionState = state as DecisionState
+                    val decisionState: DecisionState = state
                     checkCondition(decisionState.numberOfTransitions <= 1 || decisionState.decision >= 0)
                 } else {
                     checkCondition(state.numberOfTransitions <= 1 || state is RuleStopState)

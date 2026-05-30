@@ -108,7 +108,7 @@ abstract class UnbufferedTokenStream<T : Token?>(
     override val text: String?
         get() = ""
 
-    fun textForContext(ctx: RuleContext): String = getText(ctx.sourceInterval)!!
+    fun textForContext(ctx: RuleContext): String = getText(ctx.sourceInterval)
 
     fun textForRange(
         start: Token,

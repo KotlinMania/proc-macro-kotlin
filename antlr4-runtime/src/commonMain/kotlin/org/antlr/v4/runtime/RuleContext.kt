@@ -161,7 +161,7 @@ open class RuleContext : RuleNode {
     override val childCount: Int
         get() = 0
 
-    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? = visitor?.visitChildren(this) ?: null
+    override fun <T> accept(visitor: ParseTreeVisitor<out T?>?): T? = visitor?.visitChildren(this)
 
     /** Print out a whole tree, not just a node, in LISP format
      * (root child1 .. childN). Print just a node if this is a leaf.

@@ -40,8 +40,8 @@ class FailedPredicateException(
 
         val trans: AbstractPredicateTransition = s.transition(0) as AbstractPredicateTransition
         if (trans is PredicateTransition) {
-            this.ruleIndex = (trans as PredicateTransition).ruleIndex
-            this.predIndex = (trans as PredicateTransition).predIndex
+            this.ruleIndex = (trans).ruleIndex
+            this.predIndex = (trans).predIndex
         } else {
             this.ruleIndex = 0
             this.predIndex = 0

@@ -88,7 +88,7 @@ object Trees {
         return kids
     }
 
-    fun getAncestors(t: Tree?): List<out Tree?> {
+    fun getAncestors(t: Tree?): List<Tree?> {
         var t: Tree? = t
         if (t?.parent == null) return emptyList()
         val ancestors: MutableList<Tree?> = ArrayList()

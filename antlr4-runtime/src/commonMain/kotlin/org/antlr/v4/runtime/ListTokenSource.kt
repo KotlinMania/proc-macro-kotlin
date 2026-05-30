@@ -17,13 +17,13 @@ import org.antlr.v4.runtime.misc.Pair
  * list is reached. Otherwise, an EOF token will be created.
  */
 class ListTokenSource(
-    tokens: List<out Token?>,
+    tokens: List<Token?>,
     _sourceName: String?,
 ) : TokenSource {
     /**
      * The wrapped collection of [Token] objects to return.
      */
-    protected val tokens: List<out Token?>
+    protected val tokens: List<Token?>
 
     /**
      * The name of the input source. If this value is `null`, the source name
@@ -65,7 +65,7 @@ class ListTokenSource(
      * [TokenSource].
      * @exception NullPointerException if `tokens` is `null`
      */
-    constructor(tokens: List<out Token?>) : this(tokens, null)
+    constructor(tokens: List<Token?>) : this(tokens, null)
 
     /**
      * Constructs a new [ListTokenSource] instance from the specified

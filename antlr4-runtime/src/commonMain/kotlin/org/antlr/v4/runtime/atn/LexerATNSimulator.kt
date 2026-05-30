@@ -366,7 +366,7 @@ class LexerATNSimulator(
                     val treatEofAsEpsilon = t == IntStream.EOF
                     if (closure(
                             input,
-                            LexerATNConfig(c as LexerATNConfig, target, lexerActionExecutor),
+                            LexerATNConfig(c, target, lexerActionExecutor),
                             reach,
                             currentAltReachedAcceptState,
                             true,

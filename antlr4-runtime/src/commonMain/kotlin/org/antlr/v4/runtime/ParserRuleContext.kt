@@ -99,7 +99,7 @@ open class ParserRuleContext : RuleContext {
             // reset parent pointer for any error nodes
             for (child in ctx.children) {
                 if (child is ErrorNode) {
-                    addChild(child as ErrorNode)
+                    addChild(child)
                 }
             }
         }
@@ -220,7 +220,7 @@ open class ParserRuleContext : RuleContext {
         var j = -1
         for (o in c) {
             if (o is TerminalNode) {
-                val tnode: TerminalNode = o as TerminalNode
+                val tnode: TerminalNode = o
                 val symbol: Token = tnode.symbol!!
                 if (symbol.type == ttype) {
                     j++
@@ -242,7 +242,7 @@ open class ParserRuleContext : RuleContext {
         var tokens: MutableList<TerminalNode>? = null
         for (o in children!!) {
             if (o is TerminalNode) {
-                val tnode: TerminalNode = o as TerminalNode
+                val tnode: TerminalNode = o
                 val symbol: Token = tnode.symbol!!
                 if (symbol.type == ttype) {
                     if (tokens == null) {

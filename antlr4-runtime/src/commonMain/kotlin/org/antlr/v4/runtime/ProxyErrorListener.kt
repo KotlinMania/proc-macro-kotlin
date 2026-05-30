@@ -17,9 +17,9 @@ import org.antlr.v4.runtime.misc.BitSet
  * @author Sam Harwell
  */
 class ProxyErrorListener(
-    delegates: Collection<out ANTLRErrorListener?>,
+    delegates: Collection<ANTLRErrorListener?>,
 ) : ANTLRErrorListener {
-    private val delegates: Collection<out ANTLRErrorListener?>
+    private val delegates: Collection<ANTLRErrorListener?>
 
     init {
         this.delegates = delegates

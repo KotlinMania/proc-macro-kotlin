@@ -83,8 +83,6 @@ abstract class UnbufferedCharStream(
     var name: String? = null
 
     /** Useful for subclasses that pull char from other than this.input.  */
-
-    /** Useful for subclasses that pull char from other than this.input.  */
     init {
         data = IntArray(bufferSize)
     }
@@ -279,30 +277,32 @@ abstract class UnbufferedCharStream(
 
     override val sourceName: String
         get() {
-            if (name == null || name!!.isEmpty()) {
+            val n = name
+            if (n == null || n.isEmpty()) {
                 return IntStream.UNKNOWN_SOURCE_NAME
             }
 
-            return name!!
+            return n
         }
 
     override fun getText(interval: Interval?): String? {
-        require(!(interval!!.a < 0 || interval!!.b < interval!!.a - 1)) { "invalid interval" }
+        val iv = interval!!
+        require(!(iv.a < 0 || iv.b < iv.a - 1)) { "invalid interval" }
 
         val bufferStartIndex = this.bufferStartIndex
         if (n > 0 && data[n - 1] == IntStream.EOF) {
-            require(!(interval!!.a + interval!!.length() > bufferStartIndex + n)) { "the interval extends past the end of the stream" }
+            require(!(iv.a + iv.length() > bufferStartIndex + n)) { "the interval extends past the end of the stream" }
         }
 
-        if (interval!!.a < bufferStartIndex || interval!!.b >= bufferStartIndex + n) {
+        if (iv.a < bufferStartIndex || iv.b >= bufferStartIndex + n) {
             throw UnsupportedOperationException(
-                "interval " + interval + " outside buffer: " +
+                "interval " + iv + " outside buffer: " +
                     bufferStartIndex + ".." + (bufferStartIndex + n - 1),
             )
         }
         // convert from absolute to local index
-        val i: Int = interval!!.a - bufferStartIndex
-        val len = interval!!.length()
+        val i: Int = iv.a - bufferStartIndex
+        val len = iv.length()
         val buf = StringBuilder(len)
         for (j in 0..<len) {
             buf.appendCodePoint(data[i + j])

@@ -91,7 +91,7 @@ class ParserInterpreter(
         input: TokenStream?,
     ) : this(
         grammarFileName,
-        VocabularyImpl.fromTokenNames(tokenNames.toTypedArray().map { it ?: "" }.toTypedArray()),
+        VocabularyImpl.fromTokenNames(tokenNames.toTypedArray().map { it }.toTypedArray()),
         ruleNames,
         atn,
         input,
@@ -100,7 +100,7 @@ class ParserInterpreter(
     init {
         this.tokenNames = Array(atn.maxTokenType) { "" }
         for (i in 0..<atn.maxTokenType) {
-            tokenNames[i] = vocabulary.getDisplayName(i) ?: ""
+            tokenNames!![i] = vocabulary.getDisplayName(i) ?: ""
         }
 
         this.ruleNames = ruleNames.map { it }.toTypedArray() as Array<String>?
@@ -130,13 +130,13 @@ class ParserInterpreter(
 
     /** Begin parsing at startRuleIndex  */
     fun parse(startRuleIndex: Int): ParserRuleContext? {
-        val startRuleStartState: RuleStartState = atn.ruleToStartState[startRuleIndex]
+        val startRuleStartState: RuleStartState = atn.ruleToStartState[startRuleIndex]!!
 
         rootContext = createInterpreterRuleContext(null, ATNState.INVALID_STATE_NUMBER, startRuleIndex)
         if (startRuleStartState.isLeftRecursiveRule) {
             enterRecursionRule(rootContext, startRuleStartState.stateNumber, startRuleIndex, 0)
         } else {
-            enterRule(rootContext, startRuleStartState.stateNumber, startRuleIndex)
+            enterRule(rootContext!!, startRuleStartState.stateNumber, startRuleIndex)
         }
 
         while (true) {
@@ -184,7 +184,7 @@ class ParserInterpreter(
     }
 
     protected val aTNState: ATNState
-        get() = atn.states[state]!!
+        get() = atn.states[state]
 
     protected fun visitState(p: ATNState) {
 // 		println("visitState "+p.stateNumber);
@@ -217,7 +217,7 @@ class ParserInterpreter(
 
             Transition.ATOM -> match((transition as AtomTransition).label)
             Transition.RANGE, Transition.SET, Transition.NOT_SET -> {
-                if (!transition.matches(_input!!!!.LA(1), Token.MIN_USER_TOKEN_TYPE, 65535)) {
+                if (!transition.matches(_input!!.LA(1), Token.MIN_USER_TOKEN_TYPE, 65535)) {
                     recoverInline()
                 }
                 matchWildcard()
@@ -256,7 +256,7 @@ class ParserInterpreter(
                 if (!precpred(_ctx, (transition as PrecedencePredicateTransition).precedence)) {
                     throw FailedPredicateException(
                         this,
-                        "precpred(_ctx, ${(transition as PrecedencePredicateTransition).precedence})",
+                        "precpred(_ctx, ${(transition).precedence})",
                     )
                 }
 
@@ -275,7 +275,7 @@ class ParserInterpreter(
         if (p.numberOfTransitions > 1) {
             errorHandler.sync(this)
             val decision: Int = p.decision
-            if (decision == overrideDecision && _input!!!!.index() == overrideDecisionInputIndex && !overrideDecisionReached) {
+            if (decision == overrideDecision && _input!!.index() == overrideDecisionInputIndex && !overrideDecisionReached) {
                 predictedAlt = overrideDecisionAlt
                 overrideDecisionReached = true
             } else {
@@ -304,7 +304,7 @@ class ParserInterpreter(
             exitRule()
         }
 
-        val ruleTransition: RuleTransition = atn.states[state]!!.transition(0) as RuleTransition
+        val ruleTransition: RuleTransition = atn.states[state].transition(0) as RuleTransition
         state = ruleTransition.followState.stateNumber
     }
 
@@ -363,9 +363,9 @@ class ParserInterpreter(
      * tree.
      */
     protected fun recover(e: RecognitionException) {
-        val i: Int = _input!!!!.index()
+        val i: Int = _input!!.index()
         errorHandler.recover(this, e)
-        if (_input!!!!.index() == i) {
+        if (_input!!.index() == i) {
             // no input consumed, better add an error node
             if (e is InputMismatchException) {
                 val ime: InputMismatchException? = e as InputMismatchException?
@@ -385,8 +385,7 @@ class ParserInterpreter(
                         -1, // invalid start/stop
                         tok.line,
                         tok.charPositionInLine,
-                    ) as Token?
-                _ctx!!.addErrorNode(createErrorNode(_ctx!!, errToken!!))
+                    )                _ctx!!.addErrorNode(createErrorNode(_ctx!!, errToken!!))
             } else { // NoViableAlt
                 val tok: Token = e.offendingToken!!
                 val errToken: Token? =
@@ -399,8 +398,7 @@ class ParserInterpreter(
                         -1, // invalid start/stop
                         tok.line,
                         tok.charPositionInLine,
-                    ) as Token?
-                _ctx!!.addErrorNode(createErrorNode(_ctx!!, errToken!!))
+                    )                _ctx!!.addErrorNode(createErrorNode(_ctx!!, errToken!!))
             }
         }
     }

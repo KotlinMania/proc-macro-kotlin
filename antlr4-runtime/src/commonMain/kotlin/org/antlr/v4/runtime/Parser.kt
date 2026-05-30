@@ -44,7 +44,7 @@ abstract class Parser(
         override fun exitEveryRule(ctx: ParserRuleContext?) {
             println(
                 "exit    " + ruleNames?.get(ctx?.ruleIndex ?: 0) +
-                    ", LT(1)=" + _input?.LT(1)?.text ?: "",
+                    ", LT(1)=" + _input?.LT(1)?.text,
             )
         }
     }
@@ -81,7 +81,7 @@ abstract class Parser(
         if (o.type != IntStream.EOF) {
             _input?.consume()
         }
-        val hasListener: Boolean = _parseListeners != null && !_parseListeners?.isEmpty()
+        val hasListener: Boolean = _parseListeners != null && _parseListeners?.isEmpty() == false == true
         if (buildParseTree || hasListener) {
             if (_errHandler.inErrorRecoveryMode(this)) {
                 val node = _ctx?.addErrorNode(createErrorNode(_ctx, o))
@@ -119,7 +119,7 @@ abstract class Parser(
 
     /** Current input token. */
     val currentToken: Token
-        get() = _input.LT(1) ?: throw IllegalStateException("No current token available")
+        get() = _input?.LT(1) ?: throw IllegalStateException("No current token available")
 
     protected val _precedenceStack: IntStack
 
@@ -252,7 +252,7 @@ abstract class Parser(
             _errHandler.reportMatch(this)
             consume()
         } else {
-            t = _errHandler.recoverInline(this)
+            t = _errHandler.recoverInline(this)!!
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
@@ -288,7 +288,7 @@ abstract class Parser(
             _errHandler.reportMatch(this)
             consume()
         } else {
-            t = _errHandler.recoverInline(this)
+            t = _errHandler.recoverInline(this)!!
             if (this.buildParseTree && t.tokenIndex == -1) {
                 // we must have conjured up a new token during single token insertion
                 // if it's not the current symbol
@@ -374,8 +374,8 @@ abstract class Parser(
      */
     fun removeParseListener(listener: ParseTreeListener?) {
         if (_parseListeners != null) {
-            if (_parseListeners?.remove(listener)) {
-                if (_parseListeners?.isEmpty()) {
+            if (_parseListeners?.remove(listener) == true) {
+                if (_parseListeners?.isEmpty() == true) {
                     _parseListeners = null
                 }
             }
@@ -502,14 +502,14 @@ abstract class Parser(
         if (_parseListeners != null) {
             while (_ctx != _parentctx) {
                 triggerExitRuleEvent()
-                _ctx = _ctx.parent as ParserRuleContext
+                _ctx = _ctx?.parent as ParserRuleContext
             }
         } else {
             _ctx = _parentctx
         }
-        retctx.setParent(_parentctx)
+        retctx?.setParent(_parentctx!! as RuleContext)
         if (buildParseTree && _parentctx != null) {
-            _parentctx.addChild(retctx)
+            _parentctx.addChild(retctx!!)
         }
     }
 
@@ -558,7 +558,7 @@ abstract class Parser(
             _ctx?.stop = _input?.LT(-1)
         }
         if (_parseListeners != null) triggerExitRuleEvent()
-        state = _ctx?.invokingState
+        state = _ctx?.invokingState ?: -1
         _ctx = _ctx?.parent as? ParserRuleContext
     }
 
@@ -594,6 +594,6 @@ abstract class Parser(
 
     protected fun addContextToParseTree() {
         val parentCtx = _ctx?.parent as? ParserRuleContext ?: return
-        parentCtx?.addChild(_ctx)
+        val ctx = _ctx; state = ctx?.invokingState ?: -1
     }
 }

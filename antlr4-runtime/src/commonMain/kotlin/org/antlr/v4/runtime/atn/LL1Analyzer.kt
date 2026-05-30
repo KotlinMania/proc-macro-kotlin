@@ -217,18 +217,18 @@ class LL1Analyzer(
         for (i in 0..<n) {
             val t: Transition = s.transition(i)
             if (t is RuleTransition) {
-                if (calledRuleStack.get((t as RuleTransition).target.ruleIndex)) {
+                if (calledRuleStack.get((t).target.ruleIndex)) {
                     continue
                 }
 
                 val newContext: PredictionContext? =
-                    SingletonPredictionContext.create(ctx, (t as RuleTransition).followState.stateNumber)
+                    SingletonPredictionContext.create(ctx, (t).followState.stateNumber)
 
                 try {
-                    calledRuleStack.set((t as RuleTransition).target.ruleIndex)
+                    calledRuleStack.set((t).target.ruleIndex)
                     _LOOK(t.target, stopState, newContext, look, lookBusy, calledRuleStack, seeThruPreds, addEOF)
                 } finally {
-                    calledRuleStack.clear((t as RuleTransition).target.ruleIndex)
+                    calledRuleStack.clear((t).target.ruleIndex)
                 }
             } else if (t is AbstractPredicateTransition) {
                 if (seeThruPreds) {

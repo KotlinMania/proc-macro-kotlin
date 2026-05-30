@@ -90,16 +90,16 @@ class DFA(
     @Deprecated("Use toString(Vocabulary) instead.")
     fun toString(tokenNames: Array<String?>?): String {
         if (s0 == null) return ""
-        return DFASerializer(this, tokenNames).toString() ?: ""
+        return DFASerializer(this, tokenNames).toString()
     }
 
     fun toString(vocabulary: Vocabulary): String {
         if (s0 == null) return ""
-        return DFASerializer(this, vocabulary).toString() ?: ""
+        return DFASerializer(this, vocabulary).toString()
     }
 
     fun toLexerString(): String {
         if (s0 == null) return ""
-        return LexerDFASerializer(this).toString() ?: ""
+        return LexerDFASerializer(this).toString()
     }
 }

@@ -235,8 +235,8 @@ abstract class PredictionContext protected constructor(
 
             if (a is SingletonPredictionContext && b is SingletonPredictionContext) {
                 return mergeSingletons(
-                    a as SingletonPredictionContext,
-                    b as SingletonPredictionContext,
+                    a,
+                    b,
                     rootIsWildcard,
                     mergeCache,
                 )
@@ -251,10 +251,10 @@ abstract class PredictionContext protected constructor(
 
             // convert singleton so both are arrays to normalize
             if (a is SingletonPredictionContext) {
-                a = ArrayPredictionContext(a as SingletonPredictionContext)
+                a = ArrayPredictionContext(a)
             }
             if (b is SingletonPredictionContext) {
-                b = ArrayPredictionContext(b as SingletonPredictionContext)
+                b = ArrayPredictionContext(b)
             }
             return mergeArrays(
                 a as ArrayPredictionContext,
@@ -333,7 +333,7 @@ abstract class PredictionContext protected constructor(
                 // of those graphs.  dup a, a' points at merged array
                 // new joined parent so create new singleton pointing to it, a'
                 val a_: PredictionContext? = SingletonPredictionContext.create(parent, a.returnState)
-                if (mergeCache != null) mergeCache.put(a, b, a_)
+                if (mergeCache != null) mergeCache.put(a, b, a_!!)
                 return a_
             } else { // a != b payloads differ
                 // see if we can collapse parents due to $+x parents if local ctx
@@ -501,7 +501,7 @@ abstract class PredictionContext protected constructor(
             var j = 0 // walks b
             var k = 0 // walks target M array
 
-            var mergedReturnStates: IntArray? =
+            var mergedReturnStates: IntArray =
                 IntArray(a.returnStates.size + b.returnStates.size)
             var mergedParents =
                 arrayOfNulls<PredictionContext>(a.returnStates.size + b.returnStates.size)
@@ -571,7 +571,7 @@ abstract class PredictionContext protected constructor(
                             mergedParents[0],
                             mergedReturnStates?.get(0) ?: 0,
                         )
-                    if (mergeCache != null) mergeCache.put(a, b, a_)
+                    if (mergeCache != null) mergeCache.put(a, b, a_!!)
                     return a_
                 }
                 mergedParents = mergedParents.copyOf(k)
@@ -664,14 +664,14 @@ abstract class PredictionContext protected constructor(
 
             for (current in nodes) {
                 if (current === EmptyPredictionContext.Instance) continue
-                for (i in 0..<current.size()) {
-                    if (current.getParent(i) == null) continue
-                    val s: String? = current.id.toString()
+                for (i in 0..<(current?.size() ?: 0)) {
+                    if (current?.getParent(i) == null) continue
+                    val s: String? = current?.id.toString()
                     buf.append("  s").append(s)
                     buf.append("->")
                     buf.append("s")
-                    buf.append(current.getParent(i)?.id ?: -1)
-                    if (current.size() > 1) {
+                    buf.append(current?.getParent(i)?.id ?: -1)
+                    if (current?.size() ?: 0 > 1) {
                         buf.append(" [label=\"parent[" + i + "]\"];\n")
                     } else {
                         buf.append(";\n")

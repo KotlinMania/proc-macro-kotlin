@@ -135,9 +135,9 @@ class LexerActionExecutor(
             for (lexerAction in lexerActions) {
                 var lexerAction: LexerAction = lexerAction
                 if (lexerAction is LexerIndexedCustomAction) {
-                    val offset: Int = (lexerAction as LexerIndexedCustomAction).offset
+                    val offset: Int = (lexerAction).offset
                     input.seek(startIndex + offset)
-                    lexerAction = (lexerAction as LexerIndexedCustomAction).action
+                    lexerAction = (lexerAction).action
                     requiresSeek = (startIndex + offset) != stopIndex
                 } else if (lexerAction.isPositionDependent) {
                     input.seek(stopIndex)

@@ -53,7 +53,7 @@ class CodePointBuffer private constructor(
     fun get(offset: Int): Int =
         when (type) {
             Type.BYTE -> byteBuffer!!.get(offset).toInt() and 0xFF
-            Type.CHAR -> charBuffer!!.get(offset).toInt()
+            Type.CHAR -> charBuffer!!.get(offset).code
             Type.INT -> intBuffer!!.get(offset)
         }
 
@@ -317,7 +317,7 @@ class CodePointBuffer private constructor(
                     maxOf(charBuffer!!.remaining() + toAppend, charBuffer!!.capacity() / 2),
                 )
             while (charBuffer!!.hasRemaining()) {
-                newBuffer.put(charBuffer!!.get().toInt() and 0xFFFF)
+                newBuffer.put(charBuffer!!.get().code and 0xFFFF)
             }
             type = Type.INT
             charBuffer = null

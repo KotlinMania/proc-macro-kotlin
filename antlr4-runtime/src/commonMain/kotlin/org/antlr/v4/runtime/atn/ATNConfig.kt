@@ -97,7 +97,7 @@ open class ATNConfig {
 
     override fun equals(other: Any?): Boolean {
         if (other !is ATNConfig) return false
-        return equals(other as ATNConfig)
+        return equals(other)
     }
 
     fun equals(other: ATNConfig): Boolean {

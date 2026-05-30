@@ -93,8 +93,9 @@ abstract class CodePointCharStream private constructor(
 
         /** Return the UTF-16 encoded string for the given interval  */
         override fun getText(interval: Interval?): String? {
-            val startIdx: Int = minOf(interval!!.a, size)
-            val len: Int = minOf(interval!!.b - interval!!.a + 1, size - startIdx)
+            val iv = interval!!
+            val startIdx: Int = minOf(iv.a, size)
+            val len: Int = minOf(iv.b - iv.a + 1, size - startIdx)
 
             // We know the maximum code point in byteArray is U+00FF,
             // so we can treat this as if it were ISO-8859-1, aka Latin-1,
@@ -145,8 +146,9 @@ abstract class CodePointCharStream private constructor(
 
         /** Return the UTF-16 encoded string for the given interval  */
         override fun getText(interval: Interval?): String? {
-            val startIdx: Int = minOf(interval!!.a, size)
-            val len: Int = minOf(interval!!.b - interval!!.a + 1, size - startIdx)
+            val iv = interval!!
+            val startIdx: Int = minOf(iv.a, size)
+            val len: Int = minOf(iv.b - iv.a + 1, size - startIdx)
 
             // We know there are no surrogates in this
             // array, since otherwise we would be given a
@@ -200,8 +202,9 @@ abstract class CodePointCharStream private constructor(
 
         /** Return the UTF-16 encoded string for the given interval  */
         override fun getText(interval: Interval?): String? {
-            val startIdx: Int = minOf(interval!!.a, size)
-            val len: Int = minOf(interval!!.b - interval!!.a + 1, size - startIdx)
+            val iv = interval!!
+            val startIdx: Int = minOf(iv.a, size)
+            val len: Int = minOf(iv.b - iv.a + 1, size - startIdx)
 
             // Note that we pass the int[] code points to the String constructor --
             // this is supported, and the constructor will convert to UTF-16 internally.

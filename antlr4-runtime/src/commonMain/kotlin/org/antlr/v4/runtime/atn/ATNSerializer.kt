@@ -101,7 +101,7 @@ class ATNSerializer(
 
                     LexerActionType.CUSTOM -> {
                         val ruleIndex: Int = (action as LexerCustomAction).ruleIndex
-                        val actionIndex: Int = (action as LexerCustomAction).actionIndex
+                        val actionIndex: Int = (action).actionIndex
                         data.add(ruleIndex)
                         data.add(actionIndex)
                     }
@@ -181,9 +181,9 @@ class ATNSerializer(
                 when (edgeType) {
                     Transition.RULE -> {
                         trg = (t as RuleTransition).followState.stateNumber
-                        arg1 = (t as RuleTransition).target.stateNumber
-                        arg2 = (t as RuleTransition).ruleIndex
-                        arg3 = (t as RuleTransition).precedence
+                        arg1 = (t).target.stateNumber
+                        arg2 = (t).ruleIndex
+                        arg3 = (t).precedence
                     }
 
                     Transition.PRECEDENCE -> {
@@ -200,7 +200,7 @@ class ATNSerializer(
 
                     Transition.RANGE -> {
                         arg1 = (t as RangeTransition).from
-                        arg2 = (t as RangeTransition).to
+                        arg2 = (t).to
                         if (arg1 == Token.EOF) {
                             arg1 = 0
                             arg3 = 1
@@ -292,11 +292,11 @@ class ATNSerializer(
         data.add(atn.states.size)
         for (s in atn.states) {
             val stateType: Int = s.stateType
-            if (s is DecisionState && (s as DecisionState).nonGreedy) {
+            if (s is DecisionState && (s).nonGreedy) {
                 nonGreedyStates.add(s.stateNumber)
             }
 
-            if (s is RuleStartState && (s as RuleStartState).isLeftRecursiveRule) {
+            if (s is RuleStartState && (s).isLeftRecursiveRule) {
                 precedenceStates.add(s.stateNumber)
             }
 
@@ -307,7 +307,7 @@ class ATNSerializer(
             if (s.stateType == ATNState.LOOP_END) {
                 data.add((s as LoopEndState).loopBackState!!.stateNumber)
             } else if (s is BlockStartState) {
-                data.add((s as BlockStartState).endState!!.stateNumber)
+                data.add((s).endState!!.stateNumber)
             }
 
             if (s.stateType != ATNState.RULE_STOP) {

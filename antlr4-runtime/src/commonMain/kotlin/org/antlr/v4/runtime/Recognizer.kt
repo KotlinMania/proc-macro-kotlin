@@ -99,8 +99,8 @@ abstract class Recognizer<Symbol, ATNInterpreter : ATNSimulator> {
         get() = null
 
     fun getErrorHeader(e: RecognitionException): String {
-        val line: Int = e.offendingToken.line
-        val charPositionInLine: Int = e.offendingToken.charPositionInLine
+        val line: Int = e.offendingToken?.line ?: 0
+        val charPositionInLine: Int = e.offendingToken?.charPositionInLine ?: 0
         return "line $line:$charPositionInLine"
     }
 

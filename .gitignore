@@ -44,8 +44,8 @@ java_pid*.hprof
 __pycache__/
 *.pyc
 
-# Android SDK
-/.android-sdk/
+# Android SDK (project-local tool artifact — ignore at any depth, incl. subprojects)
+.android-sdk/
 local.properties
 
 # Swift Package Manager / Xcode workspace state.

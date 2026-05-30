@@ -19,9 +19,9 @@ class ProfilingATNSimulator(
     parser: Parser,
 ) : ParserATNSimulator(
         parser,
-        parser.interpreter.atn,
-        parser.interpreter.decisionToDFA,
-        parser.interpreter.sharedContextCache,
+        parser.interpreter!!.atn,
+        parser.interpreter!!.decisionToDFA,
+        parser.interpreter!!.sharedContextCache,
     ) {
     protected val decisions: Array<DecisionInfo>
     protected var numDecisions: Int
@@ -107,7 +107,7 @@ class ProfilingATNSimulator(
     ): DFAState? {
         // this method is called after each time the input position advances
         // during SLL prediction
-        _sllStopIndex = _input.index()
+        _sllStopIndex = _input?.index() ?: -1
 
         val existingTargetState: DFAState? = super.getExistingTargetState(previousD, t)
         if (existingTargetState != null) {
@@ -141,7 +141,7 @@ class ProfilingATNSimulator(
         if (fullCtx) {
             // this method is called after each time the input position advances
             // during full context prediction
-            _llStopIndex = _input.index()
+            _llStopIndex = _input?.index() ?: -1
         }
 
         val reachConfigs: ATNConfigSet? = super.computeReachSet(closure, t, fullCtx)
@@ -194,7 +194,7 @@ class ProfilingATNSimulator(
         if (conflictingAlts != null) {
             conflictingAltResolvedBySLL = conflictingAlts.nextSetBit(0)
         } else {
-            conflictingAltResolvedBySLL = configs.getAlts().nextSetBit(0)
+            conflictingAltResolvedBySLL = configs!!.getAlts().nextSetBit(0)
         }
         decisions[currentDecision].LL_Fallback++
         super.reportAttemptingFullContext(dfa, conflictingAlts, configs, startIndex, stopIndex)
@@ -228,9 +228,9 @@ class ProfilingATNSimulator(
         if (ambigAlts != null) {
             prediction = ambigAlts.nextSetBit(0)
         } else {
-            prediction = configs.getAlts().nextSetBit(0)
+            prediction = configs!!.getAlts().nextSetBit(0)
         }
-        if (configs.fullCtx && prediction != conflictingAltResolvedBySLL) {
+        if (configs!!.fullCtx && prediction != conflictingAltResolvedBySLL) {
             // Even though this is an ambiguity we are reporting, we can
             // still detect some context sensitivities.  Both SLL and LL
             // are showing a conflict, hence an ambiguity, but if they resolve

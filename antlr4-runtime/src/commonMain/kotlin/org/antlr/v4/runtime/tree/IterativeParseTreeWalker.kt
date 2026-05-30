@@ -33,7 +33,7 @@ class IterativeParseTreeWalker : ParseTreeWalker() {
 
             do {
                 if (currentNode is RuleNode) {
-                    exitRule(listener, currentNode as RuleNode)
+                    exitRule(listener, currentNode)
                 }
 
                 if (nodeStack.isEmpty()) {

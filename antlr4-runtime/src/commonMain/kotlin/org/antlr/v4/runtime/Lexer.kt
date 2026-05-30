@@ -303,7 +303,7 @@ abstract class Lexer :
          */
         get() = null
 
-    val allTokens: List<out Token>
+    val allTokens: List<Token>
         /** Return a list of all Token objects in input char stream.
          * Forces load of all tokens. Does not include EOF token.
          */

@@ -146,10 +146,10 @@ open class BufferedTokenStream(
         for (i in 0..<n) {
             val t: Token? = tokenSource.nextToken()
             if (t is WritableToken) {
-                (t as WritableToken).tokenIndex = tokens.size
+                (t).tokenIndex = tokens.size
             }
             tokens.add(t)
-            if (t.type == Token.EOF) {
+            if (t?.type ?: Token.INVALID_TYPE == Token.EOF) {
                 fetchedEOF = true
                 return i + 1
             }
@@ -270,7 +270,7 @@ open class BufferedTokenStream(
         for (i in start..stop) {
             val t: Token = tokens.get(i)!!
             if (types == null || types.contains(t.type)) {
-                filteredTokens.add(t)
+                filteredTokens!!.add(t)
             }
         }
         if (filteredTokens.isNullOrEmpty()) {
@@ -446,7 +446,7 @@ open class BufferedTokenStream(
 
     override fun getText(interval: Interval?): String? {
         val start: Int = interval!!.a
-        var stop: Int = interval!!.b
+        var stop: Int = interval.b
         if (start < 0 || stop < 0) return ""
         sync(stop)
         if (stop >= tokens.size) stop = tokens.size - 1

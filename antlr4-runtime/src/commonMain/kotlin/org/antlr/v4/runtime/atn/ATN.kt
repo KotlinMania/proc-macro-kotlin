@@ -30,7 +30,7 @@ class ATN(
     fun nextTokens(
         s: ATNState,
         ctx: RuleContext?,
-    ): IntervalSet = LL1Analyzer(this).LOOK(s, ctx)!!
+    ): IntervalSet = LL1Analyzer(this).LOOK(s, ctx)
 
     fun nextTokens(s: ATNState): IntervalSet {
         if (s.nextTokenWithinRule != null) return s.nextTokenWithinRule!!
@@ -92,7 +92,7 @@ class ATN(
         while (ctx != null && ctx.invokingState >= 0 && following.contains(Token.EPSILON)) {
             val invokingState = states[ctx.invokingState]
             val rt = invokingState.transition(0) as RuleTransition
-            following = nextTokens(rt.followState!!)
+            following = nextTokens(rt.followState)
             expected.addAll(following)
             expected.remove(Token.EPSILON)
             ctx = ctx.parent as? RuleContext

@@ -63,7 +63,7 @@ enum class PredictionMode {
             val predictions = BitSet()
             for (pair in predPredictions) {
                 if (pair.pred is SemanticContext.Predicate) {
-                    val pred = pair.pred as SemanticContext.Predicate
+                    val pred = pair.pred
                     var evalResult = false
                     if (pred.ruleIndex == -1 || pred.isCtxDependent) {
                         if (complete) {
@@ -76,7 +76,7 @@ enum class PredictionMode {
                     }
                     if (evalResult && pair.alt != ATN.INVALID_ALT_NUMBER) predictions.set(pair.alt)
                 } else if (pair.pred is SemanticContext.PrecedencePredicate) {
-                    val pred = pair.pred as SemanticContext.PrecedencePredicate
+                    val pred = pair.pred
                     val evalResult = parser.precpred(outerContext, pred.precedence)
                     if (evalResult && pair.alt != ATN.INVALID_ALT_NUMBER) predictions.set(pair.alt)
                 }
