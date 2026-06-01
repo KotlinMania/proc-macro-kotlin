@@ -448,7 +448,9 @@ rootProject.extensions.configure<NodeJsRootExtension>("kotlinNodeJs") {
 // ============================================================================
 mavenPublishing {
     publishToMavenCentral()
-    signAllPublications()
+    if (project.findProperty("RELEASE_SIGNING_ENABLED") != "false") {
+        signAllPublications()
+    }
     val projectName = providers.gradleProperty("project.name").getOrElse("unnamed-project")
     coordinates(group.toString(), projectName, version.toString())
     pom {
@@ -458,8 +460,8 @@ mavenPublishing {
         url.set("https://github.com/KotlinMania/$projectName")
         licenses {
             license {
-                name.set("MIT")
-                url.set("https://opensource.org/licenses/MIT")
+                name.set(providers.gradleProperty("project.pom.licenseName").getOrElse("MIT"))
+                url.set(providers.gradleProperty("project.pom.licenseUrl").getOrElse("https://opensource.org/licenses/MIT"))
                 distribution.set("repo")
             }
         }
@@ -600,6 +602,8 @@ val codeqlCompileJvm =
                 codeqlLanguageVersion,
                 "-api-version",
                 codeqlApiVersion,
+                "-Xmulti-platform",
+                "-Xcommon-sources=${sourceFiles.joinToString(",") { it.absolutePath }}",
                 "-Xexpect-actual-classes",
             ) + commonOptIns.flatMap { listOf("-opt-in", it) } + sourceFiles.map { it.absolutePath }
         }
