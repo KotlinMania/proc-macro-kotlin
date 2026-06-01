@@ -690,6 +690,117 @@ become deletable.
    recipes below. If grep returns no results, gap #8 doesn't apply to
    this repo and no API change is needed.
 
+9. **Exporting `kotlinx.coroutines.Flow` (or suspend functions) needs a
+   four-part setup that the base rollout does NOT cover.** First repo to
+   hit this end-to-end: `crossterm-kotlin` (public `Flow<InternalEvent>`
+   event stream). The failures cascade one after another; all four fixes
+   are required together. Symptom that starts it: the generated
+   `OrgJetbrainsKotlinxKotlinxCoroutinesCore.swift` references a
+   `KotlinCoroutineSupport` module that is neither imported nor emitted
+   (`cannot find type 'KotlinCoroutineSupport' in scope`).
+
+   **9a — Turn on coroutine support in the `swiftExport {}` block.** KGP
+   defaults it OFF (`SwiftExportAction.kt`:
+   `userDefinedSettings.getOrElse("enableCoroutinesSupport") { "false" }`),
+   so `Flow` gets half-exported with references to a `KotlinCoroutineSupport`
+   module the build never generates. Turn it on (the DSL method is
+   `@ExperimentalSwiftExportDsl`, so opt in on the call expression):
+
+   ```kotlin
+   swiftExport {
+       moduleName = frameworkName
+       flattenPackage = projectNamespace
+       @OptIn(org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl::class)
+       configure {
+           settings.put("enableCoroutinesSupport", "true")
+       }
+   }
+   ```
+
+   **9b — Relax `allWarningsAsErrors` for the `compileSwiftExport*` task
+   family — and ONLY for the coroutine-runtime case.** Once 9a is on, the
+   plugin emits a generated `build/SwiftExport/<t>/<c>/KotlinCoroutineSupport/
+   KotlinCoroutineSupport.kt` runtime module that is itself not
+   warning-clean (kotlinx.coroutines inheritance opt-in, useless-elvis,
+   unchecked `SwiftFlowIterator` casts). That is **plugin-generated
+   runtime we do not author and cannot edit** (it is regenerated every
+   build), so there is no source fix.
+
+   ```kotlin
+   tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+       if (name.startsWith("compileSwiftExport")) {
+           compilerOptions.allWarningsAsErrors.set(false)
+       }
+   }
+   ```
+
+   > **This is NOT the gap-#8 anti-pattern.** Gap #8 forbids this exact
+   > block when it is used to silence unchecked-cast warnings in the
+   > bridge for *your own* public API — because there you fix the source
+   > (make it `internal` / `@HiddenFromObjC` / `fun interface`). The
+   > distinction is *whose code emits the warning*: gap #8 = your bridge
+   > (fix source, never relax); gap #9 = the generated
+   > `KotlinCoroutineSupport.kt` coroutine runtime (no source exists,
+   > relax is the only option). Before relying on 9b, confirm with the
+   > gap-#8 audit grep that your own bridge files have zero unchecked
+   > casts; if they do, fix those at the source first. Do NOT delete this
+   > block as "the forbidden gap-#8 block" — it is load-bearing for any
+   > Flow-exporting repo.
+
+   **9c — Disable the Kotlin/Native incremental cache.** Linking the
+   Swift Export binary builds a K/N cache for `…_swiftExportMain.klib`,
+   and the generated `SwiftFlowIterator` (a `NativePtr` continuation)
+   hits an internal compiler error in C-bridge lowering
+   (`doesn't correspond to any C type: kotlin.native.internal.NativePtr`,
+   in `CBridgeGen.convertBlockPtrToKotlinFunction`). The compiler's own
+   message recommends the workaround; set it in `gradle.properties`:
+
+   ```properties
+   kotlin.incremental.native=false
+   ```
+
+   Correctness-neutral (cache only). Revisit when the K/N
+   Swift-Export-plus-coroutines cache path is fixed upstream.
+
+   **9d — Inject a `platforms` declaration into the generated SPM
+   `Package.swift`.** The Kotlin-generated `Package.swift` omits a
+   `platforms:` clause, so a standalone `swift test` builds it below
+   macOS 10.15 and every Swift Concurrency symbol in the coroutine
+   bridge (`Task`, `AsyncSequence`, `withUnsafeThrowingContinuation`, …)
+   fails with *"is only available in macOS 10.15 or newer."* Setting
+   `MACOSX_DEPLOYMENT_TARGET` in the embed env (gap-#7 / the workflow)
+   does NOT propagate into the generated manifest. Patch it in the
+   `swiftExportSmokeTest` task, between `embedSwiftExportForXcode` and
+   `swift test` (`name:` must precede `platforms:` in the initializer):
+
+   ```kotlin
+   val generatedPackageSwift =
+       layout.buildDirectory.file("SPMPackage/macosArm64/Debug/Package.swift").get().asFile
+   if (generatedPackageSwift.exists()) {
+       val text = generatedPackageSwift.readText()
+       if (!text.contains("platforms:")) {
+           generatedPackageSwift.writeText(
+               text.replaceFirst(
+                   Regex("(name:\\s*\"[^\"]*\",)"),
+                   "$1\n    platforms: [.macOS(.v14)],",
+               ),
+           )
+       }
+   }
+   ```
+
+   Also give `swift-test-harness/Package.swift` the same
+   `platforms: [.macOS(.v14)]`. If a prior failed run cached a bad
+   manifest, clear `swift-test-harness/.build` once.
+
+   **Where Flow-exporting symbols live in the generated package.** With
+   9a on, the SPM package gains `KotlinCoroutineSupport` and
+   `OrgJetbrainsKotlinxKotlinxCoroutinesCore` targets and
+   `CrosstermLibrary` lists both — confirmed working end-to-end on
+   `crossterm-kotlin` (`swift test` → 1 test, 0 failures). Canonical
+   reference: `crossterm-kotlin/build.gradle.kts` (the four fixes) +
+   `swift-test-harness/Package.swift`.
+
 ## Recipe for replacing `kotlin.Result<T>` in a public API
 
 The canonical pattern from http-kotlin commits `a179143` and the
@@ -1302,6 +1413,91 @@ assertEquals(KEY_CODE_BACKSPACE_DISPLAY_NAME, KeyCode.Backspace.toString())
 Since these are `internal` constants in the same module, `commonTest`
 can access them. The naming convention stays SCREAMING_SNAKE_CASE for
 constants per Kotlin convention.
+
+## Gaps discovered during the build-gate / test-wiring pass (2026-05-30)
+
+Two general defects in how `build`, `check`, and the per-platform CI
+workflows wire test *execution* vs. *compilation*. Neither is a Swift
+Export bridge bug — they decide whether each platform's `actual`s ever
+actually run, including the Swift smoke test.
+
+### 12. The build gate must BUILD every target but must not single out one platform's tests to RUN
+
+**Symptom.** `fullTargetBuildTaskNames` (the all-target build gate) lists
+`testAndroidHostTest` — an actual test *run* — alongside the compile/link
+tasks, while every other target contributes only `*MainClasses` /
+`*TestClasses` / `${target}Binaries` / `${target}TestBinaries` (compile
+and link, no execution). So `./gradlew build` *runs* the Android unit
+tests but for every other target merely links the `test.kexe` without
+ever executing it. The gate looks symmetric but silently tests exactly
+one platform.
+
+**Root cause.** A "build must compile every target" contract and "run the
+tests" are two different jobs. The build gate is about *compilation
+coverage*; test *execution* is host-dependent (you can't run a Linux or
+mingw test on a macOS runner, and device / Android-Native targets have no
+host-runnable test task at all). Burying one runnable test in the build
+set conflates the two.
+
+**Fix.** Keep `fullTargetBuildTaskNames` pure-build (compile + link every
+target, including each target's test binary — that proves the test code
+*compiles*). Move test *execution* to `check`, where KMP's `allTests`
+already runs every host-runnable test (`jvmTest`, `macosArm64Test`, the
+Apple simulator tests, `jsNodeTest`, `wasmJsNodeTest`, ...). Add the
+Android host test and the Swift smoke test there too:
+
+```kotlin
+tasks.named("check") {
+    dependsOn(tasks.withType<io.gitlab.arturbosch.detekt.Detekt>())
+    dependsOn("ktlintCheck")
+    dependsOn("testAndroidHostTest")     // not in the build set
+    dependsOn("swiftExportSmokeTest")    // macOS-only; self-skips via onlyIf
+}
+```
+
+Do **not** try to make tests depend on the `build` lifecycle task to
+force this ordering: `build → check → allTests` already exists, so
+`anyTest.dependsOn("build")` forms the cycle
+`build → check → allTests → build` and Gradle rejects it at
+configuration time. Depend on the underlying compile/link tasks (or just
+let `check` own execution) instead.
+
+### 13. Every per-platform CI workflow must RUN its platform's test, not just compile it
+
+**Symptom.** A platform's reusable workflow compiles and assembles but
+never invokes a test-*run* task, so that platform's `actual`s are never
+exercised in CI. Observed: `android.yml` ran
+`compileAndroidMain assembleUnitTest assembleAndroidTest` with **no**
+`testAndroidHostTest` — Android built green forever while its tests
+never ran. (`watchos.yml` separately still listed the retired
+`compileKotlinWatchosArm32`, which fails "task not found" once the target
+is scrubbed — audit for retired targets in the same pass.)
+
+**Fix.** Each `<platform>.yml` runs the test task that executes on its
+runner: `macosArm64Test`, `linuxX64Test`, `mingwX64Test`,
+`iosSimulatorArm64Test`, `tvosSimulatorArm64Test`,
+`watchosSimulatorArm64Test`, `jsNodeTest`/`jsBrowserTest`,
+`wasmJsNodeTest`/`wasmJsBrowserTest`/`wasmWasiNodeTest`,
+`testAndroidHostTest`, and `swift test` (swift.yml). Audit rule: a
+workflow whose Gradle task list contains only `compile*` / `assemble*`
+and no `*Test` run is a platform building-but-not-testing.
+
+**Honest limits (compile-only, by physics — not laziness).**
+`androidNative*` (ELF for Android ABIs, needs an emulator per ABI),
+`linuxArm64` on an x64 runner, and the device Apple slices (`iosArm64`,
+`tvosArm64`, `watchosArm64`, `watchosDeviceArm64`, which have no
+host-runnable test task) can only be compiled/linked. Their `actual`s
+share the `appleMain`/`iosMain`/etc. source sets that the corresponding
+**simulator** test exercises, so the same code is covered — state this
+in the workflow rather than implying the binary was tested.
+
+The local `swiftExportSmokeTest` (kasuari-kotlin is the reference shape)
+runs `swift test` against the `embedSwiftExportForXcode` output and must
+be wired into `check` so Swift Export breakage surfaces on
+`./gradlew check` locally, not only in `swift.yml`. When aligning a repo,
+confirm `project.frameworkName` (→ `swiftExport.moduleName`) matches the
+harness's `import <Module>` — a mismatched module name fails `swift test`
+with "no such module" even though the bridge compiled cleanly.
 
 ---
 
