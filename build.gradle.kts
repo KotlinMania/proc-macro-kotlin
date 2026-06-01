@@ -1,4 +1,5 @@
 import org.gradle.api.GradleException
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.tasks.ClasspathNormalizer
@@ -39,6 +40,13 @@ version = providers.gradleProperty("project.version").getOrElse("0.1.0-SNAPSHOT"
 val frameworkName = providers.gradleProperty("project.frameworkName").getOrElse("Unnamed")
 val projectNamespace = providers.gradleProperty("project.namespace").getOrElse("io.github.kotlinmania")
 val kotlinVersion = providers.gradleProperty("versions.kotlin").getOrElse("2.3.21")
+val commonMainBundleName = providers.gradleProperty("project.dependencies.commonMainBundle").get()
+val commonMainDependencyBundle =
+    extensions
+        .getByType(VersionCatalogsExtension::class.java)
+        .named("libs")
+        .findBundle(commonMainBundleName)
+        .orElseThrow { GradleException("Missing libs bundle '$commonMainBundleName'") }
 
 // Opt-ins shared between the top-level compilerOptions and the codeqlCompileJvm kotlinc invocation.
 val commonOptIns =
@@ -323,7 +331,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.bundles.serde.commonMain)
+            implementation(commonMainDependencyBundle)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
