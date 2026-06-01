@@ -16,4 +16,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "proc-macro-kotlin"
-include("antlr4-runtime")

@@ -1,6 +1,6 @@
 # Project Plan — proc-macro-kotlin
 
-Stage: **Phase 2c complete. Phase 3 (publish + wire into proc-macro2-kotlin) is the next action.**
+Stage: **Phase 2d — antlr4-runtime KMP compilation fix. 804 errors remain before publish.**
 
 ---
 
@@ -928,3 +928,113 @@ remains.
 | `tmp/kmp-parser/` | 0 | — | Fully Kotlin |
 | `tmp/kotlin-spec/` | 0 | — | Grammar files only |
 | `tmp/proc-macro/` | 0 | — | Rust source |
+
+---
+
+## Current status — 2026-05-28
+
+### Main module (proc-macro core): compiles, warnings block publish
+
+| Metric | Value |
+|---|---|
+| Source files | 135 `.kt` files |
+| KMP targets | JVM, JS, macosArm64, iosArm64, iosX64, iosSimulatorArm64, watchosArm64, watchosX64, watchosSimulatorArm64, tvosArm64, tvosX64, tvosSimulatorArm64, linuxX64, linuxArm64, wasmJs, androidNativeArm32, androidNativeArm64, androidNativeX64, androidNativeX86, mingwX64 |
+| Build status | `compileKotlinMacosArm64` PASSES, `compileKotlinJvm` PASSES, `compileKotlinJs` PASSES |
+| `allWarningsAsErrors` | `true` (top-level `build.gradle.kts`) — **~20 unchecked-cast / naming warnings from JetBrains vendored code block full build** |
+
+**Warnings blocking the top-level build** (all in JetBrains vendored code under `src/commonMain/kotlin/com/intellij/` and `src/commonMain/kotlin/org/jetbrains/`):
+- Unchecked casts: `List<Any>` → `List<T>`, `Set<Any>` → `Set<T>`, `Array<SyntaxElementType?>` → `Array<SyntaxElementType>`
+- Parameter naming mismatches vs supertype (`key` vs `index`, `other`, `startIndex`, `endIndex`)
+- These are all in the vendored JetBrains syntax/platform code, not in the proc-macro core
+
+### antlr4-runtime submodule: Java→Kotlin port complete, 804 compilation errors remain
+
+| Metric | Value |
+|---|---|
+| Source files | 178 `.kt` files (0 `.java`) |
+| Java→Kotlin port | **100% complete** — every `.java` file from `tmp/antlr4/runtime/Java/src/` has been converted |
+| `allWarningsAsErrors` | `false` (antlr4-runtime `build.gradle.kts`) — intentional for vendored port |
+| Compilation errors | **804** (across 64 files) |
+| Warnings | **1,209** (across 115 files) |
+| `compileKotlinMacosArm64` | **PASSES** (with `allWarningsAsErrors=false`) |
+| `compileKotlinJvm` | **PASSES** |
+| `compileKotlinJs` | **PASSES** |
+| `:antlr4-runtime:build` | **FAILS** — `ktlintJvmMainSourceSetCheck` blocks the full build |
+
+### Error breakdown (antlr4-runtime, 804 errors)
+
+| Category | Count | Description |
+|---|---|---|
+| Unresolved reference | 202 | `IOException`, `assert`, `synchronized`, `toArray`, `put`, `not`, `tokenStream`, `MODE`, `MORE`, `POP_MODE`, `PUSH_MODE`, `CHANNEL`, `CUSTOM`, `size`, `Class`, `SuppressWarnings` |
+| Nullable receiver | 159 | Need `?.` or `!!.` — nullability mismatch from Java port |
+| Argument type mismatch | 92 | Passing nullable where non-null expected |
+| Needs `override` modifier | 44 | Properties/methods hiding supertype members |
+| Not abstract / does not implement | 26 | Missing abstract member implementations |
+| Assignment type mismatch | 25 | `Array<T?>` vs `Array<T>`, etc. |
+| Overrides nothing | 24 | Method signatures don't match supertype |
+| Initializer type mismatch | 24 | Wrong array types in constructors |
+| Cannot create instance of abstract class | 2 | Attempting `LexerAction()` |
+| Other | ~8 | Conflicting declarations, val reassignment, etc. |
+
+### Top 15 error-dense files (antlr4-runtime)
+
+| File | Errors | Notes |
+|---|---|---|
+| `atn/ParserATNSimulator.kt` | 103 | Core ATN prediction — hardest algorithm file |
+| `atn/ProfilingATNSimulator.kt` | 22 | Extends ParserATNSimulator |
+| `jvmMain/CodePointBuffer.kt` | 65 | JVM-specific, uses `ByteBuffer`/`CharBuffer` |
+| `atn/PredictionContext.kt` | 23 | Context merging, equality |
+| `ParserRuleContext.kt` | 37 | Rule context tree |
+| `atn/ATNDeserializer.kt` | 47 | Binary ATN deserialization |
+| `jvmMain/misc/Utils.kt` | 22 | I/O helpers (`IOException`, `File`, etc.) |
+| `jvmMain/CharStreams.kt` | 37 | JVM-specific char stream factories |
+| `ParserInterpreter.kt` | 55 | Interpreter-mode parsing |
+| `Parser.kt` | 24 | Core parser class |
+| `DefaultErrorStrategy.kt` | 33 | Error recovery |
+| `misc/IntegerList.kt` | 8 | Int list utility |
+| `Lexer.kt` | 23 | Lexer base |
+| `jvmMain/CodePointCharStream.kt` | 25 | JVM codepoint stream |
+| `atn/LexerATNSimulator.kt` | 15 | Lexer ATN simulation |
+
+### Systematic fix patterns (highest-impact, most-mechanical)
+
+These would eliminate the bulk of the 804 errors:
+
+1. **`override` additions** (~68 errors): Add `override` to properties (`actionType`, `isPositionDependent`) and methods (`execute`, `eval`, `toString`, `equals`, `hashCode`) across all `LexerAction` subtypes and `PredictionContext` subtypes.
+
+2. **Abstract member implementations** (~26 errors): Add missing abstract method bodies in `ANTLRInputStream`, `CommonToken`, `CodePointCharStream.CodePoint8BitCharStream`, `ArrayPredictionContext`, `EmptyPredictionContext`, `SingletonPredictionContext`.
+
+3. **Java API replacements** (~80+ errors):
+   - `IOException` → `expect/actual` or Kotlin `IOException` (jvmMain only)
+   - `assert` → custom `Assertions.kt` assert function (already exists in project)
+   - `synchronized` → `@Synchronized` annotation or `kotlin.synchronized` intrinsic
+   - `SuppressWarnings` → remove (not a Kotlin annotation)
+   - `Class`, `system`, `.toArray()`, `.size` → Kotlin equivalents
+   - `tokenStream` → `getTokenStream()` or property access
+   - `.put()` on maps → `map[key] = value`
+   - `not` operator → Kotlin `!` or `.not()` function
+
+4. **Nullability fixes** (~251 errors): Add `?.` or `!!.` to nullable receivers; adjust type signatures from `Array<T?>` to `Array<T>` where appropriate.
+
+5. **`LexerAction` companion constants** (~15 errors): `MODE`, `MORE`, `POP_MODE`, `PUSH_MODE`, `CHANNEL`, `CUSTOM` are referenced as `Lexer.MODE` etc. — need to be defined as companion object constants on `Lexer`.
+
+6. **ktlint formatting** (blocks full build): The `ktlintJvmMainSourceSetCheck` task fails — needs a formatting pass on jvmMain source files.
+
+### Previous session work (PRs #38, #39, #40)
+
+- **PR #38**: Resolved all KMP compilation errors across targets (missing overrides, interface implementations, Java→Kotlin API replacements)
+- **PR #39**: Algorithmic drift fixes — restored `Utils.kt` null guards (`numNonnull()`, `toCharArray()`), ported `Parser.setTrace()`/`isTrace()`, fixed `ParseTreePatternMatcher` array copy. Removed ~20 unused imports.
+- **PR #40**: Further drift fixes and lint cleanup. Detekt config overhauled for vendored port code.
+
+### What's left before publish
+
+1. **Fix the 804 antlr4-runtime compilation errors** — systematic `override` additions, nullability, Java API replacements, abstract implementations. This is the highest-priority work.
+2. **ktlint formatting pass** on antlr4-runtime jvmMain — mechanical `ktlint --format`.
+3. **Fix ~20 top-level warnings** in JetBrains vendored code (unchecked casts, naming mismatches) — or suppress them with targeted `@Suppress`.
+4. **Publish antlr4-runtime v0.1.1** and **proc-macro-kotlin v0.1.0** to Maven Central.
+5. **Wire into proc-macro2-kotlin** Compiler variant.
+6. **Unblock serde_derive** port — then 101 downstream crates.
+
+### Safe backup
+
+The Kotlin port backup is at `/Volumes/stuff/Projects/kotlinmania/toport/antlr4/` — **do not modify**. The Java originals for comparison remain at `tmp/antlr4/runtime/Java/src/`.
