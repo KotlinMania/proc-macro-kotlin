@@ -6,9 +6,9 @@ package com.intellij.platform.syntax.logger
 import com.intellij.platform.syntax.Logger
 import kotlin.jvm.JvmName
 
-fun noopLogger(): Logger = NoopLogger
+fun noopLogger(): Logger = _NoopLogger
 
-private object NoopLogger : Logger {
+private object _NoopLogger : Logger {
   override fun error(string: String) {
   }
 

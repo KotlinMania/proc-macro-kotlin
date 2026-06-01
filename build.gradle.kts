@@ -695,7 +695,12 @@ tasks.register("swiftExportSmokeTest") {
 
     doLast {
         val execOperations = serviceOf<ExecOperations>()
-        val swiftBuildDir = layout.buildDirectory.dir("swift-test").get().asFile.absolutePath
+        val swiftBuildDir =
+            layout.buildDirectory
+                .dir("swift-test")
+                .get()
+                .asFile
+                .absolutePath
         execOperations.exec {
             workingDir = projectDir
             commandLine(
@@ -717,12 +722,14 @@ tasks.register("swiftExportSmokeTest") {
                     "DEPLOYMENT_TARGET_SETTING_NAME" to "MACOSX_DEPLOYMENT_TARGET",
                 ),
             )
-        }.assertNormalExitValue()
+        }
+            .assertNormalExitValue()
 
         execOperations.exec {
             workingDir = layout.projectDirectory.dir("swift-test-harness").asFile
             commandLine("swift", "test")
-        }.assertNormalExitValue()
+        }
+            .assertNormalExitValue()
     }
 }
 
