@@ -44,9 +44,16 @@ java_pid*.hprof
 __pycache__/
 *.pyc
 
-# Android SDK
-/.android-sdk/
+# Android SDK (project-local tool artifact — ignore at any depth, incl. subprojects)
+.android-sdk/
 local.properties
+
+# Local scratch / debugging artifacts (per workspace hygiene: scratch lives
+# under automation-artifacts/, not tracked at the repo root)
+*.bak
+errors.txt
+antlr4_warnings.txt
+antlr4_current_errors.txt
 
 # Swift Package Manager / Xcode workspace state.
 #
