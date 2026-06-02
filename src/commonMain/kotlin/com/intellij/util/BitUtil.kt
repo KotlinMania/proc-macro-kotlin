@@ -2,25 +2,21 @@
 package com.intellij.util
 
 import kotlin.experimental.inv
-import kotlin.jvm.JvmStatic
 
 object BitUtil {
   
-  @JvmStatic
   fun isSet(value: Byte, mask: Byte): Boolean {
     assertOneBitMask(mask)
     return (value.toInt() and mask.toInt()) == mask.toInt()
   }
 
   
-  @JvmStatic
   fun isSet(value: Int, mask: Int): Boolean {
     assertOneBitMask(mask)
     return (value and mask) == mask
   }
 
   
-  @JvmStatic
   fun isSet(flags: Long, mask: Long): Boolean {
     assertOneBitMask(mask)
     return (flags and mask) == mask
@@ -30,7 +26,6 @@ object BitUtil {
    * @return `value` with the bit corresponding to the `mask` set (if setBit is true) or cleared (if setBit is false)
    */
   
-  @JvmStatic
   fun set(value: Byte, mask: Byte, setBit: Boolean): Byte {
     assertOneBitMask(mask)
     val result = if (setBit) value.toInt() or mask.toInt() else value.toInt() and mask.inv().toInt()
@@ -41,7 +36,6 @@ object BitUtil {
    * @return `value` with the bit corresponding to the `mask` set (if setBit is true) or cleared (if setBit is false)
    */
   
-  @JvmStatic
   fun set(value: Int, mask: Int, setBit: Boolean): Int {
     assertOneBitMask(mask)
     return if (setBit) value or mask else value and mask.inv()
@@ -51,26 +45,22 @@ object BitUtil {
    * @return `value` with the bit corresponding to the `mask` set (if setBit is true) or cleared (if setBit is false)
    */
   
-  @JvmStatic
   fun set(value: Long, mask: Long, setBit: Boolean): Long {
     assertOneBitMask(mask)
     return if (setBit) value or mask else value and mask.inv()
   }
 
   
-  @JvmStatic
   fun clear(value: Byte, mask: Byte): Byte {
     return set(value, mask, false)
   }
 
   
-  @JvmStatic
   fun clear(value: Int, mask: Int): Int {
     return set(value, mask, false)
   }
 
   
-  @JvmStatic
   fun clear(value: Long, mask: Long): Long {
     return set(value, mask, false)
   }
@@ -79,7 +69,6 @@ object BitUtil {
     assertOneBitMask(mask.toLong() and 0xFFL)
   }
 
-  @JvmStatic
   fun assertOneBitMask(mask: Int) {
     require((mask and mask - 1) == 0) { invalidMaskError(mask.toLong()) }
   }

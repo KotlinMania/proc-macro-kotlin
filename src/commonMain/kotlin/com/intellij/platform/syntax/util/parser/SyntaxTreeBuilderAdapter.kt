@@ -4,5 +4,5 @@ package com.intellij.platform.syntax.util.parser
 import com.intellij.platform.syntax.parser.SyntaxTreeBuilder
 
 open class SyntaxTreeBuilderAdapter(
-  private val delegate: SyntaxTreeBuilder
+    private val delegate: SyntaxTreeBuilder,
 ) : SyntaxTreeBuilder by delegate

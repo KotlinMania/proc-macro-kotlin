@@ -2,13 +2,10 @@
 package com.intellij.util.text
 
 import fleet.util.multiplatform.linkToActual
-import kotlin.jvm.JvmOverloads
-import kotlin.jvm.JvmStatic
 import kotlin.math.min
 
 
 object CharArrayUtilKmp {
-  @JvmStatic
   fun fromSequenceWithoutCopying(seq: CharSequence?): CharArray? {
     if (seq is CharSequenceBackedByArray) {
       return seq.chars
@@ -17,8 +14,6 @@ object CharArrayUtilKmp {
     return fromSequenceWithoutCopyingPlatformSpecific(seq)
   }
 
-  @JvmStatic
-  @JvmOverloads
   fun containLineBreaks(
     seq: CharSequence?,
     fromOffset: Int = 0,
@@ -33,7 +28,6 @@ object CharArrayUtilKmp {
   /**
    * @return the underlying char[] array if any, or the new chara array if not
    */
-  @JvmStatic
   fun fromSequence(seq: CharSequence): CharArray {
     val underlying: CharArray? = fromSequenceWithoutCopying(seq)
     return underlying?.copyOf() ?: seq.fromSequence(0, seq.length)
@@ -42,7 +36,6 @@ object CharArrayUtilKmp {
   /**
    * @return a new char array containing the subsequence's chars
    */
-  @JvmStatic
   fun CharSequence.fromSequence(start: Int, end: Int): CharArray {
     val result = CharArray(end - start)
     getChars(result, start, 0, end - start)
@@ -58,8 +51,6 @@ object CharArrayUtilKmp {
    * @param dstOffset   start offset to use within the given output data buffer
    * @param len         number of source data symbols to copy to the given buffer
    */
-  @JvmOverloads
-  @JvmStatic
   fun CharSequence.getChars(dst: CharArray, srcOffset: Int = 0, dstOffset: Int, len: Int = this.length - srcOffset) {
     if (this is CharArrayExternalizable) {
       this.getChars(srcOffset, srcOffset + len, dst, dstOffset)
@@ -111,8 +102,6 @@ object CharArrayUtilKmp {
    * as that that symbol is not contained at the given 'chars';
    * `endOffset` otherwise
    */
-  @JvmOverloads
-  @JvmStatic
   fun CharSequence.shiftForward(chars: String, startOffset: Int, endOffset: Int = this.length): Int {
     var offset = startOffset
     val limit = min(endOffset, length)
@@ -131,12 +120,10 @@ object CharArrayUtilKmp {
     return endOffset
   }
 
-  @JvmStatic
   fun CharArray.shiftBackward(offset: Int, chars: String): Int {
     return CharArrayCharSequence(*this).shiftBackward(offset, chars)
   }
 
-  @JvmStatic
   fun CharSequence.shiftBackward(offset: Int, chars: String): Int {
     return shiftBackward(0, offset, chars)
   }
@@ -145,7 +132,6 @@ object CharArrayUtilKmp {
    * @return minimal offset in the `minOffset`-`maxOffset`  range after which `buffer` contains only characters from
    * `chars` in the range
    */
-  @JvmStatic
   fun CharSequence.shiftBackward(minOffset: Int, maxOffset: Int, chars: String): Int {
     if (maxOffset >= length) return maxOffset
 
@@ -164,7 +150,6 @@ object CharArrayUtilKmp {
     return offset
   }
 
-  @JvmStatic
   fun CharSequence.shiftForwardUntil(offset: Int, chars: String): Int {
     var offset = offset
     while (true) {
@@ -208,7 +193,6 @@ object CharArrayUtilKmp {
    * `'-1'` is returned if all document symbols that precede given offset differ from symbols
    * of the given `'chars to exclude'`
    */
-  @JvmStatic
   fun CharSequence.shiftBackwardUntil(offset: Int, chars: String): Int {
     var offset = offset
     if (offset >= length) return offset
@@ -226,7 +210,6 @@ object CharArrayUtilKmp {
     return offset
   }
 
-  @JvmStatic
   fun CharArray.regionMatches(start: Int, end: Int, s: CharSequence): Boolean {
     val len = s.length
     if (start + len > end) return false
@@ -237,13 +220,11 @@ object CharArrayUtilKmp {
     return true
   }
 
-  @JvmStatic
   fun CharSequence.regionMatches(offset: Int, s: CharSequence): Boolean {
     if (offset < 0 || offset + s.length > length) return false
     return (0..<s.length).all { i -> this[offset + i] == s[i] }
   }
 
-  @JvmStatic
   fun CharSequence.regionMatches(start: Int, end: Int, s: CharSequence): Boolean {
     val len = s.length
     if (start < 0 || start + len > end) return false

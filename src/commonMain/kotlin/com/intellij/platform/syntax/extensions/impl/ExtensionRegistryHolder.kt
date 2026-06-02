@@ -2,29 +2,27 @@
 package com.intellij.platform.syntax.extensions.impl
 
 import com.intellij.platform.syntax.extensions.ExtensionRegistry
-import com.intellij.platform.syntax.extensions.ExtensionSupport
 import com.intellij.platform.syntax.extensions.StaticExtensionSupport
 import com.intellij.platform.syntax.extensions.currentExtensionSupport
 import fleet.util.multiplatform.linkToActual
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-internal val registry: ExtensionSupport
-  get() {
-    return staticRegistryHolder.registry       // usually, IntelliJ support
-           ?: threadLocalRegistry.registry     // local thread context
-           ?: instantiateExtensionRegistry()   // callback
-  }
+internal val registry: ExtensionRegistry
+    get() {
+        return staticRegistryHolder.registry // usually, IntelliJ support
+            ?: threadLocalRegistry.registry // local thread context
+            ?: instantiateExtensionRegistry() // callback
+    }
 
 internal val staticRegistryHolder: RegistryHolder by lazy {
-  val support = instantiateExtensionRegistry().takeIf { it is StaticExtensionSupport }
-  object : RegistryHolder {
-    override val registry: ExtensionSupport?
-      get() = support
+    val support = instantiateExtensionRegistry().takeIf { it is StaticExtensionSupport }
+    object : RegistryHolder {
+        override val registry: ExtensionRegistry?
+            get() = support
 
-    override fun installRegistry(registry: ExtensionSupport): Unit =
-      throw UnsupportedOperationException()
-  }
+        override fun installRegistry(registry: ExtensionRegistry): Unit = throw UnsupportedOperationException()
+    }
 }
 
 /**
@@ -35,31 +33,34 @@ internal val staticRegistryHolder: RegistryHolder by lazy {
  * @See instantiateExtensionRegistryJvm
  * @See instantiateExtensionRegistryWasmJs
  */
-internal fun instantiateExtensionRegistry(): ExtensionSupport = linkToActual()
+internal fun instantiateExtensionRegistry(): ExtensionRegistry = linkToActual()
 
 internal val threadLocalRegistry: RegistryHolder = instantiateThreadLocalRegistry()
 
 @OptIn(ExperimentalContracts::class)
-internal fun <T> performWithExtensionSupportImpl(support: ExtensionSupport, action: (ExtensionSupport) -> T): T {
-  contract {
-    callsInPlace(action, kotlin.contracts.InvocationKind.EXACTLY_ONCE)
-  }
-
-  val oldRegistry = threadLocalRegistry.registry
-  try {
-    threadLocalRegistry.installRegistry(support)
-    return action(support)
-  }
-  finally {
-    if (oldRegistry != null) {
-      threadLocalRegistry.installRegistry(oldRegistry)
+internal fun performWithExtensionSupportImpl(
+    support: ExtensionRegistry,
+    action: (ExtensionRegistry) -> Unit,
+) {
+    contract {
+        callsInPlace(action, kotlin.contracts.InvocationKind.EXACTLY_ONCE)
     }
-  }
+
+    val oldRegistry = threadLocalRegistry.registry
+    try {
+        threadLocalRegistry.installRegistry(support)
+        action(support)
+    } finally {
+        if (oldRegistry != null) {
+            threadLocalRegistry.installRegistry(oldRegistry)
+        }
+    }
 }
 
 internal interface RegistryHolder {
-  val registry: ExtensionSupport?
-  fun installRegistry(registry: ExtensionSupport)
+    val registry: ExtensionRegistry?
+
+    fun installRegistry(registry: ExtensionRegistry)
 }
 
 /**
@@ -68,8 +69,8 @@ internal interface RegistryHolder {
  */
 internal fun instantiateThreadLocalRegistry(): RegistryHolder = linkToActual()
 
-internal fun buildExtensionSupportImpl(block: ExtensionRegistry.() -> Unit): ExtensionSupport {
-  val registry = instantiateExtensionRegistry() as? ExtensionRegistry ?: error("Failed to create ExtensionRegistry")
-  registry.block()
-  return registry
+internal fun buildExtensionSupportImpl(block: ExtensionRegistry.() -> Unit): ExtensionRegistry {
+    val registry = instantiateExtensionRegistry()
+    registry.block()
+    return registry
 }

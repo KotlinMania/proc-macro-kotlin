@@ -144,7 +144,7 @@ as the default next action when infra is clean.
   is a build failure. Treat every warning as a real defect — never scope
   the flag down to silence Swift Export gate noise (§4 forbids it
   explicitly).
-- **All configured targets build** (§0 condition 3 + §5
+- **All current KotlinMania targets build** (§0 condition 3 + §5
   `fullTargetBuildTaskNames`). Never shrink the gate to dodge a CI
   failure. The exceptions are the documented retired targets:
   `watchosArm32` (§5.5.1, retired 2026-05-24 — Apple Watch armv7k EOL +
@@ -185,10 +185,11 @@ impossible:
    upstream Rust in `tmp/`. CI plumbing, branch cleanup, dependency bumps,
    workflow edits, dry-runs, and status reports are *additive*, never a
    substitute for the source-porting requirement.
-3. **All configured targets build.** "All targets" = the full target surface
-   declared in `build.gradle.kts` and the repo-local contract — not whichever
-   tasks happen to be cheap on the current host. The `fullTargetBuildTaskNames`
-   wiring (§5) makes this enforceable on `./gradlew build`.
+3. **All current KotlinMania targets build.** "All targets" = the full
+   organization target surface in the canonical build template — not
+   whichever tasks happen to be cheap on the current host, and not a
+   repo-selected subset. The `fullTargetBuildTaskNames` wiring (§5) makes
+   this enforceable on `./gradlew build`.
 4. **Swift test passes locally.** If the repo configures `swiftExport { … }`,
    `./gradlew test` (or `check`) must invoke `swift test` against the
    `embedSwiftExportForXcode`-produced SPM package and treat a non-zero exit
@@ -570,13 +571,15 @@ For detailed information on the `ordered_priority` schema, Kahn-style layers, gr
 
 Every `*-kotlin` repo with `swiftExport { … }` carries a `SWIFT.md` file (which is the renamed `SWIFT_EXPORT_ROLLOUT.md`).
 
-For detailed instructions on the 5-class sweep, the mandatory infrastructure pins, the `@HiddenFromObjC` stopgap annotations, the de-generification checklists, and the SAM interface / flat-class templates, please refer to [SWIFT.md](file:///Volumes/stuff/Projects/kotlinmania/SWIFT.md).
+For detailed instructions on the 5-class sweep, the mandatory infrastructure pins, structural rename rules for Swift/Java emitted-name collisions, the strong-typing checklists, and the SAM interface / flat-class templates, please refer to [SWIFT.md](file:///Volumes/stuff/Projects/kotlinmania/SWIFT.md).
 
 ---
 
-## 5. The build-gate — `build` must compile every configured target
+## 5. The build-gate — `build` must compile every current KotlinMania target
 
-For detailed build-gate requirements, canonical `build.gradle.kts` templates, target lists, watchosArm32 retirement checklists, and deprecated Intel simulator drops, please refer to [BUILD_GATE.md](file:///Volumes/stuff/Projects/kotlinmania/BUILD_GATE.md).
+The canonical build template is
+`/Volumes/stuff/Projects/kotlinmania/canonical/build.gradle.kts.template`.
+Do not use a separate build-gate document as source-of-truth.
 
 ---
 

@@ -8,8 +8,7 @@ import kotlin.coroutines.cancellation.CancellationException
  *
  * @See com.intellij.platform.syntax.parser.SyntaxTreeBuilderFactory.Builder.withCancellationProvider
  */
-fun interface CancellationProvider {
-
-  @Throws(CancellationException::class)
-  fun checkCancelled()
+interface CancellationProvider {
+    @Throws(CancellationException::class)
+    fun checkCancelled()
 }

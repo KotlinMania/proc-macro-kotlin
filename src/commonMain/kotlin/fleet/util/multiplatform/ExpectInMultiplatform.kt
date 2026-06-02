@@ -1,6 +1,5 @@
 package fleet.util.multiplatform
 
-
 /**
  * During compilation, calls of this function are linked to another function if:
  * - This is the only operation of the host function (`fun a(): Any = linkToActual()`, `fun b(i: String): String { return linkToActual() }`)
@@ -19,9 +18,10 @@ package fleet.util.multiplatform
  *
  * @see Actual
  */
-fun <T> linkToActual(): T = error(
-  "this function wasn't linked to actual function, please add 'expects' compiler plugin to the source module or make this the only call of the enclosing function"
-)
+fun <T> linkToActual(): T =
+    error(
+        "this function wasn't linked to actual function, please add 'expects' compiler plugin to the source module or make this the only call of the enclosing function",
+    )
 
 /**
  * Provide an actual declaration for a function calling `linkToActual()`.
@@ -36,7 +36,6 @@ fun <T> linkToActual(): T = error(
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.BINARY)
 annotation class Actual(
-  @Deprecated("name of the function is now used instead")
-  val linkedTo: String = ""
+    @Deprecated("name of the function is now used instead")
+    val linkedTo: String = "",
 )
-

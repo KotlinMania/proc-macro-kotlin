@@ -24,34 +24,34 @@ import com.intellij.platform.syntax.tree.SyntaxNode
  * @see canBeReparsedIncrementally
  */
 
-fun interface LazyParser {
-  /**
-   * Called when the node is requested to be parsed.
-   *
-   * @return the result of the parsing operation
-   */
-  fun parse(parsingContext: LazyParsingContext): ProductionResult
+interface LazyParser {
+    /**
+     * Called when the node is requested to be parsed.
+     *
+     * @return the result of the parsing operation
+     */
+    fun parse(parsingContext: LazyParsingContext): ProductionResult
 
-  /**
-   * Called when the node is requested to be reparsed incrementally.
-   * The provided [parsingContext] contains a token list corresponding to the new node's text.
-   * The method should decide if the new token list can be used as a valid input for the parser.
-   *
-   * An example:
-   * This lazy parser corresponds to a code-block in Java. The method should check that the provided token list
-   * represents a valid brace structure, i.e. the braces are matched and there are no extra tokens before the opening brace and
-   * after the closing brace.
-   *
-   * @return true if the new token list can be used as a valid input for the parser, false otherwise.
-   */
-  fun canBeReparsedIncrementally(parsingContext: LazyParsingContext): Boolean = false
+    /**
+     * Called when the node is requested to be reparsed incrementally.
+     * The provided [parsingContext] contains a token list corresponding to the new node's text.
+     * The method should decide if the new token list can be used as a valid input for the parser.
+     *
+     * An example:
+     * This lazy parser corresponds to a code-block in Java. The method should check that the provided token list
+     * represents a valid brace structure, i.e. the braces are matched and there are no extra tokens before the opening brace and
+     * after the closing brace.
+     *
+     * @return true if the new token list can be used as a valid input for the parser, false otherwise.
+     */
+    fun canBeReparsedIncrementally(parsingContext: LazyParsingContext): Boolean = false
 
-  /**
-   * Creates a custom lexer for the given node.
-   *
-   * You need to implement this method only if the lexer differs from the one specified in your [LanguageSyntaxDefinition]
-   */
-  fun createLexer(lexingContext: LazyLexingContext): Lexer? = null
+    /**
+     * Creates a custom lexer for the given node.
+     *
+     * You need to implement this method only if the lexer differs from the one specified in your [LanguageSyntaxDefinition]
+     */
+    fun createLexer(lexingContext: LazyLexingContext): Lexer? = null
 }
 
 /**
@@ -59,22 +59,20 @@ fun interface LazyParser {
  *
  * @see LazyParser.parse
  */
-fun parseLazyNode(parsingContext: LazyParsingContext): ProductionResult {
-  return parsingContext.lazyParser.parse(parsingContext)
-}
+fun parseLazyNode(parsingContext: LazyParsingContext): ProductionResult =
+    parsingContext.lazyParser.parse(parsingContext)
 
 /**
  * Checks if the given node can be reparsed incrementally.
  *
  * @see LazyParser.canBeReparsedIncrementally
  */
-fun canLazyNodeBeReparsedIncrementally(parsingContext: LazyParsingContext): Boolean {
-  return parsingContext.lazyParser.canBeReparsedIncrementally(parsingContext)
-}
+fun canLazyNodeBeReparsedIncrementally(parsingContext: LazyParsingContext): Boolean =
+    parsingContext.lazyParser.canBeReparsedIncrementally(parsingContext)
 
 fun createLexer(lexerContext: LazyLexingContext): Lexer? {
-  val lazyParser = lexerContext.node.type.lazyParser ?: error("Node ${lexerContext.node} is not lazy parseable")
-  return lazyParser.createLexer(lexerContext)
+    val lazyParser = lexerContext.node.type.lazyParser ?: error("Node ${lexerContext.node} is not lazy parseable")
+    return lazyParser.createLexer(lexerContext)
 }
 
 /**
@@ -84,21 +82,21 @@ fun createLexer(lexerContext: LazyLexingContext): Lexer? {
  * @param cancellationProvider a cancellation provider for the parser
  */
 class LazyParsingContext(
-  val node: SyntaxNode,
-  val tokenList: TokenList,
-  val syntaxTreeBuilder: SyntaxTreeBuilder,
-  val cancellationProvider: CancellationProvider,
+    val node: SyntaxNode,
+    val tokenList: TokenList,
+    val syntaxTreeBuilder: SyntaxTreeBuilder,
+    val cancellationProvider: CancellationProvider,
 ) {
-  /**
-   * text of the node to be reparsed
-   */
-  val text: CharSequence get() = node.text
+    /**
+     * text of the node to be reparsed
+     */
+    val text: CharSequence get() = node.text
 
-  /**
-   * parser for the node to be reparsed
-   */
-  internal val lazyParser: LazyParser
-    get() = node.type.lazyParser ?: error("Node ${node} has non-lazy element type ${node.type}")
+    /**
+     * parser for the node to be reparsed
+     */
+    internal val lazyParser: LazyParser
+        get() = node.type.lazyParser ?: error("Node $node has non-lazy element type ${node.type}")
 }
 
 /**
@@ -106,6 +104,6 @@ class LazyParsingContext(
  * @param cancellationProvider a cancellation provider for the lexer
  */
 class LazyLexingContext(
-  val node: SyntaxNode,
-  val cancellationProvider: CancellationProvider,
+    val node: SyntaxNode,
+    val cancellationProvider: CancellationProvider,
 )

@@ -2,8 +2,6 @@
 package com.intellij.openapi.util.text
 
 import com.intellij.util.text.CharArrayCharSequence
-import kotlin.jvm.JvmOverloads
-import kotlin.jvm.JvmStatic
 
 class LineTokenizer(private val myText: CharSequence) {
   var offset: Int = 0
@@ -58,8 +56,6 @@ class LineTokenizer(private val myText: CharSequence) {
   }
 
   companion object {
-    @JvmStatic
-    @JvmOverloads
     fun tokenize(chars: CharSequence?, includeSeparators: Boolean, skipLastEmptyLine: Boolean = true): Array<String> {
       val strings = tokenizeIntoList(chars, includeSeparators, skipLastEmptyLine)
       return if (strings.isEmpty()) EMPTY_STRING_ARRAY else strings.toTypedArray()
@@ -67,8 +63,6 @@ class LineTokenizer(private val myText: CharSequence) {
 
     private val EMPTY_STRING_ARRAY: Array<String> = emptyArray<String>()
 
-    @JvmStatic
-    @JvmOverloads
     fun tokenizeIntoList(chars: CharSequence?, includeSeparators: Boolean, skipLastEmptyLine: Boolean = true): List<String> {
       if (chars.isNullOrEmpty()) {
         return listOf()
@@ -93,7 +87,6 @@ class LineTokenizer(private val myText: CharSequence) {
       return lines
     }
 
-    @JvmStatic
     fun calcLineCount(chars: CharSequence, skipLastEmptyLine: Boolean): Int {
       var lineCount = 0
       if (chars.isNotEmpty()) {
@@ -109,13 +102,10 @@ class LineTokenizer(private val myText: CharSequence) {
       return lineCount
     }
 
-    @JvmStatic
-    @JvmOverloads
     fun tokenize(chars: CharArray, includeSeparators: Boolean, skipLastEmptyLine: Boolean = true): Array<String> {
       return tokenize(chars, 0, chars.size, includeSeparators, skipLastEmptyLine)
     }
 
-    @JvmOverloads
     fun tokenize(
       chars: CharArray,
       startOffset: Int,

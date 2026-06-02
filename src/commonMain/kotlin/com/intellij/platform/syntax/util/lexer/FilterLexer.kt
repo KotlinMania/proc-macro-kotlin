@@ -5,9 +5,8 @@ import com.intellij.platform.syntax.SyntaxElementType
 import com.intellij.platform.syntax.SyntaxElementTypeSet
 import com.intellij.platform.syntax.lexer.Lexer
 import com.intellij.platform.syntax.lexer.LexerPosition
-import kotlin.jvm.JvmOverloads
 
-class FilterLexer @JvmOverloads constructor(
+class FilterLexer constructor(
   original: Lexer,
   private val filter: Filter?,
   private val stateFilter: BooleanArray? = null

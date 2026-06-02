@@ -11,10 +11,31 @@ public class Punct internal constructor(
     internal val data: PunctData,
 ) {
     public companion object {
-        private val LEGAL_CHARS: Set<Char> = setOf(
-            '=', '<', '>', '!', '~', '+', '-', '*', '/', '%', '^', '&', '|',
-            '@', '.', ',', ';', ':', '#', '$', '?', '\'',
-        )
+        private val LEGAL_CHARS: Set<Char> =
+            setOf(
+                '=',
+                '<',
+                '>',
+                '!',
+                '~',
+                '+',
+                '-',
+                '*',
+                '/',
+                '%',
+                '^',
+                '&',
+                '|',
+                '@',
+                '.',
+                ',',
+                ';',
+                ':',
+                '#',
+                '$',
+                '?',
+                '\'',
+            )
 
         /**
          * Creates a new [Punct] from the given character and spacing.
@@ -25,7 +46,10 @@ public class Punct internal constructor(
          * [Span.callSite] which can be further configured with the
          * [setSpan] method below.
          */
-        public fun new(ch: Char, spacing: Spacing): Punct {
+        public fun new(
+            ch: Char,
+            spacing: Spacing,
+        ): Punct {
             require(ch in LEGAL_CHARS) { "unsupported character `$ch`" }
             return Punct(
                 PunctData(
@@ -46,8 +70,7 @@ public class Punct internal constructor(
      * operator with the following token ([Spacing.JOINT]), or whether the
      * operator has definitely ended ([Spacing.ALONE]).
      */
-    public fun spacing(): Spacing =
-        if (data.joint) Spacing.JOINT else Spacing.ALONE
+    public fun spacing(): Spacing = if (data.joint) Spacing.JOINT else Spacing.ALONE
 
     /** Returns the span for this punctuation character. */
     public fun span(): Span = data.span

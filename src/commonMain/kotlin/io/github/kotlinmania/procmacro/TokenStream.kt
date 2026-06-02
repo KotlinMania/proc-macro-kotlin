@@ -24,8 +24,7 @@ public class TokenStream internal constructor(
          *
          * Upstream: `impl From<TokenTree> for TokenStream`.
          */
-        public fun fromTokenTree(tree: TokenTree): TokenStream =
-            TokenStream(TokenStreamData(listOf(tree)))
+        public fun fromTokenTree(tree: TokenTree): TokenStream = TokenStream(TokenStreamData(listOf(tree)))
 
         /**
          * Attempts to break the string into tokens and parse those tokens
@@ -38,8 +37,10 @@ public class TokenStream internal constructor(
          * [`KotlinLexer`][org.jetbrains.kotlin.kmp.lexer.KotlinLexer]
          * to tokenize Kotlin source via [KtTokenAdapter].
          */
-        public fun fromString(src: String): Result<TokenStream> {
-            val lexer = org.jetbrains.kotlin.kmp.lexer.KotlinLexer()
+        public fun fromString(src: String): TokenStreamParseOutcome {
+            val lexer =
+                org.jetbrains.kotlin.kmp.lexer
+                    .KotlinLexer()
             return KtTokenAdapter.tokenize(lexer, src)
         }
 
@@ -78,7 +79,7 @@ public class TokenStream internal constructor(
      * always returns [ExpandError]; macro expansion has no Kotlin
      * analog at this stage.
      */
-    public fun expandExpr(): Result<TokenStream> = Result.failure(ExpandErrorThrown(ExpandError()))
+    public fun expandExpr(): TokenStreamExpandOutcome = TokenStreamExpandOutcome.Err(ExpandError())
 
     /**
      * Concatenates the given token trees into this stream.
@@ -118,21 +119,22 @@ public class TokenStream internal constructor(
      * spans), except for possibly [TokenTree.Group]s with [Delimiter.NONE]
      * delimiters and negative numeric literals.
      */
-    override fun toString(): String = buildString {
-        var previous: TokenTree? = null
-        for (tree in data.trees) {
-            if (previous != null && needsSeparatorAfter(previous)) {
-                append(' ')
+    override fun toString(): String =
+        buildString {
+            var previous: TokenTree? = null
+            for (tree in data.trees) {
+                if (previous != null && needsSeparatorAfter(previous)) {
+                    append(' ')
+                }
+                when (tree) {
+                    is TokenTree.Group -> appendGroup(tree.value)
+                    is TokenTree.Ident -> append(tree.toString())
+                    is TokenTree.Punct -> append(tree.toString())
+                    is TokenTree.Literal -> append(tree.toString())
+                }
+                previous = tree
             }
-            when (tree) {
-                is TokenTree.Group -> appendGroup(tree.value)
-                is TokenTree.Ident -> append(tree.toString())
-                is TokenTree.Punct -> append(tree.toString())
-                is TokenTree.Literal -> append(tree.toString())
-            }
-            previous = tree
         }
-    }
 }
 
 /**
@@ -143,22 +145,11 @@ public class TokenStream internal constructor(
  * mutable through [TokenStream.extendTokenTrees] /
  * [TokenStream.extendTokenStreams].
  */
-internal class TokenStreamData(initial: List<TokenTree>) {
+internal class TokenStreamData(
+    initial: List<TokenTree>,
+) {
     internal var trees: List<TokenTree> = initial
 }
-
-/**
- * Class wrapper thrown when [TokenStream.fromString] cannot produce a
- * stream. Holds the [LexError] for downstream inspection.
- */
-public class LexErrorThrown internal constructor(public val error: LexError) :
-    RuntimeException(error.toString())
-
-/**
- * Class wrapper thrown when [TokenStream.expandExpr] fails.
- */
-public class ExpandErrorThrown internal constructor(public val error: ExpandError) :
-    RuntimeException(error.toString())
 
 /**
  * Lossless string rendering helper for [TokenStream.toString]. Open
@@ -168,12 +159,13 @@ public class ExpandErrorThrown internal constructor(public val error: ExpandErro
  * on the [Delimiter.NONE] doc.
  */
 private fun StringBuilder.appendGroup(group: Group) {
-    val (open, close) = when (group.delimiter()) {
-        Delimiter.PARENTHESIS -> "(" to ")"
-        Delimiter.BRACE -> "{ " to " }"
-        Delimiter.BRACKET -> "[" to "]"
-        Delimiter.NONE -> "" to ""
-    }
+    val (open, close) =
+        when (group.delimiter()) {
+            Delimiter.PARENTHESIS -> "(" to ")"
+            Delimiter.BRACE -> "{ " to " }"
+            Delimiter.BRACKET -> "[" to "]"
+            Delimiter.NONE -> "" to ""
+        }
     append(open)
     append(group.stream().toString())
     append(close)

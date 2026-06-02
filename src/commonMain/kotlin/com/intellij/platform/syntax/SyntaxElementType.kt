@@ -5,7 +5,6 @@ package com.intellij.platform.syntax
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.fetchAndIncrement
-import kotlin.jvm.JvmOverloads
 
 /**
  * A class defining a token or node type.
@@ -57,7 +56,6 @@ class SyntaxElementType internal constructor(
  * @param userData an arbitrary object associated with this element type.
  * @param transient whether this element type is lightweight or not. If `true`, the element type will not be assigned an index and cannot be stored in a set.
  */
-@JvmOverloads
 fun SyntaxElementType(
   debugName: String,
   lazyParser: LazyParser? = null,

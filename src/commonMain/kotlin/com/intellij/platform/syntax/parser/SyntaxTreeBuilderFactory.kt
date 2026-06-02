@@ -9,13 +9,11 @@ import com.intellij.platform.syntax.impl.builder.SyntaxTreeBuilderImpl
 import com.intellij.platform.syntax.lexer.TokenList
 import com.intellij.platform.syntax.logger.noopLogger
 import com.intellij.platform.syntax.parser.SyntaxTreeBuilderFactory.Builder
-import kotlin.jvm.JvmStatic
 
 /**
  * Factory for constructing a [SyntaxTreeBuilder]
  */
-object SyntaxTreeBuilderFactory {
-  @JvmStatic
+internal object SyntaxTreeBuilderFactory {
   fun builder(
     text: CharSequence,
     tokenList: TokenList,
@@ -23,7 +21,7 @@ object SyntaxTreeBuilderFactory {
     comments: Set<SyntaxElementType>,
   ): Builder = BuilderImpl(tokenList, text, whitespaces, comments)
 
-  interface Builder {
+  internal interface Builder {
     /**
      * Use this property to notify the builder that you are parsing just a part of a file starting from [startOffset].
      */
@@ -139,8 +137,8 @@ private class BuilderImpl(
       language = language,
       cancellationProvider = cancellationProvider,
       logger = logger ?: noopLogger(),
-      whitespaceOrCommentBindingPolicy = whitespaceOrCommentBindingPolicy ?: WhitespaceOrCommentBindingPolicy { false },
-      opaquePolicy = opaquePolicy ?: OpaqueElementPolicy { null },
+      whitespaceOrCommentBindingPolicy = whitespaceOrCommentBindingPolicy ?: RightBoundWhitespaceOrCommentBindingPolicy,
+      opaquePolicy = opaquePolicy ?: NoOpaqueElementPolicy,
     )
     return builder as SyntaxTreeBuilder
   }

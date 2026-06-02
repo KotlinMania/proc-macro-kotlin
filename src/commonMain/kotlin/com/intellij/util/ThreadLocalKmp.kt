@@ -3,15 +3,14 @@ package com.intellij.util
 
 import fleet.util.multiplatform.linkToActual
 
-interface ThreadLocalKmp<T> {
-  fun get(): T
-  fun remove()
-  fun set(value: T)
+internal interface NullableBooleanThreadLocalKmp {
+    fun get(): Boolean?
+
+    fun remove()
+
+    fun set(value: Boolean?)
 }
 
-fun <T> ThreadLocalKmp(): ThreadLocalKmp<T?> = ThreadLocalKmp { null }
+internal fun nullableBooleanThreadLocalKmp(): NullableBooleanThreadLocalKmp = nullableBooleanThreadLocalImpl()
 
-fun <T> ThreadLocalKmp(supplier: () -> T): ThreadLocalKmp<T> = threadLocalImpl(supplier)
-
-@Suppress("unused")
-internal fun <T> threadLocalImpl(supplier: () -> T): ThreadLocalKmp<T> = linkToActual()
+internal fun nullableBooleanThreadLocalImpl(): NullableBooleanThreadLocalKmp = linkToActual()

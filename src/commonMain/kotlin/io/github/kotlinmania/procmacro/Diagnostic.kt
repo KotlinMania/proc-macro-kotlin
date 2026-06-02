@@ -18,8 +18,20 @@ public enum class Level {
 
 /** Interface implemented by types that can be converted into a set of [Span]s. */
 public interface MultiSpan {
-    /** Converts `this` into a [List] of [Span]. */
-    public fun intoSpans(): List<Span>
+    /** Converts `this` into a concrete [SpanList]. */
+    public fun intoSpans(): SpanList
+}
+
+public class SpanList internal constructor(
+    private val spans: List<Span>,
+) {
+    public val size: Int get() = spans.size
+
+    public fun isEmpty(): Boolean = spans.isEmpty()
+
+    public fun get(index: Int): Span = spans[index]
+
+    internal fun asList(): List<Span> = spans
 }
 
 /**
@@ -38,14 +50,20 @@ public fun Span.toMultiSpan(): MultiSpan = SingleSpanMultiSpan(this)
  * the upstream `Vec<Span>::into_spans` (consuming) and `&[Span]::into_spans`
  * (copying via `to_vec`) impls.
  */
-public fun List<Span>.toMultiSpan(): MultiSpan = SpanListMultiSpan(this.toList())
+internal fun List<Span>.toMultiSpan(): MultiSpan = SpanListMultiSpan(this.toList())
 
-private class SingleSpanMultiSpan(private val span: Span) : MultiSpan {
-    override fun intoSpans(): List<Span> = listOf(span)
+public fun SpanList.toMultiSpan(): MultiSpan = SpanListMultiSpan(this.asList())
+
+private class SingleSpanMultiSpan(
+    private val span: Span,
+) : MultiSpan {
+    override fun intoSpans(): SpanList = SpanList(listOf(span))
 }
 
-private class SpanListMultiSpan(private val spans: List<Span>) : MultiSpan {
-    override fun intoSpans(): List<Span> = spans
+private class SpanListMultiSpan(
+    private val spans: List<Span>,
+) : MultiSpan {
+    override fun intoSpans(): SpanList = SpanList(spans)
 }
 
 /**
@@ -55,19 +73,26 @@ private class SpanListMultiSpan(private val spans: List<Span>) : MultiSpan {
 public class Diagnostic private constructor(
     private var level: Level,
     private var message: String,
-    private var spans: List<Span>,
+    private var spans: SpanList,
     private val children: MutableList<Diagnostic>,
 ) {
     public companion object {
         /** Creates a new diagnostic with the given [level] and [message]. */
-        public fun new(level: Level, message: String): Diagnostic =
-            Diagnostic(level = level, message = message, spans = emptyList(), children = mutableListOf())
+        public fun new(
+            level: Level,
+            message: String,
+        ): Diagnostic =
+            Diagnostic(level = level, message = message, spans = SpanList(emptyList()), children = mutableListOf())
 
         /**
          * Creates a new diagnostic with the given [level] and [message]
          * pointing to the given set of [spans].
          */
-        public fun spanned(spans: MultiSpan, level: Level, message: String): Diagnostic =
+        public fun spanned(
+            spans: MultiSpan,
+            level: Level,
+            message: String,
+        ): Diagnostic =
             Diagnostic(level = level, message = message, spans = spans.intoSpans(), children = mutableListOf())
     }
 
@@ -83,7 +108,10 @@ public class Diagnostic private constructor(
      * Adds a new child diagnostic message to `this` with the [Level.ERROR]
      * level, and the given [spans] and [message].
      */
-    public fun spanError(spans: MultiSpan, message: String): Diagnostic {
+    public fun spanError(
+        spans: MultiSpan,
+        message: String,
+    ): Diagnostic {
         children.add(spanned(spans, Level.ERROR, message))
         return this
     }
@@ -101,7 +129,10 @@ public class Diagnostic private constructor(
      * Adds a new child diagnostic message to `this` with the [Level.WARNING]
      * level, and the given [spans] and [message].
      */
-    public fun spanWarning(spans: MultiSpan, message: String): Diagnostic {
+    public fun spanWarning(
+        spans: MultiSpan,
+        message: String,
+    ): Diagnostic {
         children.add(spanned(spans, Level.WARNING, message))
         return this
     }
@@ -119,7 +150,10 @@ public class Diagnostic private constructor(
      * Adds a new child diagnostic message to `this` with the [Level.NOTE]
      * level, and the given [spans] and [message].
      */
-    public fun spanNote(spans: MultiSpan, message: String): Diagnostic {
+    public fun spanNote(
+        spans: MultiSpan,
+        message: String,
+    ): Diagnostic {
         children.add(spanned(spans, Level.NOTE, message))
         return this
     }
@@ -137,7 +171,10 @@ public class Diagnostic private constructor(
      * Adds a new child diagnostic message to `this` with the [Level.HELP]
      * level, and the given [spans] and [message].
      */
-    public fun spanHelp(spans: MultiSpan, message: String): Diagnostic {
+    public fun spanHelp(
+        spans: MultiSpan,
+        message: String,
+    ): Diagnostic {
         children.add(spanned(spans, Level.HELP, message))
         return this
     }
@@ -168,7 +205,7 @@ public class Diagnostic private constructor(
     }
 
     /** Returns the [Span]s in `this`. */
-    public fun spans(): List<Span> = spans
+    public fun spans(): SpanList = spans
 
     /** Sets the [Span]s in `this` to [spans]. */
     public fun setSpans(spans: MultiSpan) {
@@ -200,19 +237,25 @@ public class Children internal constructor(
     private val inner: Iterator<Diagnostic>,
 ) : Iterator<Diagnostic> {
     override fun hasNext(): Boolean = inner.hasNext()
+
     override fun next(): Diagnostic = inner.next()
 }
 
-private fun renderDiagnostic(diag: Diagnostic, indent: Int = 0): String = buildString {
-    val pad = "  ".repeat(indent)
-    val label = when (diag.level()) {
-        Level.ERROR -> "error"
-        Level.WARNING -> "warning"
-        Level.NOTE -> "note"
-        Level.HELP -> "help"
+private fun renderDiagnostic(
+    diag: Diagnostic,
+    indent: Int = 0,
+): String =
+    buildString {
+        val pad = "  ".repeat(indent)
+        val label =
+            when (diag.level()) {
+                Level.ERROR -> "error"
+                Level.WARNING -> "warning"
+                Level.NOTE -> "note"
+                Level.HELP -> "help"
+            }
+        append(pad).append(label).append(": ").append(diag.message())
+        for (child in diag.children()) {
+            append('\n').append(renderDiagnostic(child, indent + 1))
+        }
     }
-    append(pad).append(label).append(": ").append(diag.message())
-    for (child in diag.children()) {
-        append('\n').append(renderDiagnostic(child, indent + 1))
-    }
-}

@@ -1,12 +1,9 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 
-@file:JvmName("StringsKmp")
 
 package com.intellij.openapi.util.text
 
 import com.intellij.util.text.CharSequenceSubSequence
-import kotlin.jvm.JvmName
-import kotlin.jvm.JvmOverloads
 
 fun CharSequence.stringHashCode(): Int {
   if (this is String || this is CharSequenceWithStringHash) {
@@ -17,7 +14,6 @@ fun CharSequence.stringHashCode(): Int {
   return this.stringHashCode(0, length)
 }
 
-@JvmOverloads
 fun CharSequence.stringHashCode(from: Int, to: Int, prefixHash: Int = 0): Int {
   var h = prefixHash
   for (off in from..<to) {

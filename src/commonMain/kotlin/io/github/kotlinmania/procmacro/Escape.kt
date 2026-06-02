@@ -19,7 +19,10 @@ internal data class EscapeOptions(
     val escapeNonAscii: Boolean,
 )
 
-internal fun escapeBytes(bytes: ByteArray, opt: EscapeOptions): String {
+internal fun escapeBytes(
+    bytes: ByteArray,
+    opt: EscapeOptions,
+): String {
     val repr = StringBuilder()
 
     if (opt.escapeNonAscii) {
@@ -40,7 +43,11 @@ internal fun escapeBytes(bytes: ByteArray, opt: EscapeOptions): String {
     return repr.toString()
 }
 
-private fun escapeSingleByte(byte: Byte, opt: EscapeOptions, repr: StringBuilder) {
+private fun escapeSingleByte(
+    byte: Byte,
+    opt: EscapeOptions,
+    repr: StringBuilder,
+) {
     val u = byte.toInt() and 0xff
     if (u == 0x00) {
         repr.append("\\0")
@@ -55,7 +62,11 @@ private fun escapeSingleByte(byte: Byte, opt: EscapeOptions, repr: StringBuilder
     }
 }
 
-private fun escapeSingleChar(ch: Int, opt: EscapeOptions, repr: StringBuilder) {
+private fun escapeSingleChar(
+    ch: Int,
+    opt: EscapeOptions,
+    repr: StringBuilder,
+) {
     if ((ch == 0x27 && !opt.escapeSingleQuote) ||
         (ch == 0x22 && !opt.escapeDoubleQuote)
     ) {

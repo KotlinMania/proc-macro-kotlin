@@ -35,7 +35,10 @@ public class Ident internal constructor(
          * unlike other tokens, requires a [Span] to be specified at
          * construction.
          */
-        public fun new(string: String, span: Span): Ident {
+        public fun new(
+            string: String,
+            span: Span,
+        ): Ident {
             requireValidIdent(string, raw = false)
             return Ident(IdentData(sym = string, isRaw = false, span = span))
         }
@@ -47,7 +50,10 @@ public class Ident internal constructor(
          * are usable in path segments (e.g. `self`, `super`) are not
          * supported, and will cause this constructor to throw.
          */
-        public fun newRaw(string: String, span: Span): Ident {
+        public fun newRaw(
+            string: String,
+            span: Span,
+        ): Ident {
             requireValidIdent(string, raw = true)
             return Ident(IdentData(sym = string, isRaw = true, span = span))
         }
@@ -62,7 +68,10 @@ public class Ident internal constructor(
          * `IDENTIFIER` recognizer so the language's exact rules
          * (XID_Start / XID_Continue) are enforced consistently.
          */
-        private fun requireValidIdent(string: String, raw: Boolean) {
+        private fun requireValidIdent(
+            string: String,
+            raw: Boolean,
+        ) {
             require(string.isNotEmpty()) {
                 "`Ident` cannot be empty"
             }
@@ -83,9 +92,13 @@ public class Ident internal constructor(
             }
         }
 
-        private val RAW_IDENT_DISALLOWED: Set<String> = setOf(
-            "self", "super", "Self", "crate",
-        )
+        private val RAW_IDENT_DISALLOWED: Set<String> =
+            setOf(
+                "self",
+                "super",
+                "Self",
+                "crate",
+            )
     }
 
     /**
@@ -106,8 +119,7 @@ public class Ident internal constructor(
      * Prints the identifier as a string that should be losslessly
      * convertible back into the same identifier.
      */
-    override fun toString(): String =
-        if (data.isRaw) "r#${data.sym}" else data.sym
+    override fun toString(): String = if (data.isRaw) "r#${data.sym}" else data.sym
 }
 
 /**

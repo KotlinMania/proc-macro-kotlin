@@ -5,35 +5,34 @@ import com.intellij.platform.syntax.SyntaxElementType
 import com.intellij.platform.syntax.element.SyntaxTokenTypes
 
 internal class ErrorMarker(
-  markerId: Int,
-  builder: SyntaxTreeBuilderImpl,
+    markerId: Int,
+    builder: SyntaxTreeBuilderImpl,
 ) : ProductionMarker(markerId, builder) {
+    private var errorMessage: String? = null
 
-  private var errorMessage: String? = null
+    override fun isErrorMarker(): Boolean = true
 
-  override fun isErrorMarker(): Boolean = true
+    override fun dispose() {
+        super.dispose()
+        errorMessage = null
+    }
 
-  override fun dispose() {
-    super.dispose()
-    errorMessage = null
-  }
+    override fun getErrorMessage(): String? = errorMessage
 
-  override fun getErrorMessage(): String? {
-    return errorMessage
-  }
+    fun setErrorMessage(value: String) {
+        errorMessage = builder.errorInterner.intern(value)
+    }
 
-  fun setErrorMessage(value: String) {
-    errorMessage = builder.errorInterner.intern(value)
-  }
+    override fun getEndOffset(): Int = getStartOffset()
 
-  override fun getEndOffset(): Int = getStartOffset()
+    override fun getNodeType(): SyntaxElementType = SyntaxTokenTypes.ERROR_ELEMENT
 
-  override fun getNodeType(): SyntaxElementType = SyntaxTokenTypes.ERROR_ELEMENT
+    override fun getEndTokenIndex(): Int = startIndex
 
-  override fun getEndTokenIndex(): Int = startIndex
+    override fun getLexemeIndex(done: Boolean): Int = startIndex
 
-  override fun getLexemeIndex(done: Boolean): Int = startIndex
-
-  override fun setLexemeIndex(value: Int, done: Boolean) =
-    if (done) throw UnsupportedOperationException() else startIndex = value
+    override fun setLexemeIndex(
+        value: Int,
+        done: Boolean,
+    ) = if (done) throw UnsupportedOperationException() else startIndex = value
 }

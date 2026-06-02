@@ -28,7 +28,10 @@ package io.github.kotlinmania.procmacro.rustcore
  * named control bytes, printable ASCII passes through, everything else
  * (`<0x20`, `0x7f`, `>=0x80`) becomes `\xHH` with lowercase hex.
  */
-internal fun escapeAscii(u: Int, repr: StringBuilder) {
+internal fun escapeAscii(
+    u: Int,
+    repr: StringBuilder,
+) {
     when (u) {
         0x09 -> repr.append("\\t")
         0x0a -> repr.append("\\n")
@@ -50,15 +53,39 @@ internal fun escapeAscii(u: Int, repr: StringBuilder) {
  * else (including combining marks per `Grapheme_Extend`) becomes
  * `\u{...}` with lowercase hex.
  */
-internal fun escapeDebug(ch: Int, repr: StringBuilder) {
+internal fun escapeDebug(
+    ch: Int,
+    repr: StringBuilder,
+) {
     when (ch) {
-        0x00 -> { repr.append("\\0"); return }
-        0x09 -> { repr.append("\\t"); return }
-        0x0a -> { repr.append("\\n"); return }
-        0x0d -> { repr.append("\\r"); return }
-        0x5c -> { repr.append("\\\\"); return }
-        0x27 -> { repr.append("\\'"); return }
-        0x22 -> { repr.append("\\\""); return }
+        0x00 -> {
+            repr.append("\\0")
+            return
+        }
+        0x09 -> {
+            repr.append("\\t")
+            return
+        }
+        0x0a -> {
+            repr.append("\\n")
+            return
+        }
+        0x0d -> {
+            repr.append("\\r")
+            return
+        }
+        0x5c -> {
+            repr.append("\\\\")
+            return
+        }
+        0x27 -> {
+            repr.append("\\'")
+            return
+        }
+        0x22 -> {
+            repr.append("\\\"")
+            return
+        }
     }
     if (isPrintableUnicode(ch) && !isGraphemeExtend(ch)) {
         repr.appendCodePoint(ch)
@@ -92,7 +119,8 @@ internal fun isPrintableUnicode(codePoint: Int): Boolean {
         CharCategory.CURRENCY_SYMBOL,
         CharCategory.MODIFIER_SYMBOL,
         CharCategory.OTHER_SYMBOL,
-        CharCategory.SPACE_SEPARATOR -> true
+        CharCategory.SPACE_SEPARATOR,
+        -> true
         else -> false
     }
 }

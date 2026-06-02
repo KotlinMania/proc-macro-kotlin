@@ -9,7 +9,6 @@ import com.intellij.platform.syntax.lexer.TokenList
 import com.intellij.platform.syntax.parser.SyntaxTreeBuilder
 import com.intellij.platform.syntax.parser.WhitespacesBinders
 import com.intellij.util.text.CharSequenceSubSequence
-import kotlin.jvm.JvmStatic
 
 object SyntaxBuilderUtil {
   /**
@@ -18,7 +17,6 @@ object SyntaxBuilderUtil {
    * @param this PSI builder to operate on.
    * @param count number of tokens to skip.
    */
-  @JvmStatic
   fun SyntaxTreeBuilder.advance(count: Int) {
     repeat(count) {
       if (eof()) return
@@ -34,7 +32,6 @@ object SyntaxBuilderUtil {
    * @param expectedType expected token.
    * @return true if token matches, false otherwise.
    */
-  @JvmStatic
   fun SyntaxTreeBuilder.expect(expectedType: SyntaxElementType?): Boolean {
     if (tokenType === expectedType) {
       advanceLexer()
@@ -50,7 +47,6 @@ object SyntaxBuilderUtil {
    * @param expectedTypes expected token types.
    * @return true if token matches, false otherwise.
    */
-  @JvmStatic
   fun SyntaxTreeBuilder.expect(expectedTypes: SyntaxElementTypeSet): Boolean {
     if (tokenType in expectedTypes) {
       advanceLexer()
@@ -64,14 +60,12 @@ object SyntaxBuilderUtil {
    *
    * @param markers markers to drop.
    */
-  @JvmStatic
   fun drop(vararg markers: SyntaxTreeBuilder.Marker?) {
     for (marker in markers) {
       marker?.drop()
     }
   }
 
-  @JvmStatic
   fun SyntaxTreeBuilder.rawTokenText(index: Int): CharSequence {
     return CharSequenceSubSequence(
       baseSequence = text,
@@ -88,7 +82,6 @@ object SyntaxBuilderUtil {
    *
    * @return collapsed marker of the block or `null` if [leftBrace] is missing.
    */
-  @JvmStatic
   fun SyntaxTreeBuilder.parseBlockLazy(
     leftBrace: SyntaxElementType,
     rightBrace: SyntaxElementType,
@@ -134,7 +127,6 @@ object SyntaxBuilderUtil {
    * @param cancellationProvider - a hook to stop operation if it's not necessary anymore
    * @return true if [text] forms a balanced block
    */
-  @JvmStatic
   fun isBalancedBlock(
     text: CharSequence,
     lexer: Lexer,
@@ -160,7 +152,6 @@ object SyntaxBuilderUtil {
    * Unlike [isBalancedBlock], this does **not** require the first/last token
    * to be the brace pair — it only checks internal balance.
    */
-  @JvmStatic
   fun areBracesBalancedInside(
     tokenList: TokenList,
     leftBrace: SyntaxElementType,
@@ -189,7 +180,6 @@ object SyntaxBuilderUtil {
    * @param cancellationProvider - a hook to stop operation if it's not necessary anymore
    * @return true if [tokenList] forms a balanced block
    */
-  @JvmStatic
   fun isBalancedBlock(
     tokenList: TokenList,
     leftBrace: SyntaxElementType,
@@ -213,7 +203,6 @@ object SyntaxBuilderUtil {
     "Use isBalancedBlock instead",
     ReplaceWith("isBalancedBlock(text, lexer, leftBrace, rightBrace, cancellationProvider)"),
   )
-  @JvmStatic
   fun hasProperBraceBalance(
     text: CharSequence,
     lexer: Lexer,
@@ -226,7 +215,6 @@ object SyntaxBuilderUtil {
     "Use isBalancedBlock instead",
     ReplaceWith("isBalancedBlock(tokenList, leftBrace, rightBrace, cancellationProvider)"),
   )
-  @JvmStatic
   fun hasProperBraceBalance(
     tokenList: TokenList,
     leftBrace: SyntaxElementType,

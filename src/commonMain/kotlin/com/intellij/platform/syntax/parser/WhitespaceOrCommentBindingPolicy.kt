@@ -28,14 +28,17 @@ import com.intellij.platform.syntax.element.SyntaxTokenTypes
  * @see SyntaxTreeBuilderFactory.Builder.withWhitespaceOrCommentBindingPolicy
  */
 
-fun interface WhitespaceOrCommentBindingPolicy {
-  fun isLeftBound(elementType: SyntaxElementType): Boolean
+interface WhitespaceOrCommentBindingPolicy {
+    fun isLeftBound(elementType: SyntaxElementType): Boolean
+}
+
+object RightBoundWhitespaceOrCommentBindingPolicy : WhitespaceOrCommentBindingPolicy {
+    override fun isLeftBound(elementType: SyntaxElementType): Boolean = false
 }
 
 /**
  * A [WhitespaceOrCommentBindingPolicy], which makes the [SyntaxTokenTypes.ERROR_ELEMENT] type left-bound.
  */
 object DefaultWhitespaceBindingPolicy : WhitespaceOrCommentBindingPolicy {
-  override fun isLeftBound(elementType: SyntaxElementType): Boolean =
-    elementType == SyntaxTokenTypes.ERROR_ELEMENT
+    override fun isLeftBound(elementType: SyntaxElementType): Boolean = elementType == SyntaxTokenTypes.ERROR_ELEMENT
 }

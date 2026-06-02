@@ -12,40 +12,52 @@ import com.intellij.platform.syntax.SyntaxElementType
  * @see SyntaxTreeBuilder.Marker.setCustomEdgeTokenBinders
  */
 
+class SyntaxElementTypeList internal constructor(
+    private val tokens: List<SyntaxElementType>,
+) {
+    val size: Int get() = tokens.size
+
+    fun get(index: Int): SyntaxElementType = tokens[index]
+}
+
 interface WhitespacesAndCommentsBinder {
-  /**
-   * Provides an ability for the processor to get a text of any of given tokens.
-   */
-  interface TokenTextGetter {
-    fun get(i: Int): CharSequence
-  }
+    /**
+     * Provides an ability for the processor to get a text of any of given tokens.
+     */
+    interface TokenTextGetter {
+        fun get(i: Int): CharSequence
+    }
 
-  /**
-   * Analyzes whitespace and comment tokens at element's edge and returns element's edge position relative to these tokens.
-   * Value returned by left edge processor will be used as a pointer to a first token of element.
-   * Value returned by right edge processor will be used as a pointer to a token next of element's last token.
-   *
-   *
-   *
-   * Example 1: if a processor for left edge wants to leave all whitespaces and comments out of element's scope
-   * (before it's start) it should return value of `tokens.size()` placing element's start pointer to a first
-   * token after series of whitespaces/comments.
-   *
-   *
-   *
-   * Example 2: if a processor for right edge wants to leave all whitespaces and comments out of element's scope
-   * (after its end) it should return value of `0` placing element's end pointer to a first
-   * whitespace or comment after element's end.
-   *
-   * @param tokens       sequence of whitespace and comment tokens at the element's edge.
-   * @param atStreamEdge `true` if sequence of tokens is located at the beginning or the end of token stream.
-   * @param getter       token text getter.
-   * @return position of element's edge relative to given tokens.
-   */
-  fun getEdgePosition(tokens: List<SyntaxElementType>, atStreamEdge: Boolean, getter: TokenTextGetter): Int
+    /**
+     * Analyzes whitespace and comment tokens at element's edge and returns element's edge position relative to these tokens.
+     * Value returned by left edge processor will be used as a pointer to a first token of element.
+     * Value returned by right edge processor will be used as a pointer to a token next of element's last token.
+     *
+     *
+     *
+     * Example 1: if a processor for left edge wants to leave all whitespaces and comments out of element's scope
+     * (before it's start) it should return value of `tokens.size()` placing element's start pointer to a first
+     * token after series of whitespaces/comments.
+     *
+     *
+     *
+     * Example 2: if a processor for right edge wants to leave all whitespaces and comments out of element's scope
+     * (after its end) it should return value of `0` placing element's end pointer to a first
+     * whitespace or comment after element's end.
+     *
+     * @param tokens       sequence of whitespace and comment tokens at the element's edge.
+     * @param atStreamEdge `true` if sequence of tokens is located at the beginning or the end of token stream.
+     * @param getter       token text getter.
+     * @return position of element's edge relative to given tokens.
+     */
+    fun getEdgePosition(
+        tokens: SyntaxElementTypeList,
+        atStreamEdge: Boolean,
+        getter: TokenTextGetter,
+    ): Int
 
-  /**
-   * Recursive binder is allowed to adjust nested elements' positions.
-   */
-  fun isRecursive(): Boolean = false
+    /**
+     * Recursive binder is allowed to adjust nested elements' positions.
+     */
+    fun isRecursive(): Boolean = false
 }

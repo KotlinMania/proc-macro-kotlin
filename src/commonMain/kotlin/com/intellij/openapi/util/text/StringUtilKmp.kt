@@ -1,35 +1,24 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-@file:JvmName("StringUtilKmp")
-
-
 package com.intellij.openapi.util.text
 
-import kotlin.jvm.JvmName
-
-
-fun CharSequence.containsLineBreak(): Boolean {
-  return any { it.isLineBreak() }
-}
-
+fun CharSequence.containsLineBreak(): Boolean = any { it.isLineBreak() }
 
 fun Char.isLineBreak(): Boolean = this == '\n' || this == '\r'
 
-
 fun CharSequence.getLineBreakCount(): Int {
-  var count = 0
-  var i = 0
-  while (i < length) {
-    val c = this[i]
-    if (c == '\n') {
-      count++
-    }
-    else if (c == '\r') {
-      if (i + 1 < length && this[i + 1] == '\n') {
+    var count = 0
+    var i = 0
+    while (i < length) {
+        val c = this[i]
+        if (c == '\n') {
+            count++
+        } else if (c == '\r') {
+            if (i + 1 < length && this[i + 1] == '\n') {
+                i++
+            }
+            count++
+        }
         i++
-      }
-      count++
     }
-    i++
-  }
-  return count
+    return count
 }

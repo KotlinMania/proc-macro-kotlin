@@ -4,19 +4,16 @@ package com.intellij.util.text
 import com.intellij.openapi.util.text.CharSequenceWithStringHash
 import com.intellij.openapi.util.text.stringHashCode
 import com.intellij.util.text.CharArrayUtilKmp.regionMatches
-import kotlin.jvm.JvmField
-import kotlin.jvm.Transient
 import kotlin.math.min
 
 open class CharArrayCharSequence(
-  @JvmField protected val myChars: CharArray,
-  @JvmField protected val myStart: Int,
-  @JvmField protected val myEnd: Int,
+  protected val myChars: CharArray,
+  protected val myStart: Int,
+  protected val myEnd: Int,
 ) : CharSequenceBackedByArray, CharSequenceWithStringHash {
 
   constructor(vararg chars: Char) : this(chars, 0, chars.size)
 
-  @Transient
   private var hash = 0
 
   init {
@@ -34,8 +31,8 @@ open class CharArrayCharSequence(
     return myChars[index + myStart]
   }
 
-  override fun subSequence(start: Int, end: Int): CharSequence {
-    return if (start == 0 && end == length) this else CharArrayCharSequence(myChars, myStart + start, myStart + end)
+  override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+    return if (startIndex == 0 && endIndex == length) this else CharArrayCharSequence(myChars, myStart + startIndex, myStart + endIndex)
   }
 
   override fun toString(): String {
@@ -54,14 +51,14 @@ open class CharArrayCharSequence(
     myChars.copyInto(dst, dstOffset, myStart, myEnd)
   }
 
-  override fun equals(anObject: Any?): Boolean {
-    if (this === anObject) {
+  override fun equals(other: Any?): Boolean {
+    if (this === other) {
       return true
     }
-    if (anObject == null || this::class != anObject::class || length != (anObject as CharSequence).length) {
+    if (other == null || this::class != other::class || length != (other as CharSequence).length) {
       return false
     }
-    return myChars.regionMatches(myStart, myEnd, anObject)
+    return myChars.regionMatches(myStart, myEnd, other)
   }
 
   /**

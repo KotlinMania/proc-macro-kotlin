@@ -1,7 +1,6 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.util
 
-import kotlin.jvm.JvmStatic
 
 enum class ThreeState {
   YES, NO, UNSURE;
@@ -35,7 +34,6 @@ enum class ThreeState {
   }
 
   companion object {
-    @JvmStatic
     fun fromBoolean(value: Boolean): ThreeState {
       return if (value) YES else NO
     }
@@ -43,7 +41,6 @@ enum class ThreeState {
     /**
      * @return `YES` if the given states contain `YES`, otherwise `UNSURE` if the given states contain `UNSURE`, otherwise `NO`
      */
-    @JvmStatic
     fun mostPositive(states: Iterable<ThreeState>): ThreeState {
       var result = NO
       for (state in states) {
@@ -60,7 +57,6 @@ enum class ThreeState {
      * @return `UNSURE` if `states` contains different values, the single value otherwise
      * @throws IllegalArgumentException if `states` is empty
      */
-    @JvmStatic
     fun merge(states: Iterable<ThreeState>): ThreeState {
       var result: ThreeState? = null
       for (state in states) {

@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.kmp.lexer.KtTokens
  * independently.
  */
 internal object KtTokenAdapter {
-
     /**
      * Tokenizes [source] via the supplied [lexer] and returns a
      * [TokenStream] of `proc_macro`-shaped token trees.
@@ -31,7 +30,10 @@ internal object KtTokenAdapter {
      * Returns [Result.failure] with [LexErrorThrown] on unbalanced
      * delimiters or unrecognized tokens.
      */
-    fun tokenize(lexer: Lexer, source: CharSequence): Result<TokenStream> {
+    fun tokenize(
+        lexer: Lexer,
+        source: CharSequence,
+    ): TokenStreamParseOutcome {
         lexer.start(source, 0, source.length, 0)
 
         // Collect all tokens from the lexer
@@ -44,32 +46,31 @@ internal object KtTokenAdapter {
         val src: (Int, Int) -> String = { s, e -> source.subSequence(s, e).toString() }
 
         // Phase 1: filter whitespace and comments
-        val noWhite = raw.filter { t ->
-            !KtTokens.WHITE_SPACE_OR_COMMENT_BIT_SET.contains(t.type)
-        }
+        val noWhite =
+            raw.filter { t ->
+                !KtTokens.WHITE_SPACE_OR_COMMENT_BIT_SET.contains(t.type)
+            }
 
         // Phase 2: collapse string-template token runs into single entries
         val collapsed = collapseStringTemplates(noWhite)
 
         // Phase 3: group delimiters into nested structure
-        val grouped = groupDelimiters(collapsed)
-            ?: return Result.failure(
-                LexErrorThrown(LexError("Unbalanced delimiters in source")),
-            )
+        val grouped =
+            groupDelimiters(collapsed)
+                ?: return TokenStreamParseOutcome.Err(LexError("Unbalanced delimiters in source"))
 
         // Phase 4: convert flat tokens to TokenTree lists
         val trees = mutableListOf<TokenTree>()
         for (ft in grouped) {
-            val converted = convertFlatToken(ft, src)
-                ?: return Result.failure(
-                    LexErrorThrown(
+            val converted =
+                convertFlatToken(ft, src)
+                    ?: return TokenStreamParseOutcome.Err(
                         LexError("Unrecognized token at offset ${ft.start}: ${src(ft.start, ft.end)}"),
-                    ),
-                )
+                    )
             trees.addAll(converted)
         }
 
-        return Result.success(TokenStream(TokenStreamData(trees)))
+        return TokenStreamParseOutcome.Ok(TokenStream(TokenStreamData(trees)))
     }
 
     // --- Internal representations ---
@@ -100,17 +101,20 @@ internal object KtTokenAdapter {
                 while (i < tokens.size && tokens[i].type != KtTokens.CLOSING_QUOTE) {
                     i++
                 }
-                val closeEnd = if (i < tokens.size) {
-                    i++
-                    tokens[i - 1].end
-                } else {
-                    first.end
-                }
-                result.add(FlatToken(
-                    type = STRING_LITERAL,
-                    start = first.start,
-                    end = closeEnd,
-                ))
+                val closeEnd =
+                    if (i < tokens.size) {
+                        i++
+                        tokens[i - 1].end
+                    } else {
+                        first.end
+                    }
+                result.add(
+                    FlatToken(
+                        type = STRING_LITERAL,
+                        start = first.start,
+                        end = closeEnd,
+                    ),
+                )
             } else {
                 result.add(FlatToken(type = t.type, start = t.start, end = t.end))
                 i++
@@ -146,12 +150,14 @@ internal object KtTokenAdapter {
                 if (depth != 0) return null
                 val closeEnd = tokens[i - 1].end
                 val innerGrouped = groupDelimiters(childList) ?: return null
-                result.add(FlatToken(
-                    type = openDelim,
-                    start = t.start,
-                    end = closeEnd,
-                    children = innerGrouped,
-                ))
+                result.add(
+                    FlatToken(
+                        type = openDelim,
+                        start = t.start,
+                        end = closeEnd,
+                        children = innerGrouped,
+                    ),
+                )
             } else if (closeDelimiterOf(t.type) != null) {
                 return null
             } else {
@@ -162,19 +168,21 @@ internal object KtTokenAdapter {
         return result
     }
 
-    private fun openDelimiterOf(type: SyntaxElementType): SyntaxElementType? = when (type) {
-        KtTokens.LPAR -> KtTokens.LPAR
-        KtTokens.LBRACE -> KtTokens.LBRACE
-        KtTokens.LBRACKET -> KtTokens.LBRACKET
-        else -> null
-    }
+    private fun openDelimiterOf(type: SyntaxElementType): SyntaxElementType? =
+        when (type) {
+            KtTokens.LPAR -> KtTokens.LPAR
+            KtTokens.LBRACE -> KtTokens.LBRACE
+            KtTokens.LBRACKET -> KtTokens.LBRACKET
+            else -> null
+        }
 
-    private fun closeDelimiterOf(type: SyntaxElementType): SyntaxElementType? = when (type) {
-        KtTokens.RPAR -> KtTokens.RPAR
-        KtTokens.RBRACE -> KtTokens.RBRACE
-        KtTokens.RBRACKET -> KtTokens.RBRACKET
-        else -> null
-    }
+    private fun closeDelimiterOf(type: SyntaxElementType): SyntaxElementType? =
+        when (type) {
+            KtTokens.RPAR -> KtTokens.RPAR
+            KtTokens.RBRACE -> KtTokens.RBRACE
+            KtTokens.RBRACKET -> KtTokens.RBRACKET
+            else -> null
+        }
 
     // --- Phase 4: flat token to TokenTree conversion ---
 
@@ -186,20 +194,23 @@ internal object KtTokenAdapter {
 
         // Delimiter groups
         if (ft.children != null) {
-            val delim = when (ft.type) {
-                KtTokens.LPAR -> Delimiter.PARENTHESIS
-                KtTokens.LBRACE -> Delimiter.BRACE
-                KtTokens.LBRACKET -> Delimiter.BRACKET
-                else -> return null
-            }
+            val delim =
+                when (ft.type) {
+                    KtTokens.LPAR -> Delimiter.PARENTHESIS
+                    KtTokens.LBRACE -> Delimiter.BRACE
+                    KtTokens.LBRACKET -> Delimiter.BRACKET
+                    else -> return null
+                }
             val childTrees = mutableListOf<TokenTree>()
             for (child in ft.children) {
                 val converted = convertFlatToken(child, src) ?: return null
                 childTrees.addAll(converted)
             }
-            return listOf(TokenTree.Group(
-                Group.new(delim, TokenStream(TokenStreamData(childTrees))),
-            ))
+            return listOf(
+                TokenTree.Group(
+                    Group.new(delim, TokenStream(TokenStreamData(childTrees))),
+                ),
+            )
         }
 
         // Collapsed string literal
@@ -273,32 +284,34 @@ internal object KtTokenAdapter {
             KtTokens.SOFT_KEYWORDS_AND_MODIFIERS.contains(type)
 
     /** Tokens in HARD_KEYWORDS_AND_MODIFIERS whose text is not a valid Ident. */
-    private val COMPOUND_KEYWORDS: Set<SyntaxElementType> = setOf(
-        KtTokens.NOT_IN,
-        KtTokens.NOT_IS,
-        KtTokens.AS_SAFE,
-    )
+    private val COMPOUND_KEYWORDS: Set<SyntaxElementType> =
+        setOf(
+            KtTokens.NOT_IN,
+            KtTokens.NOT_IS,
+            KtTokens.AS_SAFE,
+        )
 
-    private fun singleCharPunct(type: SyntaxElementType): Char? = when (type) {
-        KtTokens.PLUS -> '+'
-        KtTokens.MINUS -> '-'
-        KtTokens.MUL -> '*'
-        KtTokens.DIV -> '/'
-        KtTokens.PERC -> '%'
-        KtTokens.LT -> '<'
-        KtTokens.GT -> '>'
-        KtTokens.EXCL -> '!'
-        KtTokens.AND -> '&'
-        KtTokens.EQ -> '='
-        KtTokens.COLON -> ':'
-        KtTokens.SEMICOLON -> ';'
-        KtTokens.DOT -> '.'
-        KtTokens.COMMA -> ','
-        KtTokens.AT -> '@'
-        KtTokens.HASH -> '#'
-        KtTokens.QUEST -> '?'
-        else -> null
-    }
+    private fun singleCharPunct(type: SyntaxElementType): Char? =
+        when (type) {
+            KtTokens.PLUS -> '+'
+            KtTokens.MINUS -> '-'
+            KtTokens.MUL -> '*'
+            KtTokens.DIV -> '/'
+            KtTokens.PERC -> '%'
+            KtTokens.LT -> '<'
+            KtTokens.GT -> '>'
+            KtTokens.EXCL -> '!'
+            KtTokens.AND -> '&'
+            KtTokens.EQ -> '='
+            KtTokens.COLON -> ':'
+            KtTokens.SEMICOLON -> ';'
+            KtTokens.DOT -> '.'
+            KtTokens.COMMA -> ','
+            KtTokens.AT -> '@'
+            KtTokens.HASH -> '#'
+            KtTokens.QUEST -> '?'
+            else -> null
+        }
 
     /**
      * Multi-character operators that the lexer produces as atomic tokens
@@ -309,32 +322,33 @@ internal object KtTokenAdapter {
      * tokens. The parser-level SemanticWhitespaceAwareSyntaxBuilder joins
      * them.
      */
-    private fun multiCharPunct(type: SyntaxElementType): String? = when (type) {
-        KtTokens.ARROW -> "->"
-        KtTokens.DOUBLE_ARROW -> "=>"
-        KtTokens.PLUSPLUS -> "++"
-        KtTokens.MINUSMINUS -> "--"
-        KtTokens.LTEQ -> "<="
-        KtTokens.GTEQ -> ">="
-        KtTokens.EQEQ -> "=="
-        KtTokens.EQEQEQ -> "==="
-        KtTokens.EXCLEQ -> "!="
-        KtTokens.EXCLEQEQEQ -> "!=="
-        KtTokens.EXCLEXCL -> "!!"
-        KtTokens.ANDAND -> "&&"
-        KtTokens.OROR -> "||"
-        KtTokens.MULTEQ -> "*="
-        KtTokens.DIVEQ -> "/="
-        KtTokens.PERCEQ -> "%="
-        KtTokens.PLUSEQ -> "+="
-        KtTokens.MINUSEQ -> "-="
-        KtTokens.RANGE -> ".."
-        KtTokens.RANGE_UNTIL -> "..<"
-        KtTokens.COLONCOLON -> "::"
-        KtTokens.DOUBLE_SEMICOLON -> ";;"
-        KtTokens.RESERVED -> "..."
-        else -> null
-    }
+    private fun multiCharPunct(type: SyntaxElementType): String? =
+        when (type) {
+            KtTokens.ARROW -> "->"
+            KtTokens.DOUBLE_ARROW -> "=>"
+            KtTokens.PLUSPLUS -> "++"
+            KtTokens.MINUSMINUS -> "--"
+            KtTokens.LTEQ -> "<="
+            KtTokens.GTEQ -> ">="
+            KtTokens.EQEQ -> "=="
+            KtTokens.EQEQEQ -> "==="
+            KtTokens.EXCLEQ -> "!="
+            KtTokens.EXCLEQEQEQ -> "!=="
+            KtTokens.EXCLEXCL -> "!!"
+            KtTokens.ANDAND -> "&&"
+            KtTokens.OROR -> "||"
+            KtTokens.MULTEQ -> "*="
+            KtTokens.DIVEQ -> "/="
+            KtTokens.PERCEQ -> "%="
+            KtTokens.PLUSEQ -> "+="
+            KtTokens.MINUSEQ -> "-="
+            KtTokens.RANGE -> ".."
+            KtTokens.RANGE_UNTIL -> "..<"
+            KtTokens.COLONCOLON -> "::"
+            KtTokens.DOUBLE_SEMICOLON -> ";;"
+            KtTokens.RESERVED -> "..."
+            else -> null
+        }
 
     /**
      * Decomposes compound lexer tokens that blend punctuation and
@@ -347,19 +361,23 @@ internal object KtTokenAdapter {
     private fun compoundTokenDecomposition(
         type: SyntaxElementType,
         text: String,
-    ): List<TokenTree>? = when (type) {
-        KtTokens.NOT_IN -> listOf(
-            TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
-            TokenTree.Ident(Ident.new("in", Span.callSite())),
-        )
-        KtTokens.NOT_IS -> listOf(
-            TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
-            TokenTree.Ident(Ident.new("is", Span.callSite())),
-        )
-        KtTokens.AS_SAFE -> listOf(
-            TokenTree.Ident(Ident.new("as", Span.callSite())),
-            TokenTree.Punct(Punct.new('?', Spacing.ALONE)),
-        )
-        else -> null
-    }
+    ): List<TokenTree>? =
+        when (type) {
+            KtTokens.NOT_IN ->
+                listOf(
+                    TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("in", Span.callSite())),
+                )
+            KtTokens.NOT_IS ->
+                listOf(
+                    TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("is", Span.callSite())),
+                )
+            KtTokens.AS_SAFE ->
+                listOf(
+                    TokenTree.Ident(Ident.new("as", Span.callSite())),
+                    TokenTree.Punct(Punct.new('?', Spacing.ALONE)),
+                )
+            else -> null
+        }
 }

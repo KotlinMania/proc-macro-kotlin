@@ -2,9 +2,6 @@
 package com.intellij.util.lang
 
 import com.intellij.util.currentJavaVersionPlatformSpecific
-import kotlin.jvm.JvmField
-import kotlin.jvm.JvmOverloads
-import kotlin.jvm.JvmStatic
 
 /**
  * A class representing a version of some Java platform - e.g. the runtime the class is loaded into, or some installed JRE.
@@ -21,7 +18,6 @@ class JavaVersion private constructor(
    * The major version.
    * Corresponds to the first number of the 9+ format (**9**.0.1) / the second number of the 1.x format (1.**8**.0_60).
    */
-  @JvmField
   val feature: Int,
 
   /**
@@ -29,14 +25,12 @@ class JavaVersion private constructor(
    * Corresponds to the second number of the 9+ format (9.**0**.1) / the third number of 1.x the format (1.8.**0**_60).
    * Was used in version strings prior to 1.5, in newer strings is always `0`.
    */
-  @JvmField
   val minor: Int,
 
   /**
    * The patch version.
    * Corresponds to the third number of the 9+ format (9.0.**1**) / the number after an underscore of the 1.x format (1.8.0_**60**).
    */
-  @JvmField
   val update: Int,
 
   /**
@@ -44,13 +38,11 @@ class JavaVersion private constructor(
    * Corresponds to a number prefixed by the "plus" sign in the 9+ format (9.0.1+**7**) /
    * by "-b" string in the 1.x format (1.8.0_60-b**12**).
    */
-  @JvmField
   val build: Int,
 
   /**
    * `true` if the platform is an early access release, `false` otherwise (or when not known).
    */
-  @JvmField
   val ea: Boolean,
 ) : Comparable<JavaVersion> {
   init {
@@ -132,8 +124,6 @@ class JavaVersion private constructor(
      *
      * @throws IllegalArgumentException when any of the numbers is negative
      */
-    @JvmStatic
-    @JvmOverloads
     @Throws(IllegalArgumentException::class)
     fun compose(feature: Int, minor: Int = 0, update: Int = 0, build: Int = 0, ea: Boolean = false): JavaVersion =
       JavaVersion(feature, minor, update, build, ea)
@@ -144,7 +134,6 @@ class JavaVersion private constructor(
       level = DeprecationLevel.ERROR
     )
     
-    @JvmStatic
     fun current(): JavaVersion = currentJavaVersionPlatformSpecific()
 
     private const val MAX_ACCEPTED_VERSION = 50 // sanity check
@@ -164,7 +153,6 @@ class JavaVersion private constructor(
      *
      * @throws IllegalArgumentException if failed to recognize the number.
      */
-    @JvmStatic
     @Throws(IllegalArgumentException::class)
     fun parse(versionString: String): JavaVersion {
       // trimming
@@ -264,7 +252,6 @@ class JavaVersion private constructor(
     /**
      * A safe version of [.parse] - returns `null` when unable to parse a version string.
      */
-    @JvmStatic
     fun tryParse(versionString: String?): JavaVersion? {
       if (versionString != null) {
         try {

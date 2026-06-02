@@ -10,5 +10,9 @@ import com.intellij.platform.syntax.SyntaxElementType
  */
 
 interface WhitespaceSkippedCallback {
-  fun onSkip(type: SyntaxElementType, start: Int, end: Int)
+    fun onSkip(
+        type: SyntaxElementType,
+        start: Int,
+        end: Int,
+    )
 }

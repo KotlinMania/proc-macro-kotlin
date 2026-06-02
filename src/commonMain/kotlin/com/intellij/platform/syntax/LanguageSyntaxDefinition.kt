@@ -14,35 +14,35 @@ import com.intellij.platform.syntax.parser.WhitespaceOrCommentBindingPolicy
  */
 
 interface LanguageSyntaxDefinition {
-  fun parse(builder: SyntaxTreeBuilder)
+    fun parse(builder: SyntaxTreeBuilder)
 
-  /**
-   * An instance of [com.intellij.platform.syntax.lexer.Lexer] for the language with default settings.
-   * Create your lexer directly if you need to set some custom settings.
-   */
-  fun createLexer(): Lexer
+    /**
+     * An instance of [com.intellij.platform.syntax.lexer.Lexer] for the language with default settings.
+     * Create your lexer directly if you need to set some custom settings.
+     */
+    fun createLexer(): Lexer
 
-  /**
-   * The set of comment token types of the language
-   */
-  val comments: SyntaxElementTypeSet
+    /**
+     * The set of comment token types of the language
+     */
+    val comments: SyntaxElementTypeSet
 
-  /**
-   * The set of whitespace token types of the language
-   */
-  val whitespaces: SyntaxElementTypeSet get() = syntaxElementTypeSetOf(SyntaxTokenTypes.WHITE_SPACE)
+    /**
+     * The set of whitespace token types of the language
+     */
+    val whitespaces: SyntaxElementTypeSet get() = syntaxElementTypeSetOf(SyntaxTokenTypes.WHITE_SPACE)
 
-  /**
-   * Controls whitespace balancing behavior of [com.intellij.platform.syntax.parser.SyntaxTreeBuilder].
-   * For more details see [com.intellij.platform.syntax.parser.WhitespaceOrCommentBindingPolicy]
-   */
-  val whitespaceOrCommentBindingPolicy: WhitespaceOrCommentBindingPolicy?
-    get() = null
+    /**
+     * Controls whitespace balancing behavior of [com.intellij.platform.syntax.parser.SyntaxTreeBuilder].
+     * For more details see [com.intellij.platform.syntax.parser.WhitespaceOrCommentBindingPolicy]
+     */
+    val whitespaceOrCommentBindingPolicy: WhitespaceOrCommentBindingPolicy?
+        get() = null
 
-  /**
-   * The policy for handling opaque elements in the syntax tree.
-   * For more details see [com.intellij.platform.syntax.parser.OpaqueElementPolicy]
-   */
-  val opaqueElementPolicy: OpaqueElementPolicy?
-    get() = null
+    /**
+     * The policy for handling opaque elements in the syntax tree.
+     * For more details see [com.intellij.platform.syntax.parser.OpaqueElementPolicy]
+     */
+    val opaqueElementPolicy: OpaqueElementPolicy?
+        get() = null
 }

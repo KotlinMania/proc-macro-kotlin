@@ -12,5 +12,6 @@ public class IntoIter internal constructor(
     private val source: Iterator<TokenTree>,
 ) : Iterator<TokenTree> {
     override fun hasNext(): Boolean = source.hasNext()
+
     override fun next(): TokenTree = source.next()
 }

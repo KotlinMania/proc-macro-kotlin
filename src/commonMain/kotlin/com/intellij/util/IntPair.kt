@@ -1,9 +1,8 @@
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.util
 
-import kotlin.jvm.JvmField
 
-class IntPair(@JvmField val first: Int, @JvmField val second: Int) {
+class IntPair(val first: Int, val second: Int) {
   override fun hashCode(): Int {
     return 31 * first + second
   }
