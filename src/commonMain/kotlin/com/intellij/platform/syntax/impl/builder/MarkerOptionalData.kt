@@ -11,80 +11,84 @@ import com.intellij.util.fastutil.ints.MutableIntSet
 import com.intellij.util.fastutil.ints.toIntArray
 
 internal class MarkerOptionalData {
-  private val bitSet = MutableBitSet()
+    private val bitSet = MutableBitSet()
 
-  private val myDebugAllocationPositions: MutableIntMap<Throwable> = Int2ObjectOpenHashMap()
-  private val myDoneErrors: MutableIntMap<String> = Int2ObjectOpenHashMap()
-  private val myLeftBinders: MutableIntMap<WhitespacesAndCommentsBinder> = Int2ObjectOpenHashMap()
-  private val myRightBinders: MutableIntMap<WhitespacesAndCommentsBinder> = Int2ObjectOpenHashMap()
-  private val myCollapsed: MutableIntSet = IntOpenHashSet()
+    private val myDebugAllocationPositions: MutableIntMap<Throwable> = Int2ObjectOpenHashMap()
+    private val myDoneErrors: MutableIntMap<String> = Int2ObjectOpenHashMap()
+    private val myLeftBinders: MutableIntMap<WhitespacesAndCommentsBinder> = Int2ObjectOpenHashMap()
+    private val myRightBinders: MutableIntMap<WhitespacesAndCommentsBinder> = Int2ObjectOpenHashMap()
+    private val myCollapsed: MutableIntSet = IntOpenHashSet()
 
-  fun clean(markerId: Int) {
-    if (bitSet.contains(markerId)) {
-      bitSet.remove(markerId)
-      myLeftBinders.remove(markerId)
-      myRightBinders.remove(markerId)
-      myDoneErrors.remove(markerId)
-      myCollapsed.remove(markerId)
-      myDebugAllocationPositions.remove(markerId)
+    fun clean(markerId: Int) {
+        if (bitSet.contains(markerId)) {
+            bitSet.remove(markerId)
+            myLeftBinders.remove(markerId)
+            myRightBinders.remove(markerId)
+            myDoneErrors.remove(markerId)
+            myCollapsed.remove(markerId)
+            myDebugAllocationPositions.remove(markerId)
+        }
     }
-  }
 
-  val collapsedMarkerSize
-    get() = myCollapsed.size
+    val collapsedMarkerSize
+        get() = myCollapsed.size
 
-  val collapsedMarkerIds: IntArray
-    get() = myCollapsed.toIntArray()
+    val collapsedMarkerIds: IntArray
+        get() = myCollapsed.toIntArray()
 
-  
-  fun getDoneError(markerId: Int): String? = myDoneErrors[markerId]
+    fun getDoneError(markerId: Int): String? = myDoneErrors[markerId]
 
-  fun isCollapsed(markerId: Int): Boolean = markerId in myCollapsed
+    fun isCollapsed(markerId: Int): Boolean = markerId in myCollapsed
 
-  fun setErrorMessage(markerId: Int, message: String) {
-    markAsHavingOptionalData(markerId)
-    myDoneErrors.put(markerId, message)
-  }
-
-  fun markCollapsed(markerId: Int) {
-    markAsHavingOptionalData(markerId)
-    myCollapsed.add(markerId)
-  }
-
-  private fun markAsHavingOptionalData(markerId: Int) {
-    bitSet.add(markerId)
-  }
-
-  fun notifyAllocated(markerId: Int) {
-    markAsHavingOptionalData(markerId)
-    myDebugAllocationPositions.put(markerId, Throwable("Created at the following trace."))
-  }
-
-  fun getAllocationTrace(marker: ProductionMarker): Throwable? {
-    return myDebugAllocationPositions[marker.markerId]
-  }
-
-  fun getBinder(markerId: Int, right: Boolean): WhitespacesAndCommentsBinder {
-    val binder = if (bitSet.contains(markerId)) getBinderMap(right)[markerId] else null
-    return binder ?: getDefaultBinder(right)
-  }
-
-  fun assignBinder(markerId: Int, binder: WhitespacesAndCommentsBinder, right: Boolean) {
-    val map = getBinderMap(right)
-    if (binder !== getDefaultBinder(right)) {
-      markAsHavingOptionalData(markerId)
-      map.put(markerId, binder)
+    fun setErrorMessage(
+        markerId: Int,
+        message: String,
+    ) {
+        markAsHavingOptionalData(markerId)
+        myDoneErrors.put(markerId, message)
     }
-    else {
-      map.remove(markerId)
+
+    fun markCollapsed(markerId: Int) {
+        markAsHavingOptionalData(markerId)
+        myCollapsed.add(markerId)
     }
-  }
 
-  private fun getBinderMap(right: Boolean): MutableIntMap<WhitespacesAndCommentsBinder> {
-    return if (right) myRightBinders else myLeftBinders
-  }
+    private fun markAsHavingOptionalData(markerId: Int) {
+        bitSet.add(markerId)
+    }
 
-  private fun getDefaultBinder(right: Boolean): WhitespacesAndCommentsBinder {
-    return if (right) WhitespacesBinders.defaultRightBinder() else WhitespacesBinders.defaultLeftBinder()
-  }
+    fun notifyAllocated(markerId: Int) {
+        markAsHavingOptionalData(markerId)
+        myDebugAllocationPositions.put(markerId, Throwable("Created at the following trace."))
+    }
+
+    fun getAllocationTrace(marker: ProductionMarker): Throwable? = myDebugAllocationPositions[marker.markerId]
+
+    fun getBinder(
+        markerId: Int,
+        right: Boolean,
+    ): WhitespacesAndCommentsBinder {
+        val binder = if (bitSet.contains(markerId)) getBinderMap(right)[markerId] else null
+        return binder ?: getDefaultBinder(right)
+    }
+
+    fun assignBinder(
+        markerId: Int,
+        binder: WhitespacesAndCommentsBinder,
+        right: Boolean,
+    ) {
+        val map = getBinderMap(right)
+        if (binder !== getDefaultBinder(right)) {
+            markAsHavingOptionalData(markerId)
+            map.put(markerId, binder)
+        } else {
+            map.remove(markerId)
+        }
+    }
+
+    private fun getBinderMap(right: Boolean): MutableIntMap<WhitespacesAndCommentsBinder> =
+        if (right) myRightBinders else myLeftBinders
+
+    private fun getDefaultBinder(right: Boolean): WhitespacesAndCommentsBinder =
+        if (right) WhitespacesBinders.defaultRightBinder() else WhitespacesBinders.defaultLeftBinder()
 }

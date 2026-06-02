@@ -19,8 +19,7 @@ public class Span internal constructor(
          * invocation. Cross-process span recovery is a phase-3 concern
          * once a Kotlin span server is selected.
          */
-        public fun recoverProcMacroSpan(id: Int): Span =
-            SpanRegistry.recover(id)
+        public fun recoverProcMacroSpan(id: Int): Span = SpanRegistry.recover(id)
 
         /** A span that resolves at the macro definition site. */
         public fun defSite(): Span = Span(SpanData.DefSite)
@@ -176,21 +175,27 @@ internal sealed class SpanData {
 
     internal data object CallSite : SpanData() {
         override fun byteRange(): IntRange = IntRange.EMPTY
+
         override fun toString(): String = "Span.call_site"
     }
 
     internal data object MixedSite : SpanData() {
         override fun byteRange(): IntRange = IntRange.EMPTY
+
         override fun toString(): String = "Span.mixed_site"
     }
 
     internal data object DefSite : SpanData() {
         override fun byteRange(): IntRange = IntRange.EMPTY
+
         override fun toString(): String = "Span.def_site"
     }
 
-    internal data class Synthetic(val range: IntRange) : SpanData() {
+    internal data class Synthetic(
+        val range: IntRange,
+    ) : SpanData() {
         override fun byteRange(): IntRange = range
+
         override fun toString(): String = "Span($range)"
     }
 }
@@ -231,7 +236,6 @@ internal data class DelimSpanData(
     val entire: Span,
 ) {
     internal companion object {
-        internal fun fromSingle(span: Span): DelimSpanData =
-            DelimSpanData(open = span, close = span, entire = span)
+        internal fun fromSingle(span: Span): DelimSpanData = DelimSpanData(open = span, close = span, entire = span)
     }
 }

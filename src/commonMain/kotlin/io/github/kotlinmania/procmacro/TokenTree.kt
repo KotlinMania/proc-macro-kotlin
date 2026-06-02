@@ -16,27 +16,36 @@ public sealed class TokenTree {
      * rather than `data class` so they don't gain structural equality the
      * upstream type doesn't have.
      */
-    public class Group(public val value: io.github.kotlinmania.procmacro.Group) : TokenTree()
+    public class Group(
+        public val value: io.github.kotlinmania.procmacro.Group,
+    ) : TokenTree()
 
     /** An identifier. */
-    public class Ident(public val value: io.github.kotlinmania.procmacro.Ident) : TokenTree()
+    public class Ident(
+        public val value: io.github.kotlinmania.procmacro.Ident,
+    ) : TokenTree()
 
     /** A single punctuation character (`+`, `,`, `$`, etc.). */
-    public class Punct(public val value: io.github.kotlinmania.procmacro.Punct) : TokenTree()
+    public class Punct(
+        public val value: io.github.kotlinmania.procmacro.Punct,
+    ) : TokenTree()
 
     /** A literal character (`'a'`), string (`"hello"`), number (`2.3`), etc. */
-    public class Literal(public val value: io.github.kotlinmania.procmacro.Literal) : TokenTree()
+    public class Literal(
+        public val value: io.github.kotlinmania.procmacro.Literal,
+    ) : TokenTree()
 
     /**
      * Returns the span of this tree, delegating to the `span` method of
      * the contained token or a delimited stream.
      */
-    public fun span(): Span = when (this) {
-        is Group -> value.span()
-        is Ident -> value.span()
-        is Punct -> value.span()
-        is Literal -> value.span()
-    }
+    public fun span(): Span =
+        when (this) {
+            is Group -> value.span()
+            is Ident -> value.span()
+            is Punct -> value.span()
+            is Literal -> value.span()
+        }
 
     /**
      * Configures the span for *only this token*.
@@ -69,10 +78,11 @@ public sealed class TokenTree {
      * matching against [TokenTree.Ident], [TokenTree.Punct], or
      * [TokenTree.Literal].
      */
-    override fun toString(): String = when (this) {
-        is Group -> value.toString()
-        is Ident -> value.toString()
-        is Punct -> value.toString()
-        is Literal -> value.toString()
-    }
+    override fun toString(): String =
+        when (this) {
+            is Group -> value.toString()
+            is Ident -> value.toString()
+            is Punct -> value.toString()
+            is Literal -> value.toString()
+        }
 }

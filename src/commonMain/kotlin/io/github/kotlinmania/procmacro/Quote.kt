@@ -50,8 +50,11 @@ public object ThereIsNoIteratorInRepetition : RepetitionIteratorCheck()
  */
 public sealed class RepetitionIteratorCheck {
     public infix fun or(other: RepetitionIteratorCheck): RepetitionIteratorCheck =
-        if (this is HasIterator || other is HasIterator) HasIterator
-        else ThereIsNoIteratorInRepetition
+        if (this is HasIterator || other is HasIterator) {
+            HasIterator
+        } else {
+            ThereIsNoIteratorInRepetition
+        }
 }
 
 /*
@@ -73,96 +76,112 @@ public sealed class RepetitionIteratorCheck {
 
 /**
  * Extension interface providing the `quoteIntoIter` method on
- * [Iterator]s. Mirrors upstream `RepIteratorExt`.
+ * token-tree [Iterator]s.
  */
-public interface RepIteratorExt<T> {
-    public fun quoteIntoIter(): Pair<Iterator<T>, HasIterator>
+internal class TokenTreeIteratorResult(
+    val iterator: Iterator<TokenTree>,
+    val marker: HasIterator,
+) {
+    operator fun component1(): Iterator<TokenTree> = iterator
+
+    operator fun component2(): HasIterator = marker
 }
 
 /**
- * Wrap a Kotlin [Iterator] as a [RepIteratorExt]. Mirrors
- * `impl<T: Iterator> RepIteratorExt for T`.
+ * Wrap a Kotlin [Iterator] as a token-tree repetition source.
  */
-public fun <T> Iterator<T>.quoteIntoIter(): Pair<Iterator<T>, HasIterator> =
-    this to HasIterator
+internal fun Iterator<TokenTree>.quoteIntoIter(): TokenTreeIteratorResult = TokenTreeIteratorResult(this, HasIterator)
 
 /**
  * Extension interface providing the `quoteIntoIter` method for
  * non-iterable types. Mirrors upstream `RepToTokensExt`. Non-iterable
  * types interpolate the same value in each iteration of the repetition.
  */
-public interface RepToTokensExt {
+internal interface RepToTokensExt {
     /**
      * Pretend to be an iterator for the purposes of [quoteIntoIter].
      * This allows repeated calls to [quoteIntoIter] to continue
      * correctly returning [ThereIsNoIteratorInRepetition].
      */
-    public fun next(): RepToTokensExt? = this
+    fun next(): RepToTokensExt? = this
 
-    public fun quoteIntoIter(): Pair<RepToTokensExt, ThereIsNoIteratorInRepetition> =
-        this to ThereIsNoIteratorInRepetition
+    fun quoteIntoIter(): Pair<RepToTokensExt, ThereIsNoIteratorInRepetition> = this to ThereIsNoIteratorInRepetition
 }
 
 /**
  * Extension interface providing the `quoteIntoIter` method for types
  * that can be referenced as an iterator. Mirrors upstream
- * `RepAsIteratorExt<'q>`. The `'q` lifetime collapses in Kotlin because
- * Kotlin references are not lifetime-tracked.
+ * token-tree collections.
  */
-public interface RepAsIteratorExt<T> {
-    public fun quoteIntoIter(): Pair<Iterator<T>, HasIterator>
-}
 
-/** Mirrors `impl<'q, T: 'q> RepAsIteratorExt<'q> for [T]` and `for [T; N]`. */
-public fun <T> Array<T>.quoteIntoIter(): Pair<Iterator<T>, HasIterator> =
-    iterator() to HasIterator
+/** Converts a token-tree array into a repetition iterator. */
+internal fun Array<TokenTree>.quoteIntoIter(): TokenTreeIteratorResult =
+    TokenTreeIteratorResult(iterator(), HasIterator)
 
-/** Mirrors `impl<'q, T: 'q> RepAsIteratorExt<'q> for Vec<T>`. */
-public fun <T> List<T>.quoteIntoIter(): Pair<Iterator<T>, HasIterator> =
-    iterator() to HasIterator
+/** Converts a token-tree list into a repetition iterator. */
+internal fun List<TokenTree>.quoteIntoIter(): TokenTreeIteratorResult = TokenTreeIteratorResult(iterator(), HasIterator)
 
 /**
- * Mirrors `impl<'q, T: 'q> RepAsIteratorExt<'q> for BTreeSet<T>`. Kotlin
- * has no direct `BTreeSet` analog; the closest stdlib type is [Set],
+ * Converts a token-tree set into a repetition iterator. Kotlin has no
+ * direct `BTreeSet` analog; the closest stdlib type is [Set],
  * whose iteration order is implementation-dependent. Callers who need
  * stable ordering should pre-sort before calling this extension.
  */
-public fun <T> Set<T>.quoteIntoIter(): Pair<Iterator<T>, HasIterator> =
-    iterator() to HasIterator
+internal fun Set<TokenTree>.quoteIntoIter(): TokenTreeIteratorResult = TokenTreeIteratorResult(iterator(), HasIterator)
 
 /**
  * Helper type used within interpolations to allow for repeated binding
- * names. Mirrors upstream `RepInterp<T>(pub T)`.
+ * names.
  *
  * Implements [Iterator] when [value] is an [Iterator], and exposes a
  * dummy [next] method used when a name is bound multiple times: the
  * previous binding shadows the original [Iterator] object so the macro
  * can avoid advancing the iterator multiple times per iteration.
  */
-public class RepInterp<T>(public val value: T) {
+internal class RepInterp(
+    val value: TokenTree,
+) {
     /**
      * Intended to look like `Iterator::next`. Called when a name is
      * bound multiple times; the previous binding shadows the original
      * [Iterator] object.
      */
-    public fun nextShadow(): T? = value
+    fun nextShadow(): TokenTree? = value
 }
 
 /**
- * Mirrors `impl<T: Iterator> Iterator for RepInterp<T>`. Forwards
- * iteration to the wrapped [Iterator].
+ * Forwards iteration to the wrapped token-tree [Iterator].
  */
-public fun <T> RepInterp<Iterator<T>>.iteratorAdapter(): Iterator<T> = value
+internal class RepInterpTokenTreeIterator(
+    val value: Iterator<TokenTree>,
+) {
+    fun nextShadow(): Iterator<TokenTree>? = value
+}
 
-/** Mirrors `impl<T: ToTokens> ToTokens for RepInterp<T>`. */
-public fun <T> RepInterp<T>.asToTokens(inner: (T) -> ToTokens): ToTokens =
-    inner(value)
+internal fun RepInterpTokenTreeIterator.iteratorAdapter(): Iterator<TokenTree> = value
+
+/** Converts a repeated token value to tokens. */
+internal class RepInterpToTokens(
+    val value: ToTokens,
+) {
+    fun nextShadow(): ToTokens? = value
+}
+
+internal fun RepInterpToTokens.asToTokens(): ToTokens = value
+
+internal fun RepInterp.asToTokens(inner: (TokenTree) -> ToTokens): ToTokens = inner(value)
 
 /**
- * Mirrors `impl<'q, T: RepAsIteratorExt<'q>> RepAsIteratorExt<'q> for RepInterp<T>`.
+ * Converts a repeated token-tree list into a repetition iterator.
  */
-public fun <T> RepInterp<List<T>>.quoteIntoIter(): Pair<Iterator<T>, HasIterator> =
-    value.iterator() to HasIterator
+internal class RepInterpTokenTreeList(
+    val value: List<TokenTree>,
+) {
+    fun nextShadow(): List<TokenTree>? = value
+}
+
+internal fun RepInterpTokenTreeList.quoteIntoIter(): TokenTreeIteratorResult =
+    TokenTreeIteratorResult(value.iterator(), HasIterator)
 
 /*
  * Upstream `minimal_quote_tt!`, `minimal_quote_ts!`, and `minimal_quote!`
@@ -183,18 +202,22 @@ private fun mkIdentDef(name: String): Ident = Ident.new(name, Span.defSite())
 
 private fun mkIdentCall(name: String): Ident = Ident.new(name, Span.callSite())
 
-private fun mkGroup(delim: Delimiter, stream: TokenStream): Group =
-    Group.new(delim, stream)
+private fun mkGroup(
+    delim: Delimiter,
+    stream: TokenStream,
+): Group = Group.new(delim, stream)
 
-private fun streamOf(vararg trees: TokenTree): TokenStream =
-    TokenStream.fromTokenTrees(trees.toList())
+private fun streamOf(vararg trees: TokenTree): TokenStream = TokenStream.fromTokenTrees(trees.toList())
 
 /**
  * Build the two-character operator token stream `::` / `=>` / `+=` /
  * `!=`. Upstream applies `Span::def_site()` to each piece before
  * concatenating; mirrored here.
  */
-private fun mkJointOp(first: Char, second: Char): TokenStream {
+private fun mkJointOp(
+    first: Char,
+    second: Char,
+): TokenStream {
     val a = TokenTree.Punct(Punct.new(first, Spacing.JOINT))
     val b = TokenTree.Punct(Punct.new(second, Spacing.ALONE))
     a.setSpan(Span.defSite())
@@ -208,8 +231,6 @@ private fun mkFatArrow(): TokenStream = mkJointOp('=', '>')
 
 private fun mkPlusEq(): TokenStream = mkJointOp('+', '=')
 
-private fun mkNotEq(): TokenStream = mkJointOp('!', '=')
-
 /**
  * Recursively collects all [Ident]s (meta-variables) that follow a `$`
  * from the given content stream, preserving their order of appearance.
@@ -222,7 +243,10 @@ private fun collectMetaVars(contentStream: TokenStream): List<Ident> {
     return vars
 }
 
-private fun collectMetaVarsInto(stream: TokenStream, out: MutableList<Ident>) {
+private fun collectMetaVarsInto(
+    stream: TokenStream,
+    out: MutableList<Ident>,
+) {
     val iter = PeekableTokenTreeIterator(stream.iterator())
     while (iter.hasNext()) {
         val tree = iter.next()
@@ -245,7 +269,9 @@ private fun collectMetaVarsInto(stream: TokenStream, out: MutableList<Ident>) {
  * `iter.peekable()` usage in [quote] and [collectMetaVars]; Kotlin's
  * stdlib does not expose a peekable iterator out of the box.
  */
-private class PeekableTokenTreeIterator(private val inner: Iterator<TokenTree>) {
+private class PeekableTokenTreeIterator(
+    private val inner: Iterator<TokenTree>,
+) {
     private var lookahead: TokenTree? = null
 
     fun hasNext(): Boolean = lookahead != null || inner.hasNext()
@@ -272,7 +298,10 @@ private class PeekableTokenTreeIterator(private val inner: Iterator<TokenTree>) 
  * inside generated proc-macro output so the recovered tokens carry the
  * original hygiene. Mirrors upstream `pub fn quote_span`.
  */
-public fun quoteSpan(procMacroCrate: TokenStream, span: Span): TokenStream {
+public fun quoteSpan(
+    procMacroCrate: TokenStream,
+    span: Span,
+): TokenStream {
     val id = span.saveSpan()
     // minimal_quote!((@ proc_macro_crate ) ::Span::recover_proc_macro_span((@ TokenTree::from(Literal::usize_unsuffixed(id)))))
     val out = TokenStream.new()
@@ -365,11 +394,12 @@ public fun quote(stream: TokenStream): TokenStream {
                     continue
                 }
 
-                is TokenTree.Punct -> if (tree.value.asChar() == '$') {
-                    // A doubled dollar literal escapes back to a real dollar token.
-                } else {
-                    throw IllegalArgumentException(DOLLAR_FOLLOW_ERROR)
-                }
+                is TokenTree.Punct ->
+                    if (tree.value.asChar() == '$') {
+                        // A doubled dollar literal escapes back to a real dollar token.
+                    } else {
+                        throw IllegalArgumentException(DOLLAR_FOLLOW_ERROR)
+                    }
 
                 else -> throw IllegalArgumentException(DOLLAR_FOLLOW_ERROR)
             }
@@ -378,12 +408,13 @@ public fun quote(stream: TokenStream): TokenStream {
             continue
         }
 
-        val emitted: TokenStream = when (tree) {
-            is TokenTree.Punct -> emitPunct(tree.value)
-            is TokenTree.Group -> emitGroup(tree.value)
-            is TokenTree.Ident -> emitIdent(tree.value, procMacroCrate)
-            is TokenTree.Literal -> emitLiteral(tree.value, procMacroCrate)
-        }
+        val emitted: TokenStream =
+            when (tree) {
+                is TokenTree.Punct -> emitPunct(tree.value)
+                is TokenTree.Group -> emitGroup(tree.value)
+                is TokenTree.Ident -> emitIdent(tree.value, procMacroCrate)
+                is TokenTree.Literal -> emitLiteral(tree.value, procMacroCrate)
+            }
         tokens.extendTokenStreams(listOf(emitted))
     }
     if (afterDollar) {
@@ -432,13 +463,20 @@ public fun quote(stream: TokenStream): TokenStream {
  * directly after `)`.
  */
 private fun readRepetitionSeparator(iter: PeekableTokenTreeIterator): Punct? {
-    val first = if (iter.hasNext()) iter.next() else throw IllegalArgumentException(
-        REPETITION_GROUP_TRAILER_ERROR,
-    )
+    val first =
+        if (iter.hasNext()) {
+            iter.next()
+        } else {
+            throw IllegalArgumentException(
+                REPETITION_GROUP_TRAILER_ERROR,
+            )
+        }
     val second = iter.peek()
     return when {
-        first is TokenTree.Punct && second is TokenTree.Punct &&
-            first.value.spacing() == Spacing.JOINT && second.value.asChar() == '*' -> {
+        first is TokenTree.Punct &&
+            second is TokenTree.Punct &&
+            first.value.spacing() == Spacing.JOINT &&
+            second.value.asChar() == '*' -> {
             iter.next()
             first.value
         }
@@ -455,7 +493,10 @@ private fun readRepetitionSeparator(iter: PeekableTokenTreeIterator): Punct? {
  * loop that interpolates each iteration and emits the separator between
  * them.
  */
-private fun buildRepetitionExpansion(contents: TokenStream, sepOpt: Punct?): TokenStream {
+private fun buildRepetitionExpansion(
+    contents: TokenStream,
+    sepOpt: Punct?,
+): TokenStream {
     val repExpanded = TokenStream.new()
     val metaVars = collectMetaVars(contents)
 
@@ -781,7 +822,10 @@ private fun emitToTokensCall(argStream: TokenStream): TokenStream {
     return out
 }
 
-private fun emitPunctReconstruction(charLiteralStream: TokenStream, spacingStream: TokenStream): TokenStream {
+private fun emitPunctReconstruction(
+    charLiteralStream: TokenStream,
+    spacingStream: TokenStream,
+): TokenStream {
     // crate::ToTokens::to_tokens(&crate::TokenTree::Punct(crate::Punct::new(<char>, <spacing>)), &mut ts);
     val inner = TokenStream.new()
     inner.extendTokenTrees(listOf(TokenTree.Ident(mkIdentDef("crate"))))
@@ -819,10 +863,11 @@ private fun emitPunctReconstruction(charLiteralStream: TokenStream, spacingStrea
 }
 
 private fun emitPunct(p: Punct): TokenStream {
-    val spacingStream = when (p.spacing()) {
-        Spacing.ALONE -> spacingAloneRef()
-        Spacing.JOINT -> spacingJointRef()
-    }
+    val spacingStream =
+        when (p.spacing()) {
+            Spacing.ALONE -> spacingAloneRef()
+            Spacing.JOINT -> spacingJointRef()
+        }
     val charStream = streamOf(TokenTree.Literal(Literal.character(p.asChar())))
     return emitPunctReconstruction(charStream, spacingStream)
 }
@@ -883,14 +928,18 @@ private fun emitGroup(g: Group): TokenStream {
     return emitToTokensCall(ttGroup)
 }
 
-private fun emitIdent(ident: Ident, procMacroCrate: TokenStream): TokenStream {
+private fun emitIdent(
+    ident: Ident,
+    procMacroCrate: TokenStream,
+): TokenStream {
     val literal = ident.toString()
     val rawPrefix = "r#"
-    val (textForLiteral, ctorName) = if (literal.startsWith(rawPrefix)) {
-        literal.removePrefix(rawPrefix) to "new_raw"
-    } else {
-        literal to "new"
-    }
+    val (textForLiteral, ctorName) =
+        if (literal.startsWith(rawPrefix)) {
+            literal.removePrefix(rawPrefix) to "new_raw"
+        } else {
+            literal to "new"
+        }
 
     val identCtorPath = TokenStream.new()
     identCtorPath.extendTokenTrees(listOf(TokenTree.Ident(mkIdentDef("crate"))))
@@ -925,7 +974,10 @@ private fun emitIdent(ident: Ident, procMacroCrate: TokenStream): TokenStream {
     return emitToTokensCall(ttIdent)
 }
 
-private fun emitLiteral(literal: Literal, procMacroCrate: TokenStream): TokenStream {
+private fun emitLiteral(
+    literal: Literal,
+    procMacroCrate: TokenStream,
+): TokenStream {
     // Emit:
     // crate::ToTokens::to_tokens(&crate::TokenTree::Literal({
     //     let mut iter = <text>.parse::<crate::TokenStream>().unwrap().into_iter();
@@ -939,18 +991,20 @@ private fun emitLiteral(literal: Literal, procMacroCrate: TokenStream): TokenStr
     // which lives in TokenStream.fromString and is phase-1 stubbed. The
     // shape of the emitted code is preserved verbatim so a downstream
     // runtime that wires the FromStr impl picks it up unchanged.
-    val literalTextStream = streamOf(
-        TokenTree.Literal(Literal.string(literal.toString())),
-    )
+    val literalTextStream =
+        streamOf(
+            TokenTree.Literal(Literal.string(literal.toString())),
+        )
 
-    val parseCallTrees = mutableListOf<TokenTree>(
-        TokenTree.Punct(mkPunct('.')),
-        TokenTree.Ident(mkIdentDef("parse")),
-        TokenTree.Punct(Punct.new(':', Spacing.JOINT)),
-        TokenTree.Punct(Punct.new(':', Spacing.ALONE)),
-        TokenTree.Punct(mkPunct('<')),
-        TokenTree.Ident(mkIdentDef("crate")),
-    )
+    val parseCallTrees =
+        mutableListOf<TokenTree>(
+            TokenTree.Punct(mkPunct('.')),
+            TokenTree.Ident(mkIdentDef("parse")),
+            TokenTree.Punct(Punct.new(':', Spacing.JOINT)),
+            TokenTree.Punct(Punct.new(':', Spacing.ALONE)),
+            TokenTree.Punct(mkPunct('<')),
+            TokenTree.Ident(mkIdentDef("crate")),
+        )
     val parseCallFront = TokenStream.fromTokenTrees(parseCallTrees)
     val parseCallTail = TokenStream.new()
     parseCallTail.extendTokenStreams(listOf(mkColonColon()))
@@ -985,57 +1039,60 @@ private fun emitLiteral(literal: Literal, procMacroCrate: TokenStream): TokenStr
     body.extendTokenStreams(listOf(letIterRhs))
     body.extendTokenTrees(listOf(TokenTree.Punct(mkPunct(';'))))
 
-    val tuplePattern = TokenStream.fromTokenTrees(
-        listOf(
-            TokenTree.Ident(mkIdentDef("Some")),
-            TokenTree.Group(
-                mkGroup(
-                    Delimiter.PARENTHESIS,
-                    TokenStream.fromTokenTrees(
-                        listOf(
-                            TokenTree.Ident(mkIdentDef("crate")),
-                        ),
-                    ).also {
-                        it.extendTokenStreams(listOf(mkColonColon()))
-                        it.extendTokenTrees(listOf(TokenTree.Ident(mkIdentDef("TokenTree"))))
-                        it.extendTokenStreams(listOf(mkColonColon()))
-                        it.extendTokenTrees(
-                            listOf(
-                                TokenTree.Ident(mkIdentDef("Literal")),
-                                TokenTree.Group(
-                                    mkGroup(
-                                        Delimiter.PARENTHESIS,
-                                        TokenStream.fromTokenTrees(
-                                            listOf(
-                                                TokenTree.Ident(mkIdentDef("mut")),
-                                                TokenTree.Ident(mkIdentDef("lit")),
+    val tuplePattern =
+        TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Ident(mkIdentDef("Some")),
+                TokenTree.Group(
+                    mkGroup(
+                        Delimiter.PARENTHESIS,
+                        TokenStream
+                            .fromTokenTrees(
+                                listOf(
+                                    TokenTree.Ident(mkIdentDef("crate")),
+                                ),
+                            ).also {
+                                it.extendTokenStreams(listOf(mkColonColon()))
+                                it.extendTokenTrees(listOf(TokenTree.Ident(mkIdentDef("TokenTree"))))
+                                it.extendTokenStreams(listOf(mkColonColon()))
+                                it.extendTokenTrees(
+                                    listOf(
+                                        TokenTree.Ident(mkIdentDef("Literal")),
+                                        TokenTree.Group(
+                                            mkGroup(
+                                                Delimiter.PARENTHESIS,
+                                                TokenStream.fromTokenTrees(
+                                                    listOf(
+                                                        TokenTree.Ident(mkIdentDef("mut")),
+                                                        TokenTree.Ident(mkIdentDef("lit")),
+                                                    ),
+                                                ),
                                             ),
                                         ),
                                     ),
-                                ),
-                            ),
-                        )
-                    },
+                                )
+                            },
+                    ),
                 ),
+                TokenTree.Punct(mkPunct(',')),
+                TokenTree.Ident(mkIdentDef("None")),
             ),
-            TokenTree.Punct(mkPunct(',')),
-            TokenTree.Ident(mkIdentDef("None")),
-        ),
-    )
+        )
 
-    val callPair = TokenStream.fromTokenTrees(
-        listOf(
-            TokenTree.Ident(mkIdentDef("iter")),
-            TokenTree.Punct(mkPunct('.')),
-            TokenTree.Ident(mkIdentDef("next")),
-            TokenTree.Group(mkGroup(Delimiter.PARENTHESIS, TokenStream.new())),
-            TokenTree.Punct(mkPunct(',')),
-            TokenTree.Ident(mkIdentDef("iter")),
-            TokenTree.Punct(mkPunct('.')),
-            TokenTree.Ident(mkIdentDef("next")),
-            TokenTree.Group(mkGroup(Delimiter.PARENTHESIS, TokenStream.new())),
-        ),
-    )
+    val callPair =
+        TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Ident(mkIdentDef("iter")),
+                TokenTree.Punct(mkPunct('.')),
+                TokenTree.Ident(mkIdentDef("next")),
+                TokenTree.Group(mkGroup(Delimiter.PARENTHESIS, TokenStream.new())),
+                TokenTree.Punct(mkPunct(',')),
+                TokenTree.Ident(mkIdentDef("iter")),
+                TokenTree.Punct(mkPunct('.')),
+                TokenTree.Ident(mkIdentDef("next")),
+                TokenTree.Group(mkGroup(Delimiter.PARENTHESIS, TokenStream.new())),
+            ),
+        )
 
     val thenBody = TokenStream.new()
     thenBody.extendTokenTrees(
@@ -1049,13 +1106,14 @@ private fun emitLiteral(literal: Literal, procMacroCrate: TokenStream): TokenStr
         ),
     )
 
-    val elseBody = TokenStream.fromTokenTrees(
-        listOf(
-            TokenTree.Ident(mkIdentDef("unreachable")),
-            TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
-            TokenTree.Group(mkGroup(Delimiter.PARENTHESIS, TokenStream.new())),
-        ),
-    )
+    val elseBody =
+        TokenStream.fromTokenTrees(
+            listOf(
+                TokenTree.Ident(mkIdentDef("unreachable")),
+                TokenTree.Punct(Punct.new('!', Spacing.ALONE)),
+                TokenTree.Group(mkGroup(Delimiter.PARENTHESIS, TokenStream.new())),
+            ),
+        )
 
     body.extendTokenTrees(
         listOf(

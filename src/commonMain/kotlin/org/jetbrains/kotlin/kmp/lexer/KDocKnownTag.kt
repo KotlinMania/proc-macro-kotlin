@@ -10,7 +10,10 @@ package org.jetbrains.kotlin.kmp.lexer
 import org.jetbrains.annotations.ApiStatus
 
 @ApiStatus.Experimental
-enum class KDocKnownTag(val isReferenceRequired: Boolean, val isSectionStart: Boolean) {
+enum class KDocKnownTag(
+    val isReferenceRequired: Boolean,
+    val isSectionStart: Boolean,
+) {
     AUTHOR(false, false),
     THROWS(true, false),
     EXCEPTION(true, false),
@@ -22,21 +25,24 @@ enum class KDocKnownTag(val isReferenceRequired: Boolean, val isSectionStart: Bo
     CONSTRUCTOR(false, true),
     PROPERTY(true, true),
     SAMPLE(true, false),
-    SUPPRESS(false, false);
+    SUPPRESS(false, false),
+    ;
 
     companion object {
         fun findByTagName(tagName: CharSequence): KDocKnownTag? {
-            val name = if (tagName.startsWith('@')) {
-                tagName.subSequence(1, tagName.length)
-            } else {
-                tagName
-            }
-            try {
-                val upperCaseAsciiOnly = buildString {
-                    name.map {
-                        append(if (it in 'a'..'z') it.uppercaseChar() else it)
-                    }
+            val name =
+                if (tagName.startsWith('@')) {
+                    tagName.subSequence(1, tagName.length)
+                } else {
+                    tagName
                 }
+            try {
+                val upperCaseAsciiOnly =
+                    buildString {
+                        name.map {
+                            append(if (it in 'a'..'z') it.uppercaseChar() else it)
+                        }
+                    }
                 return valueOf(upperCaseAsciiOnly)
             } catch (_: IllegalArgumentException) {
             }

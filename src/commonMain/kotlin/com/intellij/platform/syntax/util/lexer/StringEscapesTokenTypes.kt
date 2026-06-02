@@ -6,13 +6,14 @@ import com.intellij.platform.syntax.SyntaxElementTypeSet
 import com.intellij.platform.syntax.syntaxElementTypeSetOf
 
 object StringEscapesTokenTypes {
-  val VALID_STRING_ESCAPE_TOKEN: SyntaxElementType = SyntaxElementType("VALID_STRING_ESCAPE_TOKEN")
-  val INVALID_CHARACTER_ESCAPE_TOKEN: SyntaxElementType = SyntaxElementType("INVALID_CHARACTER_ESCAPE_TOKEN")
-  val INVALID_UNICODE_ESCAPE_TOKEN: SyntaxElementType = SyntaxElementType("INVALID_UNICODE_ESCAPE_TOKEN")
+    val VALID_STRING_ESCAPE_TOKEN: SyntaxElementType = SyntaxElementType("VALID_STRING_ESCAPE_TOKEN")
+    val INVALID_CHARACTER_ESCAPE_TOKEN: SyntaxElementType = SyntaxElementType("INVALID_CHARACTER_ESCAPE_TOKEN")
+    val INVALID_UNICODE_ESCAPE_TOKEN: SyntaxElementType = SyntaxElementType("INVALID_UNICODE_ESCAPE_TOKEN")
 
-  val STRING_LITERAL_ESCAPES: SyntaxElementTypeSet = syntaxElementTypeSetOf(
-    VALID_STRING_ESCAPE_TOKEN,
-    INVALID_CHARACTER_ESCAPE_TOKEN,
-    INVALID_UNICODE_ESCAPE_TOKEN
-  )
+    val STRING_LITERAL_ESCAPES: SyntaxElementTypeSet =
+        syntaxElementTypeSetOf(
+            VALID_STRING_ESCAPE_TOKEN,
+            INVALID_CHARACTER_ESCAPE_TOKEN,
+            INVALID_UNICODE_ESCAPE_TOKEN,
+        )
 }

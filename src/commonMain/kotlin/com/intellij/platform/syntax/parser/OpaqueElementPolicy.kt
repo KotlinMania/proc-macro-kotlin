@@ -9,9 +9,13 @@ import com.intellij.platform.syntax.SyntaxElementType
  * @link [com.intellij.lang.TokenWrapper] class
  */
 
-fun interface OpaqueElementPolicy {
-  /**
-   * @return text of opaque element type
-   */
-  fun getTextOfOpaqueElement(elementType: SyntaxElementType): String?
+interface OpaqueElementPolicy {
+    /**
+     * @return text of opaque element type
+     */
+    fun getTextOfOpaqueElement(elementType: SyntaxElementType): String?
+}
+
+object NoOpaqueElementPolicy : OpaqueElementPolicy {
+    override fun getTextOfOpaqueElement(elementType: SyntaxElementType): String? = null
 }

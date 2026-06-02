@@ -34,11 +34,15 @@ public interface ToTokens {
  * primitive and pass-through impl below; the two adapters that override
  * `into_token_stream` (TokenTree, TokenStream) define their own class.
  */
-private class FunctionalToTokens(private val emit: (TokenStream) -> Unit) : ToTokens {
+private class FunctionalToTokens(
+    private val emit: (TokenStream) -> Unit,
+) : ToTokens {
     override fun toTokens(tokens: TokenStream): Unit = emit(tokens)
 }
 
-private class TokenTreeToTokens(private val tree: TokenTree) : ToTokens {
+private class TokenTreeToTokens(
+    private val tree: TokenTree,
+) : ToTokens {
     override fun toTokens(tokens: TokenStream) {
         tokens.extendTokenTrees(listOf(tree))
     }
@@ -46,11 +50,8 @@ private class TokenTreeToTokens(private val tree: TokenTree) : ToTokens {
     override fun intoTokenStream(): TokenStream {
         // Upstream calls `ConcatTreesHelper::new(1).push(self).build()` to
         // construct a single-tree stream without an intermediate empty
-        // builder. `ConcatTreesHelper` lives in `tmp/proc-macro/src/lib.rs`
-        // and is not yet ported here; the produced [TokenStream] is
-        // observably equivalent to the default [toTokenStream] route, so
-        // forwarding preserves behavior. When the helper is ported, replace
-        // this body with the matching builder call.
+        // builder. The produced [TokenStream] is observably equivalent to
+        // the default [toTokenStream] route, so forwarding preserves behavior.
         return toTokenStream()
     }
 }
@@ -61,7 +62,9 @@ private class TokenTreeToTokens(private val tree: TokenTree) : ToTokens {
  */
 public fun TokenTree.asToTokens(): ToTokens = TokenTreeToTokens(this)
 
-private class TokenStreamToTokens(private val stream: TokenStream) : ToTokens {
+private class TokenStreamToTokens(
+    private val stream: TokenStream,
+) : ToTokens {
     override fun toTokens(tokens: TokenStream) {
         tokens.extendTokenStreams(listOf(stream))
     }
@@ -79,33 +82,37 @@ public fun TokenStream.asToTokens(): ToTokens = TokenStreamToTokens(this)
  * Adapt a [Literal] as a [ToTokens]. Mirrors the upstream
  * `impl ToTokens for Literal`.
  */
-public fun Literal.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    tokens.extendTokenTrees(listOf(TokenTree.Literal(this)))
-}
+public fun Literal.asToTokens(): ToTokens =
+    FunctionalToTokens { tokens ->
+        tokens.extendTokenTrees(listOf(TokenTree.Literal(this)))
+    }
 
 /**
  * Adapt an [Ident] as a [ToTokens]. Mirrors the upstream
  * `impl ToTokens for Ident`.
  */
-public fun Ident.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    tokens.extendTokenTrees(listOf(TokenTree.Ident(this)))
-}
+public fun Ident.asToTokens(): ToTokens =
+    FunctionalToTokens { tokens ->
+        tokens.extendTokenTrees(listOf(TokenTree.Ident(this)))
+    }
 
 /**
  * Adapt a [Punct] as a [ToTokens]. Mirrors the upstream
  * `impl ToTokens for Punct`.
  */
-public fun Punct.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    tokens.extendTokenTrees(listOf(TokenTree.Punct(this)))
-}
+public fun Punct.asToTokens(): ToTokens =
+    FunctionalToTokens { tokens ->
+        tokens.extendTokenTrees(listOf(TokenTree.Punct(this)))
+    }
 
 /**
  * Adapt a [Group] as a [ToTokens]. Mirrors the upstream
  * `impl ToTokens for Group`.
  */
-public fun Group.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    tokens.extendTokenTrees(listOf(TokenTree.Group(this)))
-}
+public fun Group.asToTokens(): ToTokens =
+    FunctionalToTokens { tokens ->
+        tokens.extendTokenTrees(listOf(TokenTree.Group(this)))
+    }
 
 // Upstream defines five reference-forwarding impls:
 //
@@ -120,8 +127,8 @@ public fun Group.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
 // distinction; `Box<T>`, `Rc<T>`, and `Cow<'_, T>` likewise have no native
 // Kotlin counterparts (all references are shared by default and storage is
 // the runtime's concern). The five impls therefore collapse: a Kotlin
-// caller already has the unwrapped value and invokes its own
-// [asToTokens] directly. This comment is the translated stand-in so the
+// caller already has the unwrapped value and invokes its own adapter
+// directly. This comment is the translated stand-in so the
 // missing impls are visible in source order.
 
 private object EmptyToTokens : ToTokens {
@@ -138,91 +145,6 @@ private object EmptyToTokens : ToTokens {
  */
 public fun ToTokens?.orEmpty(): ToTokens = this ?: EmptyToTokens
 
-/** Adapt a [UByte] as a [ToTokens]. Mirrors the upstream `impl ToTokens for u8`. */
-public fun UByte.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.u8Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [UShort] as a [ToTokens]. Mirrors the upstream `impl ToTokens for u16`. */
-public fun UShort.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.u16Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [UInt] as a [ToTokens]. Mirrors the upstream `impl ToTokens for u32`. */
-public fun UInt.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.u32Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/**
- * Adapt a [ULong] as a [ToTokens]. Mirrors the upstream
- * `impl ToTokens for u64`. Rust's `u128` and `usize` also use [ULong] as
- * their closest Kotlin counterpart; callers that need the `u128`/`usize`
- * suffix shape construct the literal directly via
- * [Literal.u128Suffixed] / [Literal.usizeSuffixed] and then call
- * [asToTokens] on the resulting [Literal].
- */
-public fun ULong.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.u64Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [Byte] as a [ToTokens]. Mirrors the upstream `impl ToTokens for i8`. */
-public fun Byte.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.i8Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [Short] as a [ToTokens]. Mirrors the upstream `impl ToTokens for i16`. */
-public fun Short.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.i16Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt an [Int] as a [ToTokens]. Mirrors the upstream `impl ToTokens for i32`. */
-public fun Int.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.i32Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/**
- * Adapt a [Long] as a [ToTokens]. Mirrors the upstream
- * `impl ToTokens for i64`. Rust's `i128` and `isize` also use [Long] as
- * their closest Kotlin counterpart; callers that need the `i128`/`isize`
- * suffix shape construct the literal directly via
- * [Literal.i128Suffixed] / [Literal.isizeSuffixed] and then call
- * [asToTokens] on the resulting [Literal].
- */
-public fun Long.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.i64Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [Float] as a [ToTokens]. Mirrors the upstream `impl ToTokens for f32`. */
-public fun Float.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.f32Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [Double] as a [ToTokens]. Mirrors the upstream `impl ToTokens for f64`. */
-public fun Double.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.f64Suffixed(this).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [Boolean] as a [ToTokens]. Mirrors the upstream `impl ToTokens for bool`. */
-public fun Boolean.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    val word = if (this) "true" else "false"
-    Ident.new(word, Span.callSite()).asToTokens().toTokens(tokens)
-}
-
-/** Adapt a [Char] as a [ToTokens]. Mirrors the upstream `impl ToTokens for char`. */
-public fun Char.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.character(this).asToTokens().toTokens(tokens)
-}
-
-/**
- * Adapt a [String] as a [ToTokens]. Mirrors the upstream
- * `impl ToTokens for str` and `impl ToTokens for String`, which collapse
- * to a single Kotlin impl because [String] covers both the borrowed `&str`
- * and the owned `String` shapes.
- */
-public fun String.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.string(this).asToTokens().toTokens(tokens)
-}
-
 /**
  * Adapt a [ByteArray] holding C string bytes (without the trailing NUL) as
  * a [ToTokens]. Mirrors the upstream `impl ToTokens for CStr` and
@@ -232,6 +154,7 @@ public fun String.asToTokens(): ToTokens = FunctionalToTokens { tokens ->
  * callers that want the `b"..."` shape build the literal via
  * [Literal.byteString] and then call [asToTokens] on the [Literal].
  */
-public fun ByteArray.asToTokensCString(): ToTokens = FunctionalToTokens { tokens ->
-    Literal.cString(this).asToTokens().toTokens(tokens)
-}
+public fun ByteArray.asToTokensCString(): ToTokens =
+    FunctionalToTokens { tokens ->
+        Literal.cString(this).asToTokens().toTokens(tokens)
+    }

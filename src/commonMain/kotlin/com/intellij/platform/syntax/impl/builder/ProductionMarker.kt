@@ -4,25 +4,25 @@ package com.intellij.platform.syntax.impl.builder
 import com.intellij.platform.syntax.parser.SyntaxTreeBuilder
 
 internal abstract class ProductionMarker(
-  val markerId: Int,
-  val builder: SyntaxTreeBuilderImpl,
+    val markerId: Int,
+    val builder: SyntaxTreeBuilderImpl,
 ) : SyntaxTreeBuilder.Production {
+    var startIndex: Int = -1
 
-  var startIndex: Int = -1
+    final override fun getStartTokenIndex(): Int = startIndex
 
-  final override fun getStartTokenIndex(): Int = startIndex
+    open fun dispose() {
+        startIndex = -1
+    }
 
-  open fun dispose() {
-    startIndex = -1
-  }
+    final override fun getStartOffset(): Int = builder.lexStart(getStartTokenIndex()) + builder.startOffset
 
-  final override fun getStartOffset(): Int =
-    builder.lexStart(getStartTokenIndex()) + builder.startOffset
+    final override fun isCollapsed(): Boolean = builder.myOptionalData.isCollapsed(markerId)
 
-  final override fun isCollapsed(): Boolean =
-    builder.myOptionalData.isCollapsed(markerId)
+    abstract fun getLexemeIndex(done: Boolean): Int
 
-  abstract fun getLexemeIndex(done: Boolean): Int
-
-  abstract fun setLexemeIndex(value: Int, done: Boolean)
+    abstract fun setLexemeIndex(
+        value: Int,
+        done: Boolean,
+    )
 }

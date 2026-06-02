@@ -8,24 +8,26 @@ import com.intellij.platform.syntax.SyntaxLanguage
  * API for a Syntax Node.
  */
 interface SyntaxNode {
-  val text: CharSequence
+    val text: CharSequence
 
-  val type: SyntaxElementType
+    val type: SyntaxElementType
 
-  val startOffset: Int
-  val endOffset: Int
+    val startOffset: Int
+    val endOffset: Int
 
-  val errorMessage: String?
+    val errorMessage: String?
 
-  val language: SyntaxLanguage?
+    val language: SyntaxLanguage?
 
-  fun parent(): SyntaxNode?
+    fun parent(): SyntaxNode?
 
-  fun prevSibling(): SyntaxNode?
-  fun nextSibling(): SyntaxNode?
+    fun prevSibling(): SyntaxNode?
 
-  fun firstChild(): SyntaxNode?
-  fun lastChild(): SyntaxNode?
+    fun nextSibling(): SyntaxNode?
 
-  fun childByOffset(offset: Int): SyntaxNode?
+    fun firstChild(): SyntaxNode?
+
+    fun lastChild(): SyntaxNode?
+
+    fun childByOffset(offset: Int): SyntaxNode?
 }

@@ -1,11 +1,11 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 @file:OptIn(ExperimentalAtomicApi::class)
+
 package com.intellij.platform.syntax
 
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.fetchAndIncrement
-import kotlin.jvm.JvmOverloads
 
 /**
  * A class defining a token or node type.
@@ -20,33 +20,32 @@ import kotlin.jvm.JvmOverloads
  * @see [SyntaxElementType(String, LazyParser?, Any?, Boolean)] builder function
  */
 class SyntaxElementType internal constructor(
-  private val debugName: String,
-  internal val lazyParser: LazyParser?,
-  val userData: Any?,
-  transient: Boolean,
-  @Suppress("unused") unusedParam: Any?, // this parameter is necessary for disambiguation with the factory function
+    private val debugName: String,
+    internal val lazyParser: LazyParser?,
+    val userData: Any?,
+    transient: Boolean,
+    @Suppress("unused") unusedParam: Any?, // this parameter is necessary for disambiguation with the factory function
 ) {
+    /**
+     * The unique index of this element type
+     *
+     * If the element type is transient, the index will be -1.
+     */
+    val index: Int = if (transient) -1 else counter.fetchAndIncrement()
 
-  /**
-   * The unique index of this element type
-   *
-   * If the element type is transient, the index will be -1.
-   */
-  val index: Int = if (transient) -1 else counter.fetchAndIncrement()
+    /**
+     * Checks if this element type is lazy-parseable.
+     * For performing reparse, use [parseLazyNode] and [canLazyNodeBeReparsedIncrementally] functions.
+     *
+     * @return `true` if this element type is lazy-parseable.
+     */
+    fun isLazyParseable(): Boolean = lazyParser != null
 
-  /**
-   * Checks if this element type is lazy-parseable.
-   * For performing reparse, use [parseLazyNode] and [canLazyNodeBeReparsedIncrementally] functions.
-   *
-   * @return `true` if this element type is lazy-parseable.
-   */
-  fun isLazyParseable(): Boolean = lazyParser != null
+    override fun toString(): String = debugName
 
-  override fun toString(): String = debugName
+    override fun equals(other: Any?): Boolean = this === other
 
-  override fun equals(other: Any?): Boolean = this === other
-
-  override fun hashCode(): Int = index
+    override fun hashCode(): Int = index
 }
 
 /**
@@ -57,13 +56,12 @@ class SyntaxElementType internal constructor(
  * @param userData an arbitrary object associated with this element type.
  * @param transient whether this element type is lightweight or not. If `true`, the element type will not be assigned an index and cannot be stored in a set.
  */
-@JvmOverloads
 fun SyntaxElementType(
-  debugName: String,
-  lazyParser: LazyParser? = null,
-  userData: Any? = null,
-  transient: Boolean = false,
+    debugName: String,
+    lazyParser: LazyParser? = null,
+    userData: Any? = null,
+    transient: Boolean = false,
 ): SyntaxElementType =
-  SyntaxElementType(debugName, lazyParser, userData, transient, null as Any?)
+    SyntaxElementType(debugName, lazyParser, userData, transient, null as Any?)
 
 private val counter = AtomicInt(0)

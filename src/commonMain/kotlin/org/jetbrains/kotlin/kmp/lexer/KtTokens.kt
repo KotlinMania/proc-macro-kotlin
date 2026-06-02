@@ -222,15 +222,24 @@ object KtTokens : SyntaxElementTypesWithIds() {
     val OPEN_QUOTE: SyntaxElementType = register(OPEN_QUOTE_ID, "OPEN_QUOTE")
     val REGULAR_STRING_PART: SyntaxElementType = register(REGULAR_STRING_PART_ID, "REGULAR_STRING_PART")
     val ESCAPE_SEQUENCE: SyntaxElementType = register(ESCAPE_SEQUENCE_ID, "ESCAPE_SEQUENCE")
-    val SHORT_TEMPLATE_ENTRY_START: SyntaxElementType = register(SHORT_TEMPLATE_ENTRY_START_ID, "SHORT_TEMPLATE_ENTRY_START")
-    val LONG_TEMPLATE_ENTRY_START: SyntaxElementType = register(LONG_TEMPLATE_ENTRY_START_ID, "LONG_TEMPLATE_ENTRY_START")
+    val SHORT_TEMPLATE_ENTRY_START: SyntaxElementType =
+        register(SHORT_TEMPLATE_ENTRY_START_ID, "SHORT_TEMPLATE_ENTRY_START")
+    val LONG_TEMPLATE_ENTRY_START: SyntaxElementType =
+        register(LONG_TEMPLATE_ENTRY_START_ID, "LONG_TEMPLATE_ENTRY_START")
     val LONG_TEMPLATE_ENTRY_END: SyntaxElementType = register(LONG_TEMPLATE_ENTRY_END_ID, "LONG_TEMPLATE_ENTRY_END")
     val DANGLING_NEWLINE: SyntaxElementType = register(DANGLING_NEWLINE_ID, "DANGLING_NEWLINE")
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    val PACKAGE_KEYWORD: SyntaxElementType = registerToken(PACKAGE_KEYWORD_ID, "package", soft = false, modifier = false)
+    val PACKAGE_KEYWORD: SyntaxElementType =
+        registerToken(
+            PACKAGE_KEYWORD_ID,
+            "package",
+            soft = false,
+            modifier = false,
+        )
     val AS_KEYWORD: SyntaxElementType = registerToken(AS_KEYWORD_ID, "as", soft = false, modifier = false)
-    val TYPE_ALIAS_KEYWORD: SyntaxElementType = registerToken(TYPE_ALIAS_KEYWORD_ID, "typealias", soft = false, modifier = false)
+    val TYPE_ALIAS_KEYWORD: SyntaxElementType =
+        registerToken(TYPE_ALIAS_KEYWORD_ID, "typealias", soft = false, modifier = false)
     val CLASS_KEYWORD: SyntaxElementType = registerToken(CLASS_KEYWORD_ID, "class", soft = false, modifier = false)
     val THIS_KEYWORD: SyntaxElementType = registerToken(THIS_KEYWORD_ID, "this", soft = false, modifier = false)
     val SUPER_KEYWORD: SyntaxElementType = registerToken(SUPER_KEYWORD_ID, "super", soft = false, modifier = false)
@@ -254,7 +263,8 @@ object KtTokens : SyntaxElementTypesWithIds() {
     val THROW_KEYWORD: SyntaxElementType = registerToken(THROW_KEYWORD_ID, "throw", soft = false, modifier = false)
     val RETURN_KEYWORD: SyntaxElementType = registerToken(RETURN_KEYWORD_ID, "return", soft = false, modifier = false)
     val BREAK_KEYWORD: SyntaxElementType = registerToken(BREAK_KEYWORD_ID, "break", soft = false, modifier = false)
-    val CONTINUE_KEYWORD: SyntaxElementType = registerToken(CONTINUE_KEYWORD_ID, "continue", soft = false, modifier = false)
+    val CONTINUE_KEYWORD: SyntaxElementType =
+        registerToken(CONTINUE_KEYWORD_ID, "continue", soft = false, modifier = false)
     val OBJECT_KEYWORD: SyntaxElementType = registerToken(OBJECT_KEYWORD_ID, "object", soft = false, modifier = false)
     val IF_KEYWORD: SyntaxElementType = registerToken(IF_KEYWORD_ID, "if", soft = false, modifier = false)
     val TRY_KEYWORD: SyntaxElementType = registerToken(TRY_KEYWORD_ID, "try", soft = false, modifier = false)
@@ -262,7 +272,8 @@ object KtTokens : SyntaxElementTypesWithIds() {
     val WHILE_KEYWORD: SyntaxElementType = registerToken(WHILE_KEYWORD_ID, "while", soft = false, modifier = false)
     val DO_KEYWORD: SyntaxElementType = registerToken(DO_KEYWORD_ID, "do", soft = false, modifier = false)
     val WHEN_KEYWORD: SyntaxElementType = registerToken(WHEN_KEYWORD_ID, "when", soft = false, modifier = false)
-    val INTERFACE_KEYWORD: SyntaxElementType = registerToken(INTERFACE_KEYWORD_ID, "interface", soft = false, modifier = false)
+    val INTERFACE_KEYWORD: SyntaxElementType =
+        registerToken(INTERFACE_KEYWORD_ID, "interface", soft = false, modifier = false)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     // Reserved for future use:
@@ -339,31 +350,47 @@ object KtTokens : SyntaxElementTypesWithIds() {
     val ALL_KEYWORD: SyntaxElementType = registerToken(ALL_KEYWORD_ID, "all", soft = true, modifier = false)
     val FILE_KEYWORD: SyntaxElementType = registerToken(FILE_KEYWORD_ID, "file", soft = true, modifier = false)
     val FIELD_KEYWORD: SyntaxElementType = registerToken(FIELD_KEYWORD_ID, "field", soft = true, modifier = false)
-    val PROPERTY_KEYWORD: SyntaxElementType = registerToken(PROPERTY_KEYWORD_ID, "property", soft = true, modifier = false)
-    val RECEIVER_KEYWORD: SyntaxElementType = registerToken(RECEIVER_KEYWORD_ID, "receiver", soft = true, modifier = false)
+    val PROPERTY_KEYWORD: SyntaxElementType =
+        registerToken(PROPERTY_KEYWORD_ID, "property", soft = true, modifier = false)
+    val RECEIVER_KEYWORD: SyntaxElementType =
+        registerToken(RECEIVER_KEYWORD_ID, "receiver", soft = true, modifier = false)
     val PARAM_KEYWORD: SyntaxElementType = registerToken(PARAM_KEYWORD_ID, "param", soft = true, modifier = false)
-    val SETPARAM_KEYWORD: SyntaxElementType = registerToken(SETPARAM_KEYWORD_ID, "setparam", soft = true, modifier = false)
-    val DELEGATE_KEYWORD: SyntaxElementType = registerToken(DELEGATE_KEYWORD_ID, "delegate", soft = true, modifier = false)
+    val SETPARAM_KEYWORD: SyntaxElementType =
+        registerToken(SETPARAM_KEYWORD_ID, "setparam", soft = true, modifier = false)
+    val DELEGATE_KEYWORD: SyntaxElementType =
+        registerToken(DELEGATE_KEYWORD_ID, "delegate", soft = true, modifier = false)
     val IMPORT_KEYWORD: SyntaxElementType = registerToken(IMPORT_KEYWORD_ID, "import", soft = true, modifier = false)
     val WHERE_KEYWORD: SyntaxElementType = registerToken(WHERE_KEYWORD_ID, "where", soft = true, modifier = false)
     val BY_KEYWORD: SyntaxElementType = registerToken(BY_KEYWORD_ID, "by", soft = true, modifier = false)
     val GET_KEYWORD: SyntaxElementType = registerToken(GET_KEYWORD_ID, "get", soft = true, modifier = false)
     val SET_KEYWORD: SyntaxElementType = registerToken(SET_KEYWORD_ID, "set", soft = true, modifier = false)
-    val CONSTRUCTOR_KEYWORD: SyntaxElementType = registerToken(CONSTRUCTOR_KEYWORD_ID, "constructor", soft = true, modifier = false)
+    val CONSTRUCTOR_KEYWORD: SyntaxElementType =
+        registerToken(CONSTRUCTOR_KEYWORD_ID, "constructor", soft = true, modifier = false)
     val INIT_KEYWORD: SyntaxElementType = registerToken(INIT_KEYWORD_ID, "init", soft = true, modifier = false)
     val CONTEXT_KEYWORD: SyntaxElementType = registerToken(CONTEXT_KEYWORD_ID, "context", soft = true, modifier = false)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    val ABSTRACT_MODIFIER: SyntaxElementType = registerToken(ABSTRACT_MODIFIER_ID, "abstract", soft = true, modifier = true)
+    val ABSTRACT_MODIFIER: SyntaxElementType =
+        registerToken(
+            ABSTRACT_MODIFIER_ID,
+            "abstract",
+            soft = true,
+            modifier = true,
+        )
     val ENUM_MODIFIER: SyntaxElementType = registerToken(ENUM_MODIFIER_ID, "enum", soft = true, modifier = true)
-    val CONTRACT_MODIFIER: SyntaxElementType = registerToken(CONTRACT_MODIFIER_ID, "contract", soft = true, modifier = true)
+    val CONTRACT_MODIFIER: SyntaxElementType =
+        registerToken(CONTRACT_MODIFIER_ID, "contract", soft = true, modifier = true)
     val OPEN_MODIFIER: SyntaxElementType = registerToken(OPEN_MODIFIER_ID, "open", soft = true, modifier = true)
     val INNER_MODIFIER: SyntaxElementType = registerToken(INNER_MODIFIER_ID, "inner", soft = true, modifier = true)
-    val OVERRIDE_MODIFIER: SyntaxElementType = registerToken(OVERRIDE_MODIFIER_ID, "override", soft = true, modifier = true)
-    val PRIVATE_MODIFIER: SyntaxElementType = registerToken(PRIVATE_MODIFIER_ID, "private", soft = true, modifier = true)
+    val OVERRIDE_MODIFIER: SyntaxElementType =
+        registerToken(OVERRIDE_MODIFIER_ID, "override", soft = true, modifier = true)
+    val PRIVATE_MODIFIER: SyntaxElementType =
+        registerToken(PRIVATE_MODIFIER_ID, "private", soft = true, modifier = true)
     val PUBLIC_MODIFIER: SyntaxElementType = registerToken(PUBLIC_MODIFIER_ID, "public", soft = true, modifier = true)
-    val INTERNAL_MODIFIER: SyntaxElementType = registerToken(INTERNAL_MODIFIER_ID, "internal", soft = true, modifier = true)
-    val PROTECTED_MODIFIER: SyntaxElementType = registerToken(PROTECTED_MODIFIER_ID, "protected", soft = true, modifier = true)
+    val INTERNAL_MODIFIER: SyntaxElementType =
+        registerToken(INTERNAL_MODIFIER_ID, "internal", soft = true, modifier = true)
+    val PROTECTED_MODIFIER: SyntaxElementType =
+        registerToken(PROTECTED_MODIFIER_ID, "protected", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val CATCH_KEYWORD: SyntaxElementType = registerToken(CATCH_KEYWORD_ID, "catch", soft = true, modifier = false)
@@ -371,13 +398,15 @@ object KtTokens : SyntaxElementTypesWithIds() {
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val OUT_MODIFIER: SyntaxElementType = registerToken(OUT_MODIFIER_ID, "out", soft = true, modifier = true)
     val VARARG_MODIFIER: SyntaxElementType = registerToken(VARARG_MODIFIER_ID, "vararg", soft = true, modifier = true)
-    val REIFIED_MODIFIER: SyntaxElementType = registerToken(REIFIED_MODIFIER_ID, "reified", soft = true, modifier = true)
+    val REIFIED_MODIFIER: SyntaxElementType =
+        registerToken(REIFIED_MODIFIER_ID, "reified", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val DYNAMIC_KEYWORD: SyntaxElementType = registerToken(DYNAMIC_KEYWORD_ID, "dynamic", soft = true, modifier = false)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    val COMPANION_MODIFIER: SyntaxElementType = registerToken(COMPANION_MODIFIER_ID, "companion", soft = true, modifier = true)
+    val COMPANION_MODIFIER: SyntaxElementType =
+        registerToken(COMPANION_MODIFIER_ID, "companion", soft = true, modifier = true)
     val SEALED_MODIFIER: SyntaxElementType = registerToken(SEALED_MODIFIER_ID, "sealed", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
@@ -385,40 +414,62 @@ object KtTokens : SyntaxElementTypesWithIds() {
     val FINAL_MODIFIER: SyntaxElementType = registerToken(FINAL_MODIFIER_ID, "final", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    val LATEINIT_MODIFIER: SyntaxElementType = registerToken(LATEINIT_MODIFIER_ID, "lateinit", soft = true, modifier = true)
+    val LATEINIT_MODIFIER: SyntaxElementType =
+        registerToken(
+            LATEINIT_MODIFIER_ID,
+            "lateinit",
+            soft = true,
+            modifier = true,
+        )
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val DATA_MODIFIER: SyntaxElementType = registerToken(DATA_MODIFIER_ID, "data", soft = true, modifier = true)
     val VALUE_MODIFIER: SyntaxElementType = registerToken(VALUE_MODIFIER_ID, "value", soft = true, modifier = true)
     val INLINE_MODIFIER: SyntaxElementType = registerToken(INLINE_MODIFIER_ID, "inline", soft = true, modifier = true)
-    val NOINLINE_MODIFIER: SyntaxElementType = registerToken(NOINLINE_MODIFIER_ID, "noinline", soft = true, modifier = true)
-    val TAILREC_MODIFIER: SyntaxElementType = registerToken(TAILREC_MODIFIER_ID, "tailrec", soft = true, modifier = true)
-    val EXTERNAL_MODIFIER: SyntaxElementType = registerToken(EXTERNAL_MODIFIER_ID, "external", soft = true, modifier = true)
-    val ANNOTATION_MODIFIER: SyntaxElementType = registerToken(ANNOTATION_MODIFIER_ID, "annotation", soft = true, modifier = true)
-    val CROSSINLINE_MODIFIER: SyntaxElementType = registerToken(CROSSINLINE_MODIFIER_ID, "crossinline", soft = true, modifier = true)
-    val OPERATOR_MODIFIER: SyntaxElementType = registerToken(OPERATOR_MODIFIER_ID, "operator", soft = true, modifier = true)
+    val NOINLINE_MODIFIER: SyntaxElementType =
+        registerToken(NOINLINE_MODIFIER_ID, "noinline", soft = true, modifier = true)
+    val TAILREC_MODIFIER: SyntaxElementType =
+        registerToken(TAILREC_MODIFIER_ID, "tailrec", soft = true, modifier = true)
+    val EXTERNAL_MODIFIER: SyntaxElementType =
+        registerToken(EXTERNAL_MODIFIER_ID, "external", soft = true, modifier = true)
+    val ANNOTATION_MODIFIER: SyntaxElementType =
+        registerToken(ANNOTATION_MODIFIER_ID, "annotation", soft = true, modifier = true)
+    val CROSSINLINE_MODIFIER: SyntaxElementType =
+        registerToken(CROSSINLINE_MODIFIER_ID, "crossinline", soft = true, modifier = true)
+    val OPERATOR_MODIFIER: SyntaxElementType =
+        registerToken(OPERATOR_MODIFIER_ID, "operator", soft = true, modifier = true)
     val INFIX_MODIFIER: SyntaxElementType = registerToken(INFIX_MODIFIER_ID, "infix", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val CONST_MODIFIER: SyntaxElementType = registerToken(CONST_MODIFIER_ID, "const", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    val SUSPEND_MODIFIER: SyntaxElementType = registerToken(SUSPEND_MODIFIER_ID, "suspend", soft = true, modifier = true)
+    val SUSPEND_MODIFIER: SyntaxElementType =
+        registerToken(
+            SUSPEND_MODIFIER_ID,
+            "suspend",
+            soft = true,
+            modifier = true,
+        )
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val EXPECT_MODIFIER: SyntaxElementType = registerToken(EXPECT_MODIFIER_ID, "expect", soft = true, modifier = true)
     val ACTUAL_MODIFIER: SyntaxElementType = registerToken(ACTUAL_MODIFIER_ID, "actual", soft = true, modifier = true)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    private fun registerToken(id: Int, name: String, soft: Boolean, modifier: Boolean): SyntaxElementType {
-        return register(id, name).also {
+    private fun registerToken(
+        id: Int,
+        name: String,
+        soft: Boolean,
+        modifier: Boolean,
+    ): SyntaxElementType =
+        register(id, name).also {
             val keywordsAndModifiersList = if (soft) softKeywordsAndModifiers else hardKeywordsAndModifiers
             keywordsAndModifiersList.add(it)
             if (modifier) {
                 allModifiers.add(it)
             }
         }
-    }
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val SOFT_KEYWORDS_AND_MODIFIERS: SyntaxElementTypeSet = softKeywordsAndModifiers.asSyntaxElementTypeSet()
@@ -426,28 +477,35 @@ object KtTokens : SyntaxElementTypesWithIds() {
     val MODIFIERS: SyntaxElementTypeSet = allModifiers.asSyntaxElementTypeSet()
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    private val HARD_KEYWORDS_AND_MODIFIERS_MAP: Map<String, SyntaxElementType> = HARD_KEYWORDS_AND_MODIFIERS.associateBy { it.toString() }
+    private val HARD_KEYWORDS_AND_MODIFIERS_MAP: Map<String, SyntaxElementType> =
+        HARD_KEYWORDS_AND_MODIFIERS
+            .associateBy {
+                it.toString()
+            }
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    private val SOFT_KEYWORDS_AND_MODIFIERS_MAP: Map<String, SyntaxElementType> = SOFT_KEYWORDS_AND_MODIFIERS.associateBy { it.toString() }
+    private val SOFT_KEYWORDS_AND_MODIFIERS_MAP: Map<String, SyntaxElementType> =
+        SOFT_KEYWORDS_AND_MODIFIERS
+            .associateBy {
+                it.toString()
+            }
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    fun getHardKeywordOrModifier(elementText: String?): SyntaxElementType? {
-        return elementText?.let { HARD_KEYWORDS_AND_MODIFIERS_MAP[it] }
-    }
+    fun getHardKeywordOrModifier(elementText: String?): SyntaxElementType? =
+        elementText?.let { HARD_KEYWORDS_AND_MODIFIERS_MAP[it] }
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     fun isSoftKeywordOrModifier(elementText: String?): Boolean = getSoftKeywordOrModifier(elementText) != null
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
-    fun getSoftKeywordOrModifier(elementText: String?): SyntaxElementType? {
-        return elementText?.let { SOFT_KEYWORDS_AND_MODIFIERS_MAP[it] }
-    }
+    fun getSoftKeywordOrModifier(elementText: String?): SyntaxElementType? =
+        elementText?.let { SOFT_KEYWORDS_AND_MODIFIERS_MAP[it] }
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val TYPE_MODIFIER_KEYWORDS: SyntaxElementTypeSet = syntaxElementTypeSetOf(SUSPEND_MODIFIER)
     val TYPE_ARGUMENT_MODIFIER_KEYWORDS: SyntaxElementTypeSet = syntaxElementTypeSetOf(IN_MODIFIER, OUT_MODIFIER)
-    val RESERVED_VALUE_PARAMETER_MODIFIER_KEYWORDS: SyntaxElementTypeSet = syntaxElementTypeSetOf(OUT_MODIFIER, VARARG_MODIFIER)
+    val RESERVED_VALUE_PARAMETER_MODIFIER_KEYWORDS: SyntaxElementTypeSet =
+        syntaxElementTypeSetOf(OUT_MODIFIER, VARARG_MODIFIER)
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt
     val WHITESPACES: SyntaxElementTypeSet = syntaxElementTypeSetOf(SyntaxTokenTypes.WHITE_SPACE)
@@ -457,7 +515,8 @@ object KtTokens : SyntaxElementTypesWithIds() {
      * Don't add KDocTokens to COMMENTS SyntaxElementTypeSet, because it is used in KotlinParserDefinition.getCommentTokens(),
      * and therefore all COMMENTS tokens will be ignored by SyntaxBuilder.
      */
-    val COMMENTS: SyntaxElementTypeSet = syntaxElementTypeSetOf(EOL_COMMENT, BLOCK_COMMENT, DOC_COMMENT, SHEBANG_COMMENT)
+    val COMMENTS: SyntaxElementTypeSet =
+        syntaxElementTypeSetOf(EOL_COMMENT, BLOCK_COMMENT, DOC_COMMENT, SHEBANG_COMMENT)
     val WHITE_SPACE_OR_COMMENT_BIT_SET: SyntaxElementTypeSet = COMMENTS + WHITESPACES
 
 // Vendored from JetBrains/kotlin compiler/multiplatform-parsing/common/src/org/jetbrains/kotlin/kmp/lexer/KtTokens.kt

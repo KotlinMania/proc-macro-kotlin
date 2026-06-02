@@ -1066,11 +1066,11 @@ karma-sourcemap-loader@0.4.0:
     graceful-fs "^4.2.10"
 
 "karma-webpack@file:../../gradle/npm/karma-webpack":
-  version "5.0.1-kotlinmania.0"
+  version "5.0.1-kotlinmania.1"
   dependencies:
     glob "^13.0.6"
     minimatch "^10.2.5"
-    webpack-merge "^4.1.5"
+    webpack-merge "^4.2.2"
 
 "karma@npm:karma-maintained@6.4.7":
   version "6.4.7"
@@ -1820,7 +1820,7 @@ webpack-cli@7.0.2:
     rechoir "^0.8.0"
     webpack-merge "^6.0.1"
 
-webpack-merge@^4.1.5:
+webpack-merge@^4.2.2:
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/webpack-merge/-/webpack-merge-4.2.2.tgz#a27c52ea783d1398afd2087f547d7b9d2f43634d"
   integrity sha512-TUE1UGoTX2Cd42j3krGYqObZbOD+xF7u28WB7tfUordytSjbWTIjK/8V0amkBfTYN4/pB/GIDlJZZ657BGG19g==

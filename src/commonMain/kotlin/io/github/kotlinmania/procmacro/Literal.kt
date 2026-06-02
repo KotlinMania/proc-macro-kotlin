@@ -31,30 +31,29 @@ public class Literal internal constructor(
          * span by default, which can be configured with the [setSpan]
          * method below.
          */
-        public fun u8Suffixed(n: UByte): Literal =
-            integer(n.toString(), suffix = "u8")
-        public fun u16Suffixed(n: UShort): Literal =
-            integer(n.toString(), suffix = "u16")
-        public fun u32Suffixed(n: UInt): Literal =
-            integer(n.toString(), suffix = "u32")
-        public fun u64Suffixed(n: ULong): Literal =
-            integer(n.toString(), suffix = "u64")
-        public fun u128Suffixed(n: ULong): Literal =
-            integer(n.toString(), suffix = "u128")
-        public fun usizeSuffixed(n: ULong): Literal =
-            integer(n.toString(), suffix = "usize")
-        public fun i8Suffixed(n: Byte): Literal =
-            integer(n.toString(), suffix = "i8")
-        public fun i16Suffixed(n: Short): Literal =
-            integer(n.toString(), suffix = "i16")
-        public fun i32Suffixed(n: Int): Literal =
-            integer(n.toString(), suffix = "i32")
-        public fun i64Suffixed(n: Long): Literal =
-            integer(n.toString(), suffix = "i64")
-        public fun i128Suffixed(n: Long): Literal =
-            integer(n.toString(), suffix = "i128")
-        public fun isizeSuffixed(n: Long): Literal =
-            integer(n.toString(), suffix = "isize")
+        public fun u8Suffixed(n: UByte): Literal = integer(n.toString(), suffix = "u8")
+
+        public fun u16Suffixed(n: UShort): Literal = integer(n.toString(), suffix = "u16")
+
+        public fun u32Suffixed(n: UInt): Literal = integer(n.toString(), suffix = "u32")
+
+        public fun u64Suffixed(n: ULong): Literal = integer(n.toString(), suffix = "u64")
+
+        public fun u128Suffixed(n: ULong): Literal = integer(n.toString(), suffix = "u128")
+
+        public fun usizeSuffixed(n: ULong): Literal = integer(n.toString(), suffix = "usize")
+
+        public fun i8Suffixed(n: Byte): Literal = integer(n.toString(), suffix = "i8")
+
+        public fun i16Suffixed(n: Short): Literal = integer(n.toString(), suffix = "i16")
+
+        public fun i32Suffixed(n: Int): Literal = integer(n.toString(), suffix = "i32")
+
+        public fun i64Suffixed(n: Long): Literal = integer(n.toString(), suffix = "i64")
+
+        public fun i128Suffixed(n: Long): Literal = integer(n.toString(), suffix = "i128")
+
+        public fun isizeSuffixed(n: Long): Literal = integer(n.toString(), suffix = "isize")
 
         // ----- unsuffixed integer factories -----
 
@@ -71,16 +70,27 @@ public class Literal internal constructor(
          * into two tokens (`-` and positive literal).
          */
         public fun u8Unsuffixed(n: UByte): Literal = integer(n.toString(), suffix = null)
+
         public fun u16Unsuffixed(n: UShort): Literal = integer(n.toString(), suffix = null)
+
         public fun u32Unsuffixed(n: UInt): Literal = integer(n.toString(), suffix = null)
+
         public fun u64Unsuffixed(n: ULong): Literal = integer(n.toString(), suffix = null)
+
         public fun u128Unsuffixed(n: ULong): Literal = integer(n.toString(), suffix = null)
+
         public fun usizeUnsuffixed(n: ULong): Literal = integer(n.toString(), suffix = null)
+
         public fun i8Unsuffixed(n: Byte): Literal = integer(n.toString(), suffix = null)
+
         public fun i16Unsuffixed(n: Short): Literal = integer(n.toString(), suffix = null)
+
         public fun i32Unsuffixed(n: Int): Literal = integer(n.toString(), suffix = null)
+
         public fun i64Unsuffixed(n: Long): Literal = integer(n.toString(), suffix = null)
+
         public fun i128Unsuffixed(n: Long): Literal = integer(n.toString(), suffix = null)
+
         public fun isizeUnsuffixed(n: Long): Literal = integer(n.toString(), suffix = null)
 
         // ----- floating-point factories -----
@@ -138,75 +148,86 @@ public class Literal internal constructor(
 
         /** String literal. */
         public fun string(string: String): Literal {
-            val escape = EscapeOptions(
-                escapeSingleQuote = false,
-                escapeDoubleQuote = true,
-                escapeNonAscii = false,
-            )
+            val escape =
+                EscapeOptions(
+                    escapeSingleQuote = false,
+                    escapeDoubleQuote = true,
+                    escapeNonAscii = false,
+                )
             val repr = escapeBytes(string.encodeToByteArray(), escape)
             return Literal(literalAt(LitKind.STR, repr, suffix = null))
         }
 
         /** Character literal. */
         public fun character(ch: Char): Literal {
-            val escape = EscapeOptions(
-                escapeSingleQuote = true,
-                escapeDoubleQuote = false,
-                escapeNonAscii = false,
-            )
+            val escape =
+                EscapeOptions(
+                    escapeSingleQuote = true,
+                    escapeDoubleQuote = false,
+                    escapeNonAscii = false,
+                )
             val repr = escapeBytes(ch.toString().encodeToByteArray(), escape)
             return Literal(literalAt(LitKind.CHAR, repr, suffix = null))
         }
 
         /** Byte character literal. */
         public fun byteCharacter(byte: Byte): Literal {
-            val escape = EscapeOptions(
-                escapeSingleQuote = true,
-                escapeDoubleQuote = false,
-                escapeNonAscii = true,
-            )
+            val escape =
+                EscapeOptions(
+                    escapeSingleQuote = true,
+                    escapeDoubleQuote = false,
+                    escapeNonAscii = true,
+                )
             val repr = escapeBytes(byteArrayOf(byte), escape)
             return Literal(literalAt(LitKind.BYTE, repr, suffix = null))
         }
 
         /** Byte string literal. */
         public fun byteString(bytes: ByteArray): Literal {
-            val escape = EscapeOptions(
-                escapeSingleQuote = false,
-                escapeDoubleQuote = true,
-                escapeNonAscii = true,
-            )
+            val escape =
+                EscapeOptions(
+                    escapeSingleQuote = false,
+                    escapeDoubleQuote = true,
+                    escapeNonAscii = true,
+                )
             val repr = escapeBytes(bytes, escape)
             return Literal(literalAt(LitKind.BYTE_STR, repr, suffix = null))
         }
 
         /** C string literal. */
         public fun cString(string: ByteArray): Literal {
-            val escape = EscapeOptions(
-                escapeSingleQuote = false,
-                escapeDoubleQuote = true,
-                escapeNonAscii = false,
-            )
+            val escape =
+                EscapeOptions(
+                    escapeSingleQuote = false,
+                    escapeDoubleQuote = true,
+                    escapeNonAscii = false,
+                )
             val repr = escapeBytes(string, escape)
             return Literal(literalAt(LitKind.C_STR, repr, suffix = null))
         }
 
-        private fun integer(value: String, suffix: String?): Literal =
-            Literal(literalAt(LitKind.INTEGER, value, suffix))
+        private fun integer(
+            value: String,
+            suffix: String?,
+        ): Literal = Literal(literalAt(LitKind.INTEGER, value, suffix))
 
-        private fun float(value: String, suffix: String?): Literal =
-            Literal(literalAt(LitKind.FLOAT, value, suffix))
+        private fun float(
+            value: String,
+            suffix: String?,
+        ): Literal = Literal(literalAt(LitKind.FLOAT, value, suffix))
 
-        private fun literalAt(kind: LitKind, symbol: String, suffix: String?): LiteralData =
-            LiteralData(kind = kind, symbol = symbol, suffix = suffix, span = Span.callSite())
+        private fun literalAt(
+            kind: LitKind,
+            symbol: String,
+            suffix: String?,
+        ): LiteralData = LiteralData(kind = kind, symbol = symbol, suffix = suffix, span = Span.callSite())
 
         /**
          * Float literals that don't carry a `.` decimal need one appended
          * so the emitted source token is unambiguous (`1` versus `1.0`).
          * Mirrors upstream `f{32,64}_unsuffixed`.
          */
-        private fun canonicalFloat(repr: String): String =
-            if ('.' in repr) repr else "$repr.0"
+        private fun canonicalFloat(repr: String): String = if ('.' in repr) repr else "$repr.0"
 
         // --- Kotlin-source factory methods (Compiler variant) ---
 
@@ -215,8 +236,8 @@ public class Literal internal constructor(
          * (including surrounding quotes). Handles both regular strings
          * and raw strings.
          */
-        internal fun fromKotlinString(src: String): Literal {
-            return when {
+        internal fun fromKotlinString(src: String): Literal =
+            when {
                 src.startsWith("\"\"\"") && src.endsWith("\"\"\"") -> {
                     val content = src.substring(3, src.length - 3)
                     Literal(literalAt(LitKind.STR, content, suffix = null))
@@ -227,18 +248,18 @@ public class Literal internal constructor(
                 }
                 else -> Literal(literalAt(LitKind.STR, src, suffix = null))
             }
-        }
 
         /**
          * Constructs a [Literal] from a Kotlin character source representation
          * (including surrounding single quotes).
          */
         internal fun fromKotlinChar(src: String): Literal {
-            val content = if (src.startsWith("'") && src.endsWith("'") && src.length >= 2) {
-                src.substring(1, src.length - 1)
-            } else {
-                src
-            }
+            val content =
+                if (src.startsWith("'") && src.endsWith("'") && src.length >= 2) {
+                    src.substring(1, src.length - 1)
+                } else {
+                    src
+                }
             return Literal(literalAt(LitKind.CHAR, content, suffix = null))
         }
 
@@ -305,71 +326,73 @@ public class Literal internal constructor(
      * Returns the unescaped character value if this is a byte character
      * literal. Mirrors upstream `Literal::byte_character_value`.
      */
-    public fun byteCharacterValue(): Result<UByte> {
+    public fun byteCharacterValue(): ByteCharacterValueOutcome {
         if (data.kind != LitKind.BYTE) {
-            return Result.failure(ConversionErrorKind.InvalidLiteralKind)
+            return ByteCharacterValueOutcome.Err(ConversionErrorKind.InvalidLiteralKind)
         }
-        val bytes = unescapeBytes(data.symbol)
-            ?: return Result.failure(
-                ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("invalid escape in byte literal")),
-            )
+        val bytes =
+            unescapeBytes(data.symbol)
+                ?: return ByteCharacterValueOutcome.Err(
+                    ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("invalid escape in byte literal")),
+                )
         if (bytes.size != 1) {
-            return Result.failure(
+            return ByteCharacterValueOutcome.Err(
                 ConversionErrorKind.FailedToUnescape(
                     EscapeError.Fatal("byte literal must contain exactly one byte"),
                 ),
             )
         }
-        return Result.success(bytes[0].toUByte())
+        return ByteCharacterValueOutcome.Ok(bytes[0].toUByte())
     }
 
     /**
      * Returns the unescaped character value if this is a character
      * literal. Mirrors upstream `Literal::character_value`.
      */
-    public fun characterValue(): Result<Char> {
+    public fun characterValue(): CharacterValueOutcome {
         if (data.kind != LitKind.CHAR) {
-            return Result.failure(ConversionErrorKind.InvalidLiteralKind)
+            return CharacterValueOutcome.Err(ConversionErrorKind.InvalidLiteralKind)
         }
-        val chars = unescapeChars(data.symbol)
-            ?: return Result.failure(
-                ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("invalid escape in char literal")),
-            )
+        val chars =
+            unescapeChars(data.symbol)
+                ?: return CharacterValueOutcome.Err(
+                    ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("invalid escape in char literal")),
+                )
         if (chars.length != 1) {
-            return Result.failure(
+            return CharacterValueOutcome.Err(
                 ConversionErrorKind.FailedToUnescape(
                     EscapeError.Fatal("char literal must contain exactly one character"),
                 ),
             )
         }
-        return Result.success(chars[0])
+        return CharacterValueOutcome.Ok(chars[0])
     }
 
     /**
      * Returns the unescaped string value if this is a string literal
      * (regular or raw). Mirrors upstream `Literal::str_value`.
      */
-    public fun strValue(): Result<String> {
+    public fun strValue(): StringValueOutcome {
         val kind = data.kind
         return when {
             kind == LitKind.STR -> {
                 if ('\\' !in data.symbol) {
-                    Result.success(data.symbol)
+                    StringValueOutcome.Ok(data.symbol)
                 } else {
                     val out = unescapeChars(data.symbol)
                     if (out == null) {
-                        Result.failure(
+                        StringValueOutcome.Err(
                             ConversionErrorKind.FailedToUnescape(
                                 EscapeError.Fatal("invalid escape in string literal"),
                             ),
                         )
                     } else {
-                        Result.success(out)
+                        StringValueOutcome.Ok(out)
                     }
                 }
             }
-            kind is LitKind.STR_RAW -> Result.success(data.symbol)
-            else -> Result.failure(ConversionErrorKind.InvalidLiteralKind)
+            kind is LitKind.STR_RAW -> StringValueOutcome.Ok(data.symbol)
+            else -> StringValueOutcome.Err(ConversionErrorKind.InvalidLiteralKind)
         }
     }
 
@@ -378,23 +401,23 @@ public class Literal internal constructor(
      * if this is a C string literal (regular or raw). Mirrors upstream
      * `Literal::cstr_value`.
      */
-    public fun cstrValue(): Result<ByteArray> {
+    public fun cstrValue(): ByteArrayValueOutcome {
         val kind = data.kind
         return when {
             kind == LitKind.C_STR -> {
                 val bytes = unescapeBytes(data.symbol)
                 if (bytes == null) {
-                    Result.failure(
+                    ByteArrayValueOutcome.Err(
                         ConversionErrorKind.FailedToUnescape(
                             EscapeError.Fatal("invalid escape in c-string literal"),
                         ),
                     )
                 } else {
-                    Result.success(bytes + 0)
+                    ByteArrayValueOutcome.Ok(bytes + 0)
                 }
             }
-            kind is LitKind.C_STR_RAW -> Result.success(data.symbol.encodeToByteArray() + 0)
-            else -> Result.failure(ConversionErrorKind.InvalidLiteralKind)
+            kind is LitKind.C_STR_RAW -> ByteArrayValueOutcome.Ok(data.symbol.encodeToByteArray() + 0)
+            else -> ByteArrayValueOutcome.Err(ConversionErrorKind.InvalidLiteralKind)
         }
     }
 
@@ -402,23 +425,23 @@ public class Literal internal constructor(
      * Returns the unescaped byte string bytes if this is a byte string
      * literal (regular or raw). Mirrors upstream `Literal::byte_str_value`.
      */
-    public fun byteStrValue(): Result<ByteArray> {
+    public fun byteStrValue(): ByteArrayValueOutcome {
         val kind = data.kind
         return when {
             kind == LitKind.BYTE_STR -> {
                 val bytes = unescapeBytes(data.symbol)
                 if (bytes == null) {
-                    Result.failure(
+                    ByteArrayValueOutcome.Err(
                         ConversionErrorKind.FailedToUnescape(
                             EscapeError.Fatal("invalid escape in byte-string literal"),
                         ),
                     )
                 } else {
-                    Result.success(bytes)
+                    ByteArrayValueOutcome.Ok(bytes)
                 }
             }
-            kind is LitKind.BYTE_STR_RAW -> Result.success(data.symbol.encodeToByteArray())
-            else -> Result.failure(ConversionErrorKind.InvalidLiteralKind)
+            kind is LitKind.BYTE_STR_RAW -> ByteArrayValueOutcome.Ok(data.symbol.encodeToByteArray())
+            else -> ByteArrayValueOutcome.Err(ConversionErrorKind.InvalidLiteralKind)
         }
     }
 
@@ -427,31 +450,47 @@ public class Literal internal constructor(
      * convertible back into the same literal (except for possible
      * rounding for floating point literals).
      */
-    override fun toString(): String = buildString {
-        with(data) {
-            when (kind) {
-                LitKind.BYTE -> append("b'").append(symbol).append('\'')
-                LitKind.CHAR -> append('\'').append(symbol).append('\'')
-                LitKind.STR -> append('"').append(symbol).append('"')
-                is LitKind.STR_RAW -> {
-                    val hashes = "#".repeat(kind.numHashes)
-                    append('r').append(hashes).append('"').append(symbol).append('"').append(hashes)
+    override fun toString(): String =
+        buildString {
+            with(data) {
+                when (kind) {
+                    LitKind.BYTE -> append("b'").append(symbol).append('\'')
+                    LitKind.CHAR -> append('\'').append(symbol).append('\'')
+                    LitKind.STR -> append('"').append(symbol).append('"')
+                    is LitKind.STR_RAW -> {
+                        val hashes = "#".repeat(kind.numHashes)
+                        append('r')
+                            .append(hashes)
+                            .append('"')
+                            .append(symbol)
+                            .append('"')
+                            .append(hashes)
+                    }
+                    LitKind.BYTE_STR -> append("b\"").append(symbol).append('"')
+                    is LitKind.BYTE_STR_RAW -> {
+                        val hashes = "#".repeat(kind.numHashes)
+                        append("br")
+                            .append(hashes)
+                            .append('"')
+                            .append(symbol)
+                            .append('"')
+                            .append(hashes)
+                    }
+                    LitKind.C_STR -> append("c\"").append(symbol).append('"')
+                    is LitKind.C_STR_RAW -> {
+                        val hashes = "#".repeat(kind.numHashes)
+                        append("cr")
+                            .append(hashes)
+                            .append('"')
+                            .append(symbol)
+                            .append('"')
+                            .append(hashes)
+                    }
+                    LitKind.INTEGER, LitKind.FLOAT, LitKind.ERR_WITH_GUAR -> append(symbol)
                 }
-                LitKind.BYTE_STR -> append("b\"").append(symbol).append('"')
-                is LitKind.BYTE_STR_RAW -> {
-                    val hashes = "#".repeat(kind.numHashes)
-                    append("br").append(hashes).append('"').append(symbol).append('"').append(hashes)
-                }
-                LitKind.C_STR -> append("c\"").append(symbol).append('"')
-                is LitKind.C_STR_RAW -> {
-                    val hashes = "#".repeat(kind.numHashes)
-                    append("cr").append(hashes).append('"').append(symbol).append('"').append(hashes)
-                }
-                LitKind.INTEGER, LitKind.FLOAT, LitKind.ERR_WITH_GUAR -> append(symbol)
+                if (suffix != null) append(suffix)
             }
-            if (suffix != null) append(suffix)
         }
-    }
 }
 
 /**
@@ -473,14 +512,30 @@ internal data class LiteralData(
  */
 internal sealed class LitKind {
     internal data object BYTE : LitKind()
+
     internal data object CHAR : LitKind()
+
     internal data object STR : LitKind()
-    internal data class STR_RAW(val numHashes: Int) : LitKind()
+
+    internal data class STR_RAW(
+        val numHashes: Int,
+    ) : LitKind()
+
     internal data object BYTE_STR : LitKind()
-    internal data class BYTE_STR_RAW(val numHashes: Int) : LitKind()
+
+    internal data class BYTE_STR_RAW(
+        val numHashes: Int,
+    ) : LitKind()
+
     internal data object C_STR : LitKind()
-    internal data class C_STR_RAW(val numHashes: Int) : LitKind()
+
+    internal data class C_STR_RAW(
+        val numHashes: Int,
+    ) : LitKind()
+
     internal data object INTEGER : LitKind()
+
     internal data object FLOAT : LitKind()
+
     internal data object ERR_WITH_GUAR : LitKind()
 }

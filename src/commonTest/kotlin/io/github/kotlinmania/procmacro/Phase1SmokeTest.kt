@@ -379,53 +379,57 @@ class TokenStreamTest {
 
     @Test
     fun fromTokenTreesPreservesOrder() {
-        val trees = listOf<TokenTree>(
-            TokenTree.Ident(Ident.new("a", Span.callSite())),
-            TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
-            TokenTree.Ident(Ident.new("b", Span.callSite())),
-        )
+        val trees =
+            listOf<TokenTree>(
+                TokenTree.Ident(Ident.new("a", Span.callSite())),
+                TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
+                TokenTree.Ident(Ident.new("b", Span.callSite())),
+            )
         val stream = TokenStream.fromTokenTrees(trees)
         assertEquals(trees, stream.toList())
     }
 
     @Test
     fun toStringSeparatesWithSpaces() {
-        val stream = TokenStream.fromTokenTrees(
-            listOf<TokenTree>(
-                TokenTree.Ident(Ident.new("a", Span.callSite())),
-                TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
-                TokenTree.Ident(Ident.new("b", Span.callSite())),
-            ),
-        )
+        val stream =
+            TokenStream.fromTokenTrees(
+                listOf<TokenTree>(
+                    TokenTree.Ident(Ident.new("a", Span.callSite())),
+                    TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("b", Span.callSite())),
+                ),
+            )
         assertEquals("a + b", stream.toString())
     }
 
     @Test
     fun jointPunctSuppressesSeparator() {
-        val stream = TokenStream.fromTokenTrees(
-            listOf<TokenTree>(
-                TokenTree.Punct(Punct.new('+', Spacing.JOINT)),
-                TokenTree.Punct(Punct.new('=', Spacing.ALONE)),
-            ),
-        )
+        val stream =
+            TokenStream.fromTokenTrees(
+                listOf<TokenTree>(
+                    TokenTree.Punct(Punct.new('+', Spacing.JOINT)),
+                    TokenTree.Punct(Punct.new('=', Spacing.ALONE)),
+                ),
+            )
         assertEquals("+=", stream.toString())
     }
 
     @Test
     fun groupRenderingUsesDelimiters() {
-        val inner = TokenStream.fromTokenTrees(
-            listOf<TokenTree>(
-                TokenTree.Ident(Ident.new("x", Span.callSite())),
-                TokenTree.Punct(Punct.new(',', Spacing.ALONE)),
-                TokenTree.Ident(Ident.new("y", Span.callSite())),
-            ),
-        )
-        val stream = TokenStream.fromTokenTree(
-            TokenTree.Group(Group.new(Delimiter.PARENTHESIS, inner)),
-        )
+        val inner =
+            TokenStream.fromTokenTrees(
+                listOf<TokenTree>(
+                    TokenTree.Ident(Ident.new("x", Span.callSite())),
+                    TokenTree.Punct(Punct.new(',', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("y", Span.callSite())),
+                ),
+            )
+        val stream =
+            TokenStream.fromTokenTree(
+                TokenTree.Group(Group.new(Delimiter.PARENTHESIS, inner)),
+            )
         assertEquals("(x , y)", stream.toString())
     }
-
 
     @Test
     fun fromStringParsesKotlinSource() {
@@ -507,13 +511,13 @@ class MultiSpanTest {
     @Test
     fun singleSpanWrapsAsOneElementList() {
         val span = Span.callSite()
-        assertEquals(listOf(span), span.toMultiSpan().intoSpans())
+        assertEquals(listOf(span), span.toMultiSpan().intoSpans().asList())
     }
 
     @Test
     fun listWrapsAsSameElements() {
         val spans = listOf(Span.callSite(), Span.mixedSite(), Span.defSite())
-        assertEquals(spans, spans.toMultiSpan().intoSpans())
+        assertEquals(spans, spans.toMultiSpan().intoSpans().asList())
     }
 
     @Test
@@ -542,7 +546,7 @@ class DiagnosticTest {
         val diag = Diagnostic.spanned(span.toMultiSpan(), Level.WARNING, "watch out")
         assertEquals(Level.WARNING, diag.level())
         assertEquals("watch out", diag.message())
-        assertEquals(listOf(span), diag.spans())
+        assertEquals(listOf(span), diag.spans().asList())
     }
 
     @Test
@@ -559,16 +563,18 @@ class DiagnosticTest {
         val diag = Diagnostic.new(Level.ERROR, "bad")
         val replacement = listOf(Span.callSite(), Span.mixedSite())
         diag.setSpans(replacement.toMultiSpan())
-        assertEquals(replacement, diag.spans())
+        assertEquals(replacement, diag.spans().asList())
     }
 
     @Test
     fun chainableChildMethodsAddInOrder() {
-        val parent = Diagnostic.new(Level.ERROR, "root")
-            .error("err child")
-            .warning("warn child")
-            .note("note child")
-            .help("help child")
+        val parent =
+            Diagnostic
+                .new(Level.ERROR, "root")
+                .error("err child")
+                .warning("warn child")
+                .note("note child")
+                .help("help child")
         val kids = parent.children().asSequence().toList()
         assertEquals(4, kids.size)
         assertEquals(Level.ERROR, kids[0].level())
@@ -581,15 +587,17 @@ class DiagnosticTest {
     @Test
     fun spannedChildMethodsCarrySpansAndLevel() {
         val span = Span.callSite()
-        val parent = Diagnostic.new(Level.ERROR, "root")
-            .spanError(span.toMultiSpan(), "err here")
-            .spanWarning(span.toMultiSpan(), "warn here")
-            .spanNote(span.toMultiSpan(), "note here")
-            .spanHelp(span.toMultiSpan(), "help here")
+        val parent =
+            Diagnostic
+                .new(Level.ERROR, "root")
+                .spanError(span.toMultiSpan(), "err here")
+                .spanWarning(span.toMultiSpan(), "warn here")
+                .spanNote(span.toMultiSpan(), "note here")
+                .spanHelp(span.toMultiSpan(), "help here")
         val kids = parent.children().asSequence().toList()
         assertEquals(4, kids.size)
         for (kid in kids) {
-            assertEquals(listOf(span), kid.spans())
+            assertEquals(listOf(span), kid.spans().asList())
         }
         assertEquals(Level.ERROR, kids[0].level())
         assertEquals(Level.WARNING, kids[1].level())
@@ -633,13 +641,14 @@ class ToTokensTest {
 
     @Test
     fun tokenStreamAdapterPreservesContent() {
-        val source = TokenStream.fromTokenTrees(
-            listOf(
-                TokenTree.Ident(Ident.new("a", Span.callSite())),
-                TokenTree.Punct(Punct.new(',', Spacing.ALONE)),
-                TokenTree.Ident(Ident.new("b", Span.callSite())),
-            ),
-        )
+        val source =
+            TokenStream.fromTokenTrees(
+                listOf(
+                    TokenTree.Ident(Ident.new("a", Span.callSite())),
+                    TokenTree.Punct(Punct.new(',', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("b", Span.callSite())),
+                ),
+            )
         assertEquals(source.toString(), streamOf(source.asToTokens()).toString())
     }
 
@@ -648,9 +657,10 @@ class ToTokensTest {
         // Upstream `impl ToTokens for TokenStream` overrides `into_token_stream`
         // to return `self`; the Kotlin port returns the same TokenStream
         // reference rather than a fresh copy.
-        val source = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Ident(Ident.new("x", Span.callSite()))),
-        )
+        val source =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Ident(Ident.new("x", Span.callSite()))),
+            )
         assertSame(source, source.asToTokens().intoTokenStream())
     }
 
@@ -674,9 +684,10 @@ class ToTokensTest {
 
     @Test
     fun groupAdapterEmitsDelimitedStream() {
-        val inner = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Ident(Ident.new("inner", Span.callSite()))),
-        )
+        val inner =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Ident(Ident.new("inner", Span.callSite()))),
+            )
         val group = Group.new(Delimiter.PARENTHESIS, inner)
         assertEquals("(inner)", streamOf(group.asToTokens()).toString())
     }
@@ -695,68 +706,68 @@ class ToTokensTest {
 
     @Test
     fun ubytePrimitiveEmitsU8Suffixed() {
-        assertEquals("42u8", streamOf((42u).toUByte().asToTokens()).toString())
+        assertEquals("42u8", streamOf((42u).toUByte().asU8ToTokens()).toString())
     }
 
     @Test
     fun ushortPrimitiveEmitsU16Suffixed() {
-        assertEquals("7u16", streamOf((7u).toUShort().asToTokens()).toString())
+        assertEquals("7u16", streamOf((7u).toUShort().asU16ToTokens()).toString())
     }
 
     @Test
     fun uintPrimitiveEmitsU32Suffixed() {
-        assertEquals("9u32", streamOf(9u.asToTokens()).toString())
+        assertEquals("9u32", streamOf(9u.asU32ToTokens()).toString())
     }
 
     @Test
     fun ulongPrimitiveEmitsU64Suffixed() {
-        assertEquals("11u64", streamOf(11uL.asToTokens()).toString())
+        assertEquals("11u64", streamOf(11uL.asU64ToTokens()).toString())
     }
 
     @Test
     fun bytePrimitiveEmitsI8Suffixed() {
-        assertEquals("-3i8", streamOf((-3).toByte().asToTokens()).toString())
+        assertEquals("-3i8", streamOf((-3).toByte().asI8ToTokens()).toString())
     }
 
     @Test
     fun shortPrimitiveEmitsI16Suffixed() {
-        assertEquals("-5i16", streamOf((-5).toShort().asToTokens()).toString())
+        assertEquals("-5i16", streamOf((-5).toShort().asI16ToTokens()).toString())
     }
 
     @Test
     fun intPrimitiveEmitsI32Suffixed() {
-        assertEquals("-7i32", streamOf((-7).asToTokens()).toString())
+        assertEquals("-7i32", streamOf((-7).asI32ToTokens()).toString())
     }
 
     @Test
     fun longPrimitiveEmitsI64Suffixed() {
-        assertEquals("-9i64", streamOf((-9L).asToTokens()).toString())
+        assertEquals("-9i64", streamOf((-9L).asI64ToTokens()).toString())
     }
 
     @Test
     fun floatPrimitiveEmitsF32Suffixed() {
-        assertEquals("1.5f32", streamOf(1.5f.asToTokens()).toString())
+        assertEquals("1.5f32", streamOf(1.5f.asF32ToTokens()).toString())
     }
 
     @Test
     fun doublePrimitiveEmitsF64Suffixed() {
-        assertEquals("2.5f64", streamOf(2.5.asToTokens()).toString())
+        assertEquals("2.5f64", streamOf(2.5.asF64ToTokens()).toString())
     }
 
     @Test
     fun booleanEmitsKeywordIdent() {
-        assertEquals("true", streamOf(true.asToTokens()).toString())
-        assertEquals("false", streamOf(false.asToTokens()).toString())
+        assertEquals("true", streamOf(true.asBoolToTokens()).toString())
+        assertEquals("false", streamOf(false.asBoolToTokens()).toString())
     }
 
     @Test
     fun charEmitsCharacterLiteral() {
-        assertEquals("'a'", streamOf('a'.asToTokens()).toString())
+        assertEquals("'a'", streamOf('a'.asCharToTokens()).toString())
     }
 
     @Test
     fun stringEmitsStringLiteral() {
-        assertEquals("\"hi\"", streamOf("hi".asToTokens()).toString())
+        assertEquals("\"hi\"", streamOf("hi".asStringToTokens()).toString())
     }
 
     @Test
@@ -805,56 +816,69 @@ class RepetitionIteratorCheckTest {
 class RepInterpTest {
     @Test
     fun holdsValueAndYieldsItOnNextShadow() {
-        val r = RepInterp(42)
-        assertEquals(42, r.value)
-        assertEquals(42, r.nextShadow())
+        val tree = TokenTree.Ident(Ident.new("value", Span.callSite()))
+        val r = RepInterp(tree)
+        assertSame(tree, r.value)
+        assertSame(tree, r.nextShadow())
     }
 
     @Test
     fun iteratorAdapterForwards() {
-        val r = RepInterp(listOf("a", "b").iterator())
+        val a = TokenTree.Ident(Ident.new("a", Span.callSite()))
+        val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
+        val r = RepInterpTokenTreeIterator(listOf(a, b).iterator())
         val pulled = r.iteratorAdapter().asSequence().toList()
-        assertEquals(listOf("a", "b"), pulled)
+        assertEquals(listOf(a, b), pulled)
     }
 
     @Test
     fun quoteIntoIterOverListWrapper() {
-        val (it, marker) = RepInterp(listOf(1, 2, 3)).quoteIntoIter()
+        val a = TokenTree.Ident(Ident.new("a", Span.callSite()))
+        val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
+        val c = TokenTree.Ident(Ident.new("c", Span.callSite()))
+        val (it, marker) = RepInterpTokenTreeList(listOf(a, b, c)).quoteIntoIter()
         assertSame(HasIterator, marker)
-        assertEquals(listOf(1, 2, 3), it.asSequence().toList())
+        assertEquals(listOf(a, b, c), it.asSequence().toList())
     }
 }
 
 class QuoteExtTest {
     @Test
     fun iteratorQuoteIntoIterReturnsHasIter() {
-        val (out, marker) = listOf("x").iterator().quoteIntoIter()
+        val x = TokenTree.Ident(Ident.new("x", Span.callSite()))
+        val (out, marker) = listOf(x).iterator().quoteIntoIter()
         assertSame(HasIterator, marker)
         assertTrue(out.hasNext())
-        assertEquals("x", out.next())
+        assertSame(x, out.next())
     }
 
     @Test
     fun listQuoteIntoIterReturnsHasIter() {
-        val (out, marker) = listOf(1, 2).quoteIntoIter()
+        val a = TokenTree.Ident(Ident.new("a", Span.callSite()))
+        val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
+        val (out, marker) = listOf(a, b).quoteIntoIter()
         assertSame(HasIterator, marker)
-        assertEquals(listOf(1, 2), out.asSequence().toList())
+        assertEquals(listOf(a, b), out.asSequence().toList())
     }
 
     @Test
     fun arrayQuoteIntoIterReturnsHasIter() {
-        val (out, marker) = arrayOf("p", "q").quoteIntoIter()
+        val p = TokenTree.Ident(Ident.new("p", Span.callSite()))
+        val q = TokenTree.Ident(Ident.new("q", Span.callSite()))
+        val (out, marker) = arrayOf<TokenTree>(p, q).quoteIntoIter()
         assertSame(HasIterator, marker)
-        assertEquals(listOf("p", "q"), out.asSequence().toList())
+        assertEquals(listOf(p, q), out.asSequence().toList())
     }
 
     @Test
     fun setQuoteIntoIterReturnsHasIter() {
         // LinkedHashSet preserves insertion order in commonMain stdlib.
-        val src: Set<String> = linkedSetOf("a", "b")
+        val a = TokenTree.Ident(Ident.new("a", Span.callSite()))
+        val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
+        val src: Set<TokenTree> = linkedSetOf(a, b)
         val (out, marker) = src.quoteIntoIter()
         assertSame(HasIterator, marker)
-        assertEquals(listOf("a", "b"), out.asSequence().toList())
+        assertEquals(listOf(a, b), out.asSequence().toList())
     }
 }
 
@@ -878,9 +902,10 @@ class QuoteSpanRegistryTest {
 class QuoteSpanTest {
     @Test
     fun quoteSpanEmbedsRecoverCall() {
-        val procCrate = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Ident(Ident.new("crate", Span.defSite()))),
-        )
+        val procCrate =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Ident(Ident.new("crate", Span.defSite()))),
+            )
         val rendered = quoteSpan(procCrate, Span.callSite()).toString()
         assertTrue(rendered.contains("Span"), "expected Span in: $rendered")
         assertTrue(rendered.contains("recover_proc_macro_span"), "expected recover call in: $rendered")
@@ -897,9 +922,10 @@ class QuoteTest {
 
     @Test
     fun identQuoteIncludesIdentCtorAndOriginalText() {
-        val input = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Ident(Ident.new("hello", Span.callSite()))),
-        )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Ident(Ident.new("hello", Span.callSite()))),
+            )
         val out = quote(input).toString()
         assertTrue(out.contains("\"hello\""), "expected literal hello in: $out")
         assertTrue(out.contains("Ident"), "expected Ident ctor reference in: $out")
@@ -907,9 +933,10 @@ class QuoteTest {
 
     @Test
     fun punctQuoteEmbedsPunctCtor() {
-        val input = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Punct(Punct.new(',', Spacing.ALONE))),
-        )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Punct(Punct.new(',', Spacing.ALONE))),
+            )
         val out = quote(input).toString()
         assertTrue(out.contains("Punct"), "expected Punct ctor in: $out")
         assertTrue(out.contains("Alone"), "expected Spacing::Alone in: $out")
@@ -918,12 +945,14 @@ class QuoteTest {
 
     @Test
     fun groupQuoteEmitsDelimiterAndRecursesInto() {
-        val inner = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Ident(Ident.new("inside", Span.callSite()))),
-        )
-        val input = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Group(Group.new(Delimiter.BRACKET, inner))),
-        )
+        val inner =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Ident(Ident.new("inside", Span.callSite()))),
+            )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Group(Group.new(Delimiter.BRACKET, inner))),
+            )
         val out = quote(input).toString()
         assertTrue(out.contains("Bracket"), "expected Delimiter::Bracket in: $out")
         assertTrue(out.contains("\"inside\""), "expected nested inside literal in: $out")
@@ -931,9 +960,10 @@ class QuoteTest {
 
     @Test
     fun literalQuoteEmbedsLiteralText() {
-        val input = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Literal(Literal.string("payload"))),
-        )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Literal(Literal.string("payload"))),
+            )
         val out = quote(input).toString()
         assertTrue(out.contains("payload"), "expected payload text in: $out")
         assertTrue(out.contains("parse"), "expected parse call in: $out")
@@ -941,9 +971,10 @@ class QuoteTest {
 
     @Test
     fun trailingDollarRejected() {
-        val input = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Punct(Punct.new('$', Spacing.ALONE))),
-        )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Punct(Punct.new('$', Spacing.ALONE))),
+            )
         assertFailsWith<IllegalArgumentException> { quote(input) }
     }
 
@@ -951,19 +982,21 @@ class QuoteTest {
     fun dollarFollowedByGroupExpandsAsRepetition() {
         // The repetition body must declare a meta-var with `$ident` so
         // the expansion produces the per-meta-var `quote_into_iter` setup.
-        val rep = TokenStream.fromTokenTrees(
-            listOf(
-                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
-                TokenTree.Ident(Ident.new("v", Span.callSite())),
-            ),
-        )
-        val input = TokenStream.fromTokenTrees(
-            listOf(
-                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
-                TokenTree.Group(Group.new(Delimiter.PARENTHESIS, rep)),
-                TokenTree.Punct(Punct.new('*', Spacing.ALONE)),
-            ),
-        )
+        val rep =
+            TokenStream.fromTokenTrees(
+                listOf(
+                    TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("v", Span.callSite())),
+                ),
+            )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(
+                    TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                    TokenTree.Group(Group.new(Delimiter.PARENTHESIS, rep)),
+                    TokenTree.Punct(Punct.new('*', Spacing.ALONE)),
+                ),
+            )
         val out = quote(input).toString()
         assertTrue(out.contains("while"), "expected while in repetition: $out")
         assertTrue(out.contains("quote_into_iter"), "expected quote_into_iter call: $out")
@@ -971,27 +1004,30 @@ class QuoteTest {
 
     @Test
     fun dollarFollowedByGroupWithoutStarRejected() {
-        val rep = TokenStream.fromTokenTrees(
-            listOf(TokenTree.Ident(Ident.new("v", Span.callSite()))),
-        )
-        val input = TokenStream.fromTokenTrees(
-            listOf(
-                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
-                TokenTree.Group(Group.new(Delimiter.PARENTHESIS, rep)),
-                TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
-            ),
-        )
+        val rep =
+            TokenStream.fromTokenTrees(
+                listOf(TokenTree.Ident(Ident.new("v", Span.callSite()))),
+            )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(
+                    TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                    TokenTree.Group(Group.new(Delimiter.PARENTHESIS, rep)),
+                    TokenTree.Punct(Punct.new('+', Spacing.ALONE)),
+                ),
+            )
         assertFailsWith<IllegalArgumentException> { quote(input) }
     }
 
     @Test
     fun dollarFollowedByIdentEmitsInterpolation() {
-        val input = TokenStream.fromTokenTrees(
-            listOf(
-                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
-                TokenTree.Ident(Ident.new("var", Span.callSite())),
-            ),
-        )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(
+                    TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                    TokenTree.Ident(Ident.new("var", Span.callSite())),
+                ),
+            )
         val out = quote(input).toString()
         assertTrue(out.contains("ToTokens"), "expected ToTokens dispatch: $out")
         assertTrue(out.contains("var"), "expected interpolated var ident: $out")
@@ -999,12 +1035,13 @@ class QuoteTest {
 
     @Test
     fun dollarDollarPassesThroughAsLiteralDollar() {
-        val input = TokenStream.fromTokenTrees(
-            listOf(
-                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
-                TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
-            ),
-        )
+        val input =
+            TokenStream.fromTokenTrees(
+                listOf(
+                    TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                    TokenTree.Punct(Punct.new('$', Spacing.ALONE)),
+                ),
+            )
         // No throw: the second dollar resets afterDollar and the loop
         // moves on without emitting the escape.
         quote(input)
@@ -1082,7 +1119,10 @@ class KtTokenAdapterTest {
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
         val lit = trees[0] as TokenTree.Literal
-        assertTrue(lit.value.toString().contains("hello"), "Expected string literal containing 'hello', got ${lit.value}")
+        assertTrue(
+            lit.value.toString().contains("hello"),
+            "Expected string literal containing 'hello', got ${lit.value}",
+        )
     }
 
     @Test
@@ -1135,13 +1175,15 @@ class KtTokenAdapterTest {
         val trees = result.getOrThrow().toList()
         // f → Ident, ( → Group(PAREN), containing Group(BRACE)
         assertTrue(trees.size >= 2, "Expected at least 2 top-level trees")
-        val outerGroup = trees.filterIsInstance<TokenTree.Group>().firstOrNull()
-        assertTrue(outerGroup != null, "Expected a Group in the result")
-        assertEquals(Delimiter.PARENTHESIS, outerGroup!!.value.delimiter())
+        val outerGroup =
+            trees.filterIsInstance<TokenTree.Group>().firstOrNull()
+                ?: error("Expected a Group in the result")
+        assertEquals(Delimiter.PARENTHESIS, outerGroup.value.delimiter())
         val inner = outerGroup.value.stream().toList()
-        val innerBrace = inner.filterIsInstance<TokenTree.Group>().firstOrNull()
-        assertTrue(innerBrace != null, "Expected nested brace group")
-        assertEquals(Delimiter.BRACE, innerBrace!!.value.delimiter())
+        val innerBrace =
+            inner.filterIsInstance<TokenTree.Group>().firstOrNull()
+                ?: error("Expected nested brace group")
+        assertEquals(Delimiter.BRACE, innerBrace.value.delimiter())
     }
 
     @Test

@@ -4,36 +4,31 @@ package com.intellij.platform.syntax.util.lexer
 import com.intellij.platform.syntax.SyntaxElementType
 import com.intellij.platform.syntax.lexer.Lexer
 
-open class DelegateLexer(val delegate: Lexer) : LexerBase() {
-  override fun start(buffer: CharSequence, startOffset: Int, endOffset: Int, initialState: Int) {
-    delegate.start(buffer, startOffset, endOffset, initialState)
-  }
+open class DelegateLexer(
+    val delegate: Lexer,
+) : LexerBase() {
+    override fun start(
+        buffer: CharSequence,
+        startOffset: Int,
+        endOffset: Int,
+        initialState: Int,
+    ) {
+        delegate.start(buffer, startOffset, endOffset, initialState)
+    }
 
-  override fun getState(): Int {
-    return delegate.getState()
-  }
+    override fun getState(): Int = delegate.getState()
 
-  override fun getTokenType(): SyntaxElementType? {
-    return delegate.getTokenType()
-  }
+    override fun getTokenType(): SyntaxElementType? = delegate.getTokenType()
 
-  override fun getTokenStart(): Int {
-    return delegate.getTokenStart()
-  }
+    override fun getTokenStart(): Int = delegate.getTokenStart()
 
-  override fun getTokenEnd(): Int {
-    return delegate.getTokenEnd()
-  }
+    override fun getTokenEnd(): Int = delegate.getTokenEnd()
 
-  override fun advance() {
-    delegate.advance()
-  }
+    override fun advance() {
+        delegate.advance()
+    }
 
-  override fun getBufferSequence(): CharSequence {
-    return delegate.getBufferSequence()
-  }
+    override fun getBufferSequence(): CharSequence = delegate.getBufferSequence()
 
-  override fun getBufferEnd(): Int {
-    return delegate.getBufferEnd()
-  }
+    override fun getBufferEnd(): Int = delegate.getBufferEnd()
 }

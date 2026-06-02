@@ -6,19 +6,22 @@ import com.intellij.platform.syntax.SyntaxElementTypeSet
 import com.intellij.platform.syntax.lexer.Lexer
 
 open class MergingLexerAdapter(
-  original: Lexer,
-  private val tokenSet: SyntaxElementTypeSet,
-) : MergingLexerAdapterBase(original) {
-  override fun merge(tokenType: SyntaxElementType, lexer: Lexer): SyntaxElementType {
-    if (!tokenSet.contains(tokenType)) {
-      return tokenType
-    }
+    delegate: Lexer,
+    private val tokenSet: SyntaxElementTypeSet,
+) : MergingLexerAdapterBase(delegate) {
+    override fun merge(
+        tokenType: SyntaxElementType,
+        lexer: Lexer,
+    ): SyntaxElementType {
+        if (!tokenSet.contains(tokenType)) {
+            return tokenType
+        }
 
-    while (true) {
-      val token = lexer.getTokenType()
-      if (token !== tokenType) break
-      lexer.advance()
+        while (true) {
+            val token = lexer.getTokenType()
+            if (token !== tokenType) break
+            lexer.advance()
+        }
+        return tokenType
     }
-    return tokenType
-  }
 }

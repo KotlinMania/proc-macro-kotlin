@@ -4,15 +4,15 @@ package com.intellij.platform.syntax.extensions
 /**
  * A key that allows to get extensions registered under the corresponding [name].
  */
-class ExtensionPointKey<T : Any> internal constructor(val name: String, unused: Any?) {
-  override fun equals(other: Any?): Boolean =
-    this === other || (other is ExtensionPointKey<*> && name == other.name)
+internal class ExtensionPointKey internal constructor(
+    val name: String,
+    unused: Any?,
+) {
+    override fun equals(other: Any?): Boolean = this === other || (other is ExtensionPointKey && name == other.name)
 
-  override fun hashCode(): Int =
-    name.hashCode()
+    override fun hashCode(): Int = name.hashCode()
 
-  override fun toString(): String =
-    "ExtensionKey($name)"
+    override fun toString(): String = "ExtensionKey($name)"
 }
 
-fun <T : Any> ExtensionPointKey(name: String): ExtensionPointKey<T> = ExtensionPointKey(name, null)
+internal fun ExtensionPointKey(name: String): ExtensionPointKey = ExtensionPointKey(name, null)

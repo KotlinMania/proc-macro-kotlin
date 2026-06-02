@@ -18,7 +18,10 @@ public class Group internal constructor(
          * [Span.callSite]. To change the span you can use the [setSpan]
          * method below.
          */
-        public fun new(delimiter: Delimiter, stream: TokenStream): Group =
+        public fun new(
+            delimiter: Delimiter,
+            stream: TokenStream,
+        ): Group =
             Group(
                 GroupData(
                     delimiter = delimiter,
@@ -88,8 +91,7 @@ public class Group internal constructor(
      * back into the same group (modulo spans), except for possibly
      * [TokenTree.Group]s with [Delimiter.NONE] delimiters.
      */
-    override fun toString(): String =
-        TokenStream.fromTokenTree(TokenTree.Group(this)).toString()
+    override fun toString(): String = TokenStream.fromTokenTree(TokenTree.Group(this)).toString()
 }
 
 /**
