@@ -813,12 +813,6 @@ class KotlinFlexLexer : FlexLexer {
             else -> throw IllegalArgumentException("Unexpected state: $state")
         }
 
-    /** Returns the maximum size of the scanner buffer, which limits the size of tokens. */
-    private fun zzMaxBufferLen(): Int = Int.MAX_VALUE
-
-    /**  Whether the scanner buffer can grow to accommodate a larger token. */
-    private fun zzCanGrow(): Boolean = true
-
     override fun getTokenStart(): Int = zzStartRead
 
     override fun getTokenEnd(): Int = getTokenStart() + yylength()

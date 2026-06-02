@@ -7,36 +7,34 @@
 
 package org.jetbrains.kotlin.kmp.utils
 
-class StringUtil {
-    companion object {
-        fun getLineBreakCount(text: CharSequence): Int {
-            var count = 0
-            var i = 0
-            while (i < text.length) {
-                val c = text[i]
-                when (c) {
-                    '\n' -> {
-                        count++
-                    }
-                    '\r' -> {
-                        if ((i + 1).let { it < text.length && text[it] == '\n' }) {
-                            i++
-                        }
-                        count++
-                    }
+object StringUtil {
+    fun getLineBreakCount(text: CharSequence): Int {
+        var count = 0
+        var i = 0
+        while (i < text.length) {
+            val c = text[i]
+            when (c) {
+                '\n' -> {
+                    count++
                 }
-                i++
+                '\r' -> {
+                    if ((i + 1).let { it < text.length && text[it] == '\n' }) {
+                        i++
+                    }
+                    count++
+                }
             }
-            return count
+            i++
         }
-
-        fun containsLineBreak(text: CharSequence): Boolean {
-            for (i in 0..<text.length) {
-                if (isLineBreak(text[i])) return true
-            }
-            return false
-        }
-
-        fun isLineBreak(c: Char): Boolean = c == '\n' || c == '\r'
+        return count
     }
+
+    fun containsLineBreak(text: CharSequence): Boolean {
+        for (i in 0..<text.length) {
+            if (isLineBreak(text[i])) return true
+        }
+        return false
+    }
+
+    fun isLineBreak(c: Char): Boolean = c == '\n' || c == '\r'
 }

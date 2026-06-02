@@ -7,77 +7,73 @@ import com.intellij.util.text.CharArrayUtilKmp.regionMatches
 import kotlin.math.min
 
 open class CharArrayCharSequence(
-  protected val myChars: CharArray,
-  protected val myStart: Int,
-  protected val myEnd: Int,
-) : CharSequenceBackedByArray, CharSequenceWithStringHash {
+    protected val myChars: CharArray,
+    protected val myStart: Int,
+    protected val myEnd: Int,
+) : CharSequenceBackedByArray,
+    CharSequenceWithStringHash {
+    constructor(vararg chars: Char) : this(chars, 0, chars.size)
 
-  constructor(vararg chars: Char) : this(chars, 0, chars.size)
+    private var hash = 0
 
-  private var hash = 0
-
-  init {
-    if (myStart < 0 || myEnd > myChars.size || myStart > myEnd) {
-      throw IndexOutOfBoundsException("chars.length:" + myChars.size + ", start:" + myStart + ", end:" + myEnd)
-    }
-  }
-
-  override val length: Int
-    get() {
-      return myEnd - myStart
+    init {
+        if (myStart < 0 || myEnd > myChars.size || myStart > myEnd) {
+            throw IndexOutOfBoundsException("chars.length:" + myChars.size + ", start:" + myStart + ", end:" + myEnd)
+        }
     }
 
-  override fun get(index: Int): Char {
-    return myChars[index + myStart]
-  }
+    override val length: Int
+        get() {
+            return myEnd - myStart
+        }
 
-  override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
-    return if (startIndex == 0 && endIndex == length) this else CharArrayCharSequence(myChars, myStart + startIndex, myStart + endIndex)
-  }
+    override fun get(index: Int): Char = myChars[index + myStart]
 
-  override fun toString(): String {
-    return myChars.concatToString(myStart, myEnd) //TODO StringFactory
-  }
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence = if (startIndex == 0 && endIndex == length) this else CharArrayCharSequence(myChars, myStart + startIndex, myStart + endIndex)
 
-  override val chars: CharArray
-    get() {
-      if (myStart == 0) return myChars
-      val chars = CharArray(length)
-      getChars(chars, 0)
-      return chars
+    override fun toString(): String {
+        return myChars.concatToString(myStart, myEnd) // TODO StringFactory
     }
 
-  override fun getChars(dst: CharArray, dstOffset: Int) {
-    myChars.copyInto(dst, dstOffset, myStart, myEnd)
-  }
+    override val chars: CharArray
+        get() {
+            if (myStart == 0) return myChars
+            val chars = CharArray(length)
+            getChars(chars, 0)
+            return chars
+        }
 
-  override fun equals(other: Any?): Boolean {
-    if (this === other) {
-      return true
+    override fun getChars(dst: CharArray, dstOffset: Int) {
+        myChars.copyInto(dst, dstOffset, myStart, myEnd)
     }
-    if (other == null || this::class != other::class || length != (other as CharSequence).length) {
-      return false
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (other == null || this::class != other::class || length != (other as CharSequence).length) {
+            return false
+        }
+        return myChars.regionMatches(myStart, myEnd, other)
     }
-    return myChars.regionMatches(myStart, myEnd, other)
-  }
 
-  /**
-   * See [java.io.Reader.read];
-   */
-  fun readCharsTo(start: Int, cbuf: CharArray, off: Int, len: Int): Int {
-    val readChars = min(len, length - start)
-    if (readChars <= 0) return -1
+    /**
+     * See [java.io.Reader.read];
+     */
+    fun readCharsTo(start: Int, cbuf: CharArray, off: Int, len: Int): Int {
+        val readChars = min(len, length - start)
+        if (readChars <= 0) return -1
 
-    myChars.copyInto(cbuf, off, myStart + start, myStart + start + readChars)
-    return readChars
-  }
-
-  override fun hashCode(): Int {
-    var h = hash
-    if (h == 0) {
-      h = myChars.stringHashCode(myStart, myEnd)
-      hash = h
+        myChars.copyInto(cbuf, off, myStart + start, myStart + start + readChars)
+        return readChars
     }
-    return h
-  }
+
+    override fun hashCode(): Int {
+        var h = hash
+        if (h == 0) {
+            h = myChars.stringHashCode(myStart, myEnd)
+            hash = h
+        }
+        return h
+    }
 }

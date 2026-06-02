@@ -231,8 +231,6 @@ private fun mkFatArrow(): TokenStream = mkJointOp('=', '>')
 
 private fun mkPlusEq(): TokenStream = mkJointOp('+', '=')
 
-private fun mkNotEq(): TokenStream = mkJointOp('!', '=')
-
 /**
  * Recursively collects all [Ident]s (meta-variables) that follow a `$`
  * from the given content stream, preserving their order of appearance.

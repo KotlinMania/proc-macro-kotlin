@@ -21,57 +21,60 @@ import com.intellij.util.text.CharArrayUtilKmp.getChars
  * as a map key or set element, since it keeps reference to the original sequence and prevents its collection.
  */
 open class CharSequenceSubSequence(
-  val baseSequence: CharSequence,
-  private val start: Int,
-  private val end: Int,
-) : CharSequence, CharArrayExternalizable, CharSequenceWithStringHash {
+    val baseSequence: CharSequence,
+    private val start: Int,
+    private val end: Int,
+) : CharSequence,
+    CharArrayExternalizable,
+    CharSequenceWithStringHash {
+    constructor(baseSequence: CharSequence) : this(baseSequence, 0, baseSequence.length)
 
-  constructor(baseSequence: CharSequence) : this(baseSequence, 0, baseSequence.length)
+    private var hash = 0
 
-  private var hash = 0
-
-  init {
-    if (start < 0 || end > baseSequence.length || start > end) {
-      throw IndexOutOfBoundsException("chars sequence.length:" + baseSequence.length +
-                                      ", start:" + start +
-                                      ", end:" + end)
+    init {
+        if (start < 0 || end > baseSequence.length || start > end) {
+            throw IndexOutOfBoundsException(
+                "chars sequence.length:" + baseSequence.length +
+                    ", start:" + start +
+                    ", end:" + end,
+            )
+        }
     }
-  }
 
-  override val length: Int
-    get() = end - start
+    override val length: Int
+        get() = end - start
 
-  override fun get(index: Int): Char =
-    baseSequence[index + start]
+    override fun get(index: Int): Char =
+        baseSequence[index + start]
 
-  override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
-    if (startIndex == this.start && endIndex == this.end) return this
-    return CharSequenceSubSequence(this.baseSequence, this.start + startIndex, this.start + endIndex)
-  }
-
-  override fun toString(): String {
-    if (this.baseSequence is String) {
-      return this.baseSequence.substring(start, end)
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+        if (startIndex == this.start && endIndex == this.end) return this
+        return CharSequenceSubSequence(this.baseSequence, this.start + startIndex, this.start + endIndex)
     }
-    return baseSequence.fromSequence(start, end).concatToString()
-  }
 
-  override fun getChars(start: Int, end: Int, dest: CharArray, destPos: Int) {
-    require(end - start <= this.end - this.start)
-    baseSequence.getChars(dest, start + this.start, destPos, end - start)
-  }
-
-  override fun hashCode(): Int {
-    var h = hash
-    if (h == 0) {
-      h = baseSequence.stringHashCode(start, end)
-      hash = h
+    override fun toString(): String {
+        if (this.baseSequence is String) {
+            return this.baseSequence.substring(start, end)
+        }
+        return baseSequence.fromSequence(start, end).concatToString()
     }
-    return h
-  }
 
-  override fun equals(other: Any?): Boolean {
-    if (other === this) return true
-    return other is CharSequence && this.contentEquals(other)
-  }
+    override fun getChars(start: Int, end: Int, dest: CharArray, destPos: Int) {
+        require(end - start <= this.end - this.start)
+        baseSequence.getChars(dest, start + this.start, destPos, end - start)
+    }
+
+    override fun hashCode(): Int {
+        var h = hash
+        if (h == 0) {
+            h = baseSequence.stringHashCode(start, end)
+            hash = h
+        }
+        return h
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        return other is CharSequence && this.contentEquals(other)
+    }
 }

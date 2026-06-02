@@ -446,19 +446,19 @@ class Int2IntOpenHashMap : MutableInt2IntMap {
         this.value = newValue
     }
 
-  override fun equals(other: Any?): Boolean {
-    if (other === this) return true
-    return other is Int2IntMap && contentEquals(other)
-  }
-
-  internal fun contentEquals(other: Int2IntMap): Boolean {
-    if (this.size != other.size) return false
-
-    for ((key, value) in this.entries) {
-            if (other[key] != value) return false
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        return other is Int2IntMap && contentEquals(other)
     }
-    return true
-  }
+
+    internal fun contentEquals(other: Int2IntMap): Boolean {
+        if (this.size != other.size) return false
+
+        for ((key, value) in this.entries) {
+            if (other[key] != value) return false
+        }
+        return true
+    }
 
     /** Returns a hash code for this map.
      *
