@@ -54,6 +54,7 @@ val commonOptIns =
     listOf(
         "kotlin.time.ExperimentalTime",
         "kotlin.concurrent.atomics.ExperimentalAtomicApi",
+        "kotlin.ExperimentalUnsignedTypes",
     )
 
 // ============================================================================
@@ -315,6 +316,10 @@ kotlin {
     swiftExport {
         moduleName = frameworkName
         flattenPackage = projectNamespace
+        @OptIn(org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl::class)
+        configure {
+            settings.put("enableCoroutinesSupport", "true")
+        }
     }
 
     // Android KMP library. Block name is `android` — `androidLibrary` is deprecated in KGP 2.3.x.
@@ -340,6 +345,12 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    if (name.startsWith("compileSwiftExport")) {
+        compilerOptions.allWarningsAsErrors.set(false)
     }
 }
 
@@ -421,6 +432,17 @@ val wasmNodeVersion = providers.gradleProperty("wasm.node.version").getOrElse(no
 val yarnVersion = providers.gradleProperty("yarn.version").getOrElse("1.22.22")
 val wasmYarnVersion = providers.gradleProperty("wasm.yarn.version").getOrElse(yarnVersion)
 
+// webpack is pinned in kotlin-js-store/package.json — the single source of truth
+// that Dependabot updates natively. Gradle reads the version from there so the
+// yarn resolution and the NodeJsRootExtension pin always track the checked-in
+// store; a Dependabot bump of package.json/yarn.lock is honored rather than
+// overridden. (These two values previously lived in gradle.properties, which
+// Dependabot cannot see, so a bump there would silently revert the build.)
+@Suppress("UNCHECKED_CAST")
+val webpackVersion: String =
+    (groovy.json.JsonSlurper().parse(rootProject.file("kotlin-js-store/package.json")) as Map<String, Any>)
+        .let { it["dependencies"] as Map<String, Any> }["webpack"] as String
+
 rootProject.extensions.configure<NodeJsEnvSpec>("kotlinNodeJsSpec") { version.set(nodeVersion) }
 rootProject.extensions.configure<WasmNodeJsEnvSpec>("kotlinWasmNodeJsSpec") { version.set(wasmNodeVersion) }
 rootProject.extensions.configure<YarnRootEnvSpec>("kotlinYarnSpec") { version.set(yarnVersion) }
@@ -435,6 +457,11 @@ rootProject.extensions.configure<YarnRootExtension>("kotlinYarn") {
             resolution(pkg, ver)
             resolution("**/$pkg", ver)
         }
+    // webpack resolution sourced from kotlin-js-store/package.json (see above)
+    // rather than a yarn.resolution.webpack property, so it can never override a
+    // Dependabot bump of the store.
+    resolution("webpack", webpackVersion)
+    resolution("**/webpack", webpackVersion)
 }
 
 val patchedKarmaWebpackPackage =
@@ -446,7 +473,7 @@ val patchedKarmaWebpackPackage =
 // TODO: NodeJsRootExtension.versions.* is deprecated and will be removed when the spec-based
 //       NodeJsEnvSpec API gains equivalent properties. Track KGP release notes before removing.
 rootProject.extensions.configure<NodeJsRootExtension>("kotlinNodeJs") {
-    versions.webpack.version = providers.gradleProperty("node.webpack.version").getOrElse("5.106.2")
+    versions.webpack.version = webpackVersion
     versions.webpackCli.version = providers.gradleProperty("node.webpackCli.version").getOrElse("7.0.2")
     versions.karma.version = providers.gradleProperty("node.karma.version").getOrElse("npm:karma-maintained@6.4.7")
     versions.karmaWebpack.version = "file:$patchedKarmaWebpackPackage"
@@ -708,6 +735,20 @@ tasks.register("swiftExportSmokeTest") {
                     ),
                 )
             }.assertNormalExitValue()
+
+        val generatedPackageSwift =
+            layout.buildDirectory.file("SPMPackage/macosArm64/Debug/Package.swift").get().asFile
+        if (generatedPackageSwift.exists()) {
+            val text = generatedPackageSwift.readText()
+            if (!text.contains("platforms:")) {
+                generatedPackageSwift.writeText(
+                    text.replaceFirst(
+                        Regex("(name:\\s*\"[^\"]*\",)"),
+                        "\$1\n    platforms: [.macOS(.v14)],",
+                    ),
+                )
+            }
+        }
 
         execOperations
             .exec {

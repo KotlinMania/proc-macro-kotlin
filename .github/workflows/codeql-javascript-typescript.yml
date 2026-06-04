@@ -56,8 +56,9 @@ jobs:
           ORG_GRADLE_PROJECT_kotlin_js_yarn_download: "false"
         run: >
           ./gradlew
-          compileKotlinJs
-          compileKotlinWasmJs
+          jsTestTestDevelopmentExecutableCompileSync
+          wasmJsTestTestDevelopmentExecutableCompileSync
+          compileTestDevelopmentExecutableKotlinWasmWasi
           -Pkotlinmania.codeql=true
           --no-configuration-cache
 
