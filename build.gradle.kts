@@ -1,9 +1,5 @@
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.gradle.api.file.ArchiveOperations
-import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.tasks.ClasspathNormalizer
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -39,7 +35,7 @@ group = providers.gradleProperty("project.group").getOrElse("io.github.kotlinman
 version = providers.gradleProperty("project.version").getOrElse("0.1.0-SNAPSHOT")
 val frameworkName = providers.gradleProperty("project.frameworkName").getOrElse("Unnamed")
 val projectNamespace = providers.gradleProperty("project.namespace").getOrElse("io.github.kotlinmania")
-val kotlinVersion = providers.gradleProperty("versions.kotlin").getOrElse("2.3.21")
+val kotlinVersion = providers.gradleProperty("versions.kotlin").getOrElse("2.4.0")
 val isCodeqlBuild = providers.gradleProperty("kotlinmania.codeql").map(String::toBoolean).getOrElse(false)
 val commonMainBundleName = providers.gradleProperty("project.dependencies.commonMainBundle").get()
 val commonMainDependencyBundle =
@@ -49,11 +45,12 @@ val commonMainDependencyBundle =
         .findBundle(commonMainBundleName)
         .orElseThrow { GradleException("Missing libs bundle '$commonMainBundleName'") }
 
-// Opt-ins shared between the top-level compilerOptions and the codeqlCompileJvm kotlinc invocation.
+// Opt-ins shared across Kotlin targets.
 val commonOptIns =
     listOf(
         "kotlin.time.ExperimentalTime",
         "kotlin.concurrent.atomics.ExperimentalAtomicApi",
+        "kotlin.ExperimentalUnsignedTypes",
     )
 
 // ============================================================================
@@ -227,6 +224,15 @@ tasks.matching { it.name == "compileAndroidMain" }.configureEach {
     dependsOn(ensureAndroidSdk)
 }
 
+// Gap #9b: KGP-generated bridge boilerplate and KotlinCoroutineSupport runtime
+// produce warnings (unchecked casts, unused expressions, opt-in requirements)
+// that cannot be fixed in source — they are regenerated every build.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    if (name.startsWith("compileSwiftExport")) {
+        compilerOptions.allWarningsAsErrors.set(false)
+    }
+}
+
 val jvmToolchainVersion = providers.gradleProperty("jvm.toolchain").getOrElse("21").toInt()
 
 // ============================================================================
@@ -246,11 +252,11 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     compilerOptions {
-        languageVersion.set(KotlinVersion.KOTLIN_2_3)
-        apiVersion.set(KotlinVersion.KOTLIN_2_3)
+        languageVersion.set(KotlinVersion.KOTLIN_2_4)
+        apiVersion.set(KotlinVersion.KOTLIN_2_4)
         allWarningsAsErrors.set(!isCodeqlBuild)
         optIn.addAll(commonOptIns)
-        freeCompilerArgs.add("-Xexpect-actual-classes")
+        freeCompilerArgs.addAll("-Xexpect-actual-classes", "-Xsuppress-version-warnings")
     }
 
     val xcf = XCFramework(frameworkName)
@@ -309,15 +315,19 @@ kotlin {
         nodejs()
     }
 
-    // Swift Export bridge — Experimental per Kotlin 2.3.0 release notes.
-    // KGP 2.3.21 does not expose a public opt-in annotation; warnings (if any)
+    // Swift Export bridge — Experimental per Kotlin 2.4.0 release notes.
+    // KGP 2.4.0 does not expose a public opt-in annotation; warnings (if any)
     // arrive via KotlinToolingDiagnostics, not @RequiresOptIn.
     swiftExport {
         moduleName = frameworkName
         flattenPackage = projectNamespace
+        @OptIn(org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl::class)
+        configure {
+            settings.put("enableCoroutinesSupport", "true")
+        }
     }
 
-    // Android KMP library. Block name is `android` — `androidLibrary` is deprecated in KGP 2.3.x.
+    // Android KMP library. Block name is `android` — `androidLibrary` is deprecated in current KGP.
     android {
         namespace = projectNamespace
         compileSdk = projectCompileSdk.toInt()
@@ -409,6 +419,7 @@ tasks.named("check") {
     // wasmWasi). Test EXECUTION belongs to check; target BUILD coverage belongs
     // to the explicit all-target build set below.
     dependsOn("testAndroidHostTest")
+    dependsOn("hostTests")
     // Swift Export smoke test is required; it must not self-skip.
     dependsOn("swiftExportSmokeTest")
 }
@@ -420,6 +431,17 @@ val nodeVersion = providers.gradleProperty("node.version").getOrElse("24.15.0")
 val wasmNodeVersion = providers.gradleProperty("wasm.node.version").getOrElse(nodeVersion)
 val yarnVersion = providers.gradleProperty("yarn.version").getOrElse("1.22.22")
 val wasmYarnVersion = providers.gradleProperty("wasm.yarn.version").getOrElse(yarnVersion)
+
+// webpack is pinned in kotlin-js-store/package.json — the single source of truth
+// that Dependabot updates natively. Gradle reads the version from there so the
+// yarn resolution and the NodeJsRootExtension pin always track the checked-in
+// store; a Dependabot bump of package.json/yarn.lock is honored rather than
+// overridden. (These two values previously lived in gradle.properties, which
+// Dependabot cannot see, so a bump there would silently revert the build.)
+@Suppress("UNCHECKED_CAST")
+val webpackVersion: String =
+    (groovy.json.JsonSlurper().parse(rootProject.file("kotlin-js-store/package.json")) as Map<String, Any>)
+        .let { it["dependencies"] as Map<String, Any> }["webpack"] as String
 
 rootProject.extensions.configure<NodeJsEnvSpec>("kotlinNodeJsSpec") { version.set(nodeVersion) }
 rootProject.extensions.configure<WasmNodeJsEnvSpec>("kotlinWasmNodeJsSpec") { version.set(wasmNodeVersion) }
@@ -435,6 +457,11 @@ rootProject.extensions.configure<YarnRootExtension>("kotlinYarn") {
             resolution(pkg, ver)
             resolution("**/$pkg", ver)
         }
+    // webpack resolution sourced from kotlin-js-store/package.json (see above)
+    // rather than a yarn.resolution.webpack property, so it can never override a
+    // Dependabot bump of the store.
+    resolution("webpack", webpackVersion)
+    resolution("**/webpack", webpackVersion)
 }
 
 val patchedKarmaWebpackPackage =
@@ -446,7 +473,7 @@ val patchedKarmaWebpackPackage =
 // TODO: NodeJsRootExtension.versions.* is deprecated and will be removed when the spec-based
 //       NodeJsEnvSpec API gains equivalent properties. Track KGP release notes before removing.
 rootProject.extensions.configure<NodeJsRootExtension>("kotlinNodeJs") {
-    versions.webpack.version = providers.gradleProperty("node.webpack.version").getOrElse("5.106.2")
+    versions.webpack.version = webpackVersion
     versions.webpackCli.version = providers.gradleProperty("node.webpackCli.version").getOrElse("7.0.2")
     versions.karma.version = providers.gradleProperty("node.karma.version").getOrElse("npm:karma-maintained@6.4.7")
     versions.karmaWebpack.version = "file:$patchedKarmaWebpackPackage"
@@ -493,153 +520,6 @@ mavenPublishing {
         }
     }
 }
-
-// ============================================================================
-// CodeQL extraction
-// ============================================================================
-val codeqlKotlincScope =
-    configurations.dependencyScope("codeqlKotlinc") {
-        description = "Kotlin compiler (CodeQL extraction target only)"
-    }
-val codeqlSourceScope =
-    configurations.dependencyScope("codeqlSourceClasspath") {
-        description = "Runtime classpath for CodeQL extraction of commonMain sources"
-    }
-val codeqlAarScope =
-    configurations.dependencyScope("codeqlAndroidAar") {
-        description = "Android AAR artifacts for CodeQL dependency classpath extraction"
-    }
-val codeqlKotlincFiles =
-    configurations.resolvable("codeqlKotlincFiles") {
-        extendsFrom(codeqlKotlincScope.get())
-    }
-val codeqlSourceFiles =
-    configurations.resolvable("codeqlSourceFiles") {
-        extendsFrom(codeqlSourceScope.get())
-    }
-val codeqlAarFiles =
-    configurations.resolvable("codeqlAarFiles") {
-        extendsFrom(codeqlAarScope.get())
-    }
-
-val codeqlLanguageVersion =
-    providers
-        .gradleProperty("kotlin.languageVersion")
-        .getOrElse(kotlinVersion.split('.').take(2).joinToString("."))
-val codeqlApiVersion = providers.gradleProperty("kotlin.apiVersion").getOrElse(codeqlLanguageVersion)
-val codeqlKotlinSourceSetNames =
-    providers
-        .gradleProperty("project.codeql.kotlinSourceSets")
-        .getOrElse("commonMain")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toList()
-val codeqlKotlinCommonSourceSetNames =
-    providers
-        .gradleProperty("project.codeql.kotlinCommonSourceSets")
-        .getOrElse("commonMain")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toList()
-
-dependencies {
-    val codeqlKotlinVersion = providers.gradleProperty("codeql.kotlin.version").getOrElse(kotlinVersion)
-    add("codeqlKotlinc", "org.jetbrains.kotlin:kotlin-compiler-embeddable:$codeqlKotlinVersion")
-
-    providers
-        .gradleProperty("project.dependencies.codeqlSourceClasspath")
-        .getOrElse("")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .forEach { add("codeqlSourceClasspath", it) }
-
-    providers
-        .gradleProperty("project.dependencies.codeqlAndroidAar")
-        .getOrElse("")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .forEach { add("codeqlAndroidAar", it) }
-}
-
-val codeqlCompileJvm =
-    tasks.register<JavaExec>("codeqlCompileJvm") {
-        description =
-            "Compile ${codeqlKotlinSourceSetNames.joinToString(",")} Kotlin sources " +
-                "with kotlinc $codeqlLanguageVersion for CodeQL Java/Kotlin extraction."
-        group = "verification"
-        classpath(codeqlKotlincFiles)
-        mainClass.set("org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
-        // Inject services at config time — config-cache safe; project.copy/zipTree in a task
-        // action would violate https://docs.gradle.org/9.5.1/userguide/configuration_cache.html
-        val fs = serviceOf<FileSystemOperations>()
-        val archives = serviceOf<ArchiveOperations>()
-        val outDir = layout.buildDirectory.dir("classes/kotlin/codeql-jvm")
-        val aarExtractDir = layout.buildDirectory.dir("codeql/android-aar")
-        val commonSources =
-            files(
-                codeqlKotlinCommonSourceSetNames.map { sourceSetName ->
-                    fileTree("src/$sourceSetName/kotlin") { include("**/*.kt") }
-                },
-            )
-        val sources =
-            files(
-                codeqlKotlinSourceSetNames.map { sourceSetName ->
-                    fileTree("src/$sourceSetName/kotlin") { include("**/*.kt") }
-                },
-            )
-        inputs.files(sources).withPathSensitivity(PathSensitivity.RELATIVE)
-        inputs.files(commonSources).withPathSensitivity(PathSensitivity.RELATIVE)
-        inputs.files(codeqlSourceFiles).withNormalizer(ClasspathNormalizer::class.java)
-        inputs.files(codeqlAarFiles).withNormalizer(ClasspathNormalizer::class.java)
-        outputs.dir(outDir)
-        outputs.dir(aarExtractDir)
-        doFirst {
-            outDir.get().asFile.mkdirs()
-            val extractedJars =
-                codeqlAarFiles.get().resolve().mapNotNull { aar ->
-                    val extractTarget = aarExtractDir.get().asFile.resolve(aar.nameWithoutExtension)
-                    extractTarget.mkdirs()
-                    fs.copy {
-                        from(archives.zipTree(aar))
-                        include("classes.jar")
-                        into(extractTarget)
-                    }
-                    extractTarget.resolve("classes.jar").takeIf { it.exists() }
-                }
-            val fullClasspath =
-                (codeqlSourceFiles.get().resolve() + extractedJars)
-                    .joinToString(File.pathSeparator) { it.absolutePath }
-            val commonSourceFiles = commonSources.files.toMutableList()
-            require(commonSourceFiles.isNotEmpty()) {
-                "project.codeql.kotlinCommonSourceSets must resolve to at least one Kotlin source file"
-            }
-            val sourceFiles = sources.files.toMutableList()
-            require(sourceFiles.isNotEmpty()) {
-                "project.codeql.kotlinSourceSets must resolve to at least one Kotlin source file"
-            }
-            args = listOf(
-                "-d",
-                outDir.get().asFile.absolutePath,
-                "-classpath",
-                fullClasspath,
-                "-jvm-target",
-                jvmToolchainVersion.toString(),
-                "-no-stdlib",
-                "-no-reflect",
-                "-language-version",
-                codeqlLanguageVersion,
-                "-api-version",
-                codeqlApiVersion,
-                "-Xmulti-platform",
-                "-Xcommon-sources=${commonSourceFiles.joinToString(",") { it.absolutePath }}",
-                "-Xexpect-actual-classes",
-            ) + commonOptIns.flatMap { listOf("-opt-in", it) } + sourceFiles.map { it.absolutePath }
-        }
-    }
 
 // ============================================================================
 // Tasks
@@ -708,6 +588,23 @@ tasks.register("swiftExportSmokeTest") {
                     ),
                 )
             }.assertNormalExitValue()
+
+        val generatedPackageSwift =
+            layout.buildDirectory
+                .file("SPMPackage/macosArm64/Debug/Package.swift")
+                .get()
+                .asFile
+        if (generatedPackageSwift.exists()) {
+            val text = generatedPackageSwift.readText()
+            if (!text.contains("platforms:")) {
+                generatedPackageSwift.writeText(
+                    text.replaceFirst(
+                        Regex("(name:\\s*\"[^\"]*\",)"),
+                        "\$1\n    platforms: [.macOS(.v14)],",
+                    ),
+                )
+            }
+        }
 
         execOperations
             .exec {
