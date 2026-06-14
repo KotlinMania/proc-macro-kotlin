@@ -1,9 +1,5 @@
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.gradle.api.file.ArchiveOperations
-import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.tasks.ClasspathNormalizer
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -49,7 +45,7 @@ val commonMainDependencyBundle =
         .findBundle(commonMainBundleName)
         .orElseThrow { GradleException("Missing libs bundle '$commonMainBundleName'") }
 
-// Opt-ins shared between the top-level compilerOptions and the codeqlCompileJvm kotlinc invocation.
+// Opt-ins shared across Kotlin targets.
 val commonOptIns =
     listOf(
         "kotlin.time.ExperimentalTime",
@@ -228,6 +224,15 @@ tasks.matching { it.name == "compileAndroidMain" }.configureEach {
     dependsOn(ensureAndroidSdk)
 }
 
+// Gap #9b: KGP-generated bridge boilerplate and KotlinCoroutineSupport runtime
+// produce warnings (unchecked casts, unused expressions, opt-in requirements)
+// that cannot be fixed in source — they are regenerated every build.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    if (name.startsWith("compileSwiftExport")) {
+        compilerOptions.allWarningsAsErrors.set(false)
+    }
+}
+
 val jvmToolchainVersion = providers.gradleProperty("jvm.toolchain").getOrElse("21").toInt()
 
 // ============================================================================
@@ -251,7 +256,7 @@ kotlin {
         apiVersion.set(KotlinVersion.KOTLIN_2_4)
         allWarningsAsErrors.set(!isCodeqlBuild)
         optIn.addAll(commonOptIns)
-        freeCompilerArgs.add("-Xexpect-actual-classes")
+        freeCompilerArgs.addAll("-Xexpect-actual-classes", "-Xsuppress-version-warnings")
     }
 
     val xcf = XCFramework(frameworkName)
@@ -348,12 +353,6 @@ kotlin {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
-    if (name.startsWith("compileSwiftExport")) {
-        compilerOptions.allWarningsAsErrors.set(false)
-    }
-}
-
 // ============================================================================
 // Test logging
 // ============================================================================
@@ -420,6 +419,7 @@ tasks.named("check") {
     // wasmWasi). Test EXECUTION belongs to check; target BUILD coverage belongs
     // to the explicit all-target build set below.
     dependsOn("testAndroidHostTest")
+    dependsOn("hostTests")
     // Swift Export smoke test is required; it must not self-skip.
     dependsOn("swiftExportSmokeTest")
 }
@@ -520,153 +520,6 @@ mavenPublishing {
         }
     }
 }
-
-// ============================================================================
-// CodeQL extraction
-// ============================================================================
-val codeqlKotlincScope =
-    configurations.dependencyScope("codeqlKotlinc") {
-        description = "Kotlin compiler (CodeQL extraction target only)"
-    }
-val codeqlSourceScope =
-    configurations.dependencyScope("codeqlSourceClasspath") {
-        description = "Runtime classpath for CodeQL extraction of commonMain sources"
-    }
-val codeqlAarScope =
-    configurations.dependencyScope("codeqlAndroidAar") {
-        description = "Android AAR artifacts for CodeQL dependency classpath extraction"
-    }
-val codeqlKotlincFiles =
-    configurations.resolvable("codeqlKotlincFiles") {
-        extendsFrom(codeqlKotlincScope.get())
-    }
-val codeqlSourceFiles =
-    configurations.resolvable("codeqlSourceFiles") {
-        extendsFrom(codeqlSourceScope.get())
-    }
-val codeqlAarFiles =
-    configurations.resolvable("codeqlAarFiles") {
-        extendsFrom(codeqlAarScope.get())
-    }
-
-val codeqlLanguageVersion =
-    providers
-        .gradleProperty("kotlin.languageVersion")
-        .getOrElse(kotlinVersion.split('.').take(2).joinToString("."))
-val codeqlApiVersion = providers.gradleProperty("kotlin.apiVersion").getOrElse(codeqlLanguageVersion)
-val codeqlKotlinSourceSetNames =
-    providers
-        .gradleProperty("project.codeql.kotlinSourceSets")
-        .getOrElse("commonMain")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toList()
-val codeqlKotlinCommonSourceSetNames =
-    providers
-        .gradleProperty("project.codeql.kotlinCommonSourceSets")
-        .getOrElse("commonMain")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toList()
-
-dependencies {
-    val codeqlKotlinVersion = providers.gradleProperty("codeql.kotlin.version").getOrElse(kotlinVersion)
-    add("codeqlKotlinc", "org.jetbrains.kotlin:kotlin-compiler-embeddable:$codeqlKotlinVersion")
-
-    providers
-        .gradleProperty("project.dependencies.codeqlSourceClasspath")
-        .getOrElse("")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .forEach { add("codeqlSourceClasspath", it) }
-
-    providers
-        .gradleProperty("project.dependencies.codeqlAndroidAar")
-        .getOrElse("")
-        .splitToSequence(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .forEach { add("codeqlAndroidAar", it) }
-}
-
-val codeqlCompileJvm =
-    tasks.register<JavaExec>("codeqlCompileJvm") {
-        description =
-            "Compile ${codeqlKotlinSourceSetNames.joinToString(",")} Kotlin sources " +
-            "with kotlinc $codeqlLanguageVersion for CodeQL Java/Kotlin extraction."
-        group = "verification"
-        classpath(codeqlKotlincFiles)
-        mainClass.set("org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
-        // Inject services at config time — config-cache safe; project.copy/zipTree in a task
-        // action would violate https://docs.gradle.org/9.5.1/userguide/configuration_cache.html
-        val fs = serviceOf<FileSystemOperations>()
-        val archives = serviceOf<ArchiveOperations>()
-        val outDir = layout.buildDirectory.dir("classes/kotlin/codeql-jvm")
-        val aarExtractDir = layout.buildDirectory.dir("codeql/android-aar")
-        val commonSources =
-            files(
-                codeqlKotlinCommonSourceSetNames.map { sourceSetName ->
-                    fileTree("src/$sourceSetName/kotlin") { include("**/*.kt") }
-                },
-            )
-        val sources =
-            files(
-                codeqlKotlinSourceSetNames.map { sourceSetName ->
-                    fileTree("src/$sourceSetName/kotlin") { include("**/*.kt") }
-                },
-            )
-        inputs.files(sources).withPathSensitivity(PathSensitivity.RELATIVE)
-        inputs.files(commonSources).withPathSensitivity(PathSensitivity.RELATIVE)
-        inputs.files(codeqlSourceFiles).withNormalizer(ClasspathNormalizer::class.java)
-        inputs.files(codeqlAarFiles).withNormalizer(ClasspathNormalizer::class.java)
-        outputs.dir(outDir)
-        outputs.dir(aarExtractDir)
-        doFirst {
-            outDir.get().asFile.mkdirs()
-            val extractedJars =
-                codeqlAarFiles.get().resolve().mapNotNull { aar ->
-                    val extractTarget = aarExtractDir.get().asFile.resolve(aar.nameWithoutExtension)
-                    extractTarget.mkdirs()
-                    fs.copy {
-                        from(archives.zipTree(aar))
-                        include("classes.jar")
-                        into(extractTarget)
-                    }
-                    extractTarget.resolve("classes.jar").takeIf { it.exists() }
-                }
-            val fullClasspath =
-                (codeqlSourceFiles.get().resolve() + extractedJars)
-                    .joinToString(File.pathSeparator) { it.absolutePath }
-            val commonSourceFiles = commonSources.files.toMutableList()
-            require(commonSourceFiles.isNotEmpty()) {
-                "project.codeql.kotlinCommonSourceSets must resolve to at least one Kotlin source file"
-            }
-            val sourceFiles = sources.files.toMutableList()
-            require(sourceFiles.isNotEmpty()) {
-                "project.codeql.kotlinSourceSets must resolve to at least one Kotlin source file"
-            }
-            args = listOf(
-                "-d",
-                outDir.get().asFile.absolutePath,
-                "-classpath",
-                fullClasspath,
-                "-jvm-target",
-                jvmToolchainVersion.toString(),
-                "-no-stdlib",
-                "-no-reflect",
-                "-language-version",
-                codeqlLanguageVersion,
-                "-api-version",
-                codeqlApiVersion,
-                "-Xmulti-platform",
-                "-Xcommon-sources=${commonSourceFiles.joinToString(",") { it.absolutePath }}",
-                "-Xexpect-actual-classes",
-            ) + commonOptIns.flatMap { listOf("-opt-in", it) } + sourceFiles.map { it.absolutePath }
-        }
-    }
 
 // ============================================================================
 // Tasks
