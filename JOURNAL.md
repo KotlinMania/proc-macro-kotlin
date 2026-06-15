@@ -3,6 +3,19 @@
 Research notes for `proc-macro-kotlin`. This file records observed state from
 the current worktrees and commands, not desired state.
 
+## 2026-06-15 correction: ANTLR4 runtime is published
+
+`io.github.kotlinmania:antlr4-kotlin:0.1.2` is now on Maven Central.
+`proc-macro-kotlin` consumes it through the existing
+`proc-macro-commonMain` version-catalog bundle, and CodeQL extraction
+uses `io.github.kotlinmania:antlr4-kotlin-jvm:0.1.2`.
+
+The old vendored `antlr4-runtime/` module is not restored. Historical
+pre-unvendor callers outside that module were Gradle-level only:
+`settings.gradle.kts` included `antlr4-runtime`, and `gradle.properties`
+named the subproject. Generated grammar callers should target the
+published `io.github.kotlinmania.antlr4.*` package.
+
 ## 2026-06-03 audit
 
 ### Scope

@@ -125,7 +125,7 @@ the two together third.
    `Lexer` interface, `SyntaxElementType`, `SyntaxTreeBuilderImpl`,
    `MarkerPool`, fastutil collections, and the builder/production
    infrastructure that a Kotlin tokenizer sits on top of.
-5. **Vendor the JetBrains KMP lexer.** 🔜 Next. JetBrains' own
+5. **Vendor the JetBrains KMP lexer.** ✅ Done. JetBrains' own
    `KotlinFlexLexer.kt` (1,723 lines, JFlex-generated) is pure Kotlin
    multiplatform code — zero `java.*` imports, `CharSequence` buffer,
    Kotlin stdlib surrogates only. It implements the `FlexLexer` interface
@@ -134,8 +134,8 @@ the two together third.
    [Kotlin spec ANTLR4 grammars](https://github.com/Kotlin/kotlin-spec/tree/release/grammar/src/main/antlr)
    (`KotlinLexer.g4`, `KotlinParser.g4`, `UnicodeClasses.g4`) go under
    `tmp/kotlin-spec/` as cross-reference. See `PROJECT_PLAN.md` for the
-   detailed vendoring order and adapter design.
-6. **Wire `KotlinLexer` into `TokenStream.fromString`.** The Compiler
+   detailed adapter design.
+6. **Wire `KotlinLexer` into `TokenStream.fromString`.** ✅ Done. The Compiler
    variant tokenizes Kotlin source through the new lexer, maps `KtToken`
    variants to `proc_macro`-shaped `TokenTree` variants, produces nested
    `Group` tokens via delimiter matching, and sources `Span` data from
@@ -147,30 +147,25 @@ the two together third.
 8. **Publish to Maven Central** behind `proc-macro2-kotlin 0.2.0`'s
    release. The two ship together.
 
-### Why a hand-written lexer instead of ANTLR4
+### Kotlin grammar runtime
 
-The kotlinmania workspace already has its own LR(1) parser generator
-(`lalrpop-kotlin`, 71K lines, published v0.1.6) and a working example
-of a hand-written lexer feeding lalrpop-generated parse tables
-(`starlark-syntax-kotlin`, published v0.1.1). Depending on the ANTLR4
-runtime would add a foreign build tool and a non-kotlinmania runtime
-dependency to a critical-path infrastructure crate. Hand-writing the
-lexer against the `.g4` specification keeps the dependency graph
-self-contained, matches the proven pattern from `starlark-syntax-kotlin`,
-and gives us full control over how `KtToken` variants map to
-`proc_macro`-shaped `TokenTree` variants.
-
-A future Kotlin parser can be produced via `lalrpop-kotlin` by
-translating `KotlinParser.g4` into a `.lalrpop` grammar and generating
-LR(1) tables — no ANTLR4 needed at any point in the pipeline.
+The tokenizer path currently uses JetBrains' KMP `KotlinLexer` and
+`KtTokens` directly. The grammar-driven path uses the published
+`io.github.kotlinmania:antlr4-kotlin:0.1.2` runtime from Maven Central;
+the old in-repo `antlr4-runtime/` module was removed and must not be
+restored. The published runtime's package is
+`io.github.kotlinmania.antlr4.*`, so generated grammar callers are wired
+against that namespace rather than the old vendored
+`org.antlr.v4.runtime.*` package.
 
 ## Status
 
-**Phase 2 in progress.** Rust `proc_macro` API surface is ported
+**Phase 2 is wired.** Rust `proc_macro` API surface is ported
 (14,248 lines of Kotlin). JetBrains `com.intellij.platform.syntax.*`
-infrastructure is vendored. No `KotlinLexer` / `KtTokens` yet — the
-Kotlin-source tokenizer is the next piece. See `PROJECT_PLAN.md` for
-the detailed action plan.
+infrastructure, the KMP `KotlinLexer`, and `KtTokens` are present, and
+`TokenStream.fromString` tokenizes Kotlin source through that lexer.
+The published ANTLR4 Kotlin runtime is available for generated grammar
+callers through the Gradle version catalog.
 
 ## License
 

@@ -5,6 +5,7 @@ serialization = "1.11.0"
 datetime = "0.8.0"
 collectionsImmutable = "0.4.0"
 threadlocal = "0.3.1"
+antlr4 = "0.1.2"
 androidKmp = "9.2.1"
 vanniktech = "0.36.0"
 detekt = "1.23.8"
@@ -25,6 +26,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "collectionsImmutable" }
 threadlocal-kotlin = { module = "io.github.kotlinmania:threadlocal-kotlin", version.ref = "threadlocal" }
+antlr4-kotlin = { module = "io.github.kotlinmania:antlr4-kotlin", version.ref = "antlr4" }
 
 [bundles]
 proc-macro-commonMain = [
@@ -34,4 +36,5 @@ proc-macro-commonMain = [
   "kotlinx-datetime",
   "collections-immutable",
   "threadlocal-kotlin",
+  "antlr4-kotlin",
 ]
