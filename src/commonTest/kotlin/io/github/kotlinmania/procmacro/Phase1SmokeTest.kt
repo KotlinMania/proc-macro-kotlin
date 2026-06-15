@@ -1,4 +1,3 @@
-// port-lint: ignore (smoke tests for phase-1 public types)
 package io.github.kotlinmania.procmacro
 
 import kotlin.test.Test

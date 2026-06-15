@@ -75,9 +75,8 @@ public class TokenStream internal constructor(
      * any macros within it. Returns the expanded [TokenStream].
      *
      * Currently only expressions expanding to literals will succeed,
-     * although this may be relaxed in the future. The phase-1 stub
-     * always returns [ExpandError]; macro expansion has no Kotlin
-     * analog at this stage.
+     * although this may be relaxed in the future. The Kotlin runtime
+     * returns [ExpandError] when no compiler expansion server is active.
      */
     public fun expandExpr(): TokenStreamExpandOutcome = TokenStreamExpandOutcome.Err(ExpandError())
 
@@ -174,8 +173,8 @@ private fun StringBuilder.appendGroup(group: Group) {
 /**
  * Returns `true` if a separator (single space) should be inserted after
  * the given [TokenTree] when rendering for
- * [TokenStream.toString]. The heuristic mirrors what `proc_macro2`'s
- * fallback Display does: insert a separator unless the token is
+ * [TokenStream.toString]. The heuristic mirrors Rust token rendering:
+ * insert a separator unless the token is
  * [TokenTree.Punct] with [Spacing.JOINT] spacing.
  */
 private fun needsSeparatorAfter(left: TokenTree): Boolean {

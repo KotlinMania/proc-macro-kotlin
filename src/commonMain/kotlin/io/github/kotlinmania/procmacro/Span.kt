@@ -13,11 +13,9 @@ public class Span internal constructor(
          *
          * Upstream this is the inverse of `Span::save_span`: an opaque
          * `usize` ID round-trips to the original span across the
-         * `bridge::client` IPC boundary. The bridge submodule is documented
-         * as non-portable; phase 1 keeps an in-process registry so that
-         * `quote_span` round-trips spans within a single JVM/Kotlin runtime
-         * invocation. Cross-process span recovery is a phase-3 concern
-         * once a Kotlin span server is selected.
+         * `bridge::client` IPC boundary. Kotlin keeps the same opaque-ID
+         * shape in an in-process registry so `quote_span` preserves span
+         * identity within one runtime invocation.
          */
         public fun recoverProcMacroSpan(id: Int): Span = SpanRegistry.recover(id)
 
@@ -58,8 +56,8 @@ public class Span internal constructor(
     /**
      * Returns the span's byte position range in the source file.
      *
-     * Phase-1 stubs (call-site, mixed-site, def-site) report an empty
-     * range. Phase 3 replaces the storage with KotlinLexer-backed offsets.
+     * Sentinel spans (call-site, mixed-site, def-site) report an empty
+     * range. Synthetic spans carry explicit byte bounds.
      */
     public fun byteRange(): IntRange = data.byteRange()
 
@@ -78,16 +76,16 @@ public class Span internal constructor(
     /**
      * The one-indexed line of the source file where the span starts.
      *
-     * Phase-1 stubs report `0`. Phase 3 replaces the storage with
-     * KotlinLexer-backed line numbers.
+     * Sentinel and synthetic spans report `0` unless backed by source
+     * offsets.
      */
     public fun line(): Int = 0
 
     /**
      * The one-indexed column of the source file where the span starts.
      *
-     * Phase-1 stubs report `0`. Phase 3 replaces the storage with
-     * KotlinLexer-backed column numbers.
+     * Sentinel and synthetic spans report `0` unless backed by source
+     * offsets.
      */
     public fun column(): Int = 0
 
@@ -97,8 +95,7 @@ public class Span internal constructor(
      * might be remapped (e.g. `"/src/lib.kt"`) or an artificial path
      * (e.g. `"<token stream>"`).
      *
-     * Phase-1 stubs report a fixed sentinel. Phase 3 replaces the storage
-     * with the KotlinLexer-backed source path.
+     * Sentinel and synthetic spans report a fixed display path.
      */
     public fun file(): String = "<token stream>"
 
@@ -118,8 +115,6 @@ public class Span internal constructor(
      * Returns `null` if this and `other` are from different files.
      */
     public fun join(other: Span): Span? {
-        // Phase-1 stub: synthetic spans always join. Phase 3 enforces
-        // the same-file invariant against KotlinLexer-backed offsets.
         if (data === other.data) return this
         return Span(SpanData.Synthetic(byteRange().first..other.byteRange().last))
     }
@@ -128,8 +123,8 @@ public class Span internal constructor(
      * Creates a new span with the same line/column information as this but
      * that resolves symbols as though it were at `other`.
      *
-     * Phase-1 has no hygiene model — returns `this`. Phase 3 may model
-     * resolution context independently.
+     * The current Kotlin runtime keeps source location and resolution
+     * together, so this returns `this`.
      */
     public fun resolvedAt(other: Span): Span = this
 
@@ -143,8 +138,7 @@ public class Span internal constructor(
      * Serialize this [Span] to an opaque identifier recoverable by
      * [Span.recoverProcMacroSpan]. Upstream this is the
      * `bridge::client`-side counterpart of `recover_proc_macro_span`.
-     * See [Span.recoverProcMacroSpan] for the phase-1 in-process
-     * registry caveat.
+     * See [Span.recoverProcMacroSpan] for the in-process registry shape.
      */
     public fun saveSpan(): Int = SpanRegistry.save(this)
 
@@ -156,8 +150,7 @@ public class Span internal constructor(
      * source code, including spaces and comments. It only returns a result
      * if the span corresponds to real source code.
      *
-     * Phase-1 returns `null` for all spans. Phase 3 wires this to the
-     * KotlinLexer-backed source map.
+     * Sentinel and synthetic spans do not carry original source text.
      */
     public fun sourceText(): String? = null
 
@@ -165,10 +158,9 @@ public class Span internal constructor(
 }
 
 /**
- * Internal backing store for [Span]. Phase 1 enumerates the three sentinel
+ * Internal backing store for [Span]. This enumerates the three sentinel
  * variants ([CallSite], [MixedSite], [DefSite]) plus a [Synthetic] variant
- * carrying a byte range; phase 3 adds a `Lexed` variant carrying real
- * source offsets and token-type information.
+ * carrying a byte range.
  */
 internal sealed class SpanData {
     internal abstract fun byteRange(): IntRange
@@ -204,11 +196,8 @@ internal sealed class SpanData {
  * In-process backing store for [Span.saveSpan] / [Span.recoverProcMacroSpan].
  *
  * Upstream Rust uses `bridge::client` to round-trip span identifiers
- * across the proc-macro/rustc IPC boundary. The bridge submodule does
- * not port; this registry is the phase-1 stand-in that lets `quote_span`
+ * across the proc-macro/rustc IPC boundary. This registry lets `quote_span`
  * preserve span identity within a single Kotlin runtime invocation.
- * Cross-process recovery is a phase-3 concern once a Kotlin span server
- * is selected.
  */
 internal object SpanRegistry {
     private val saved: MutableList<Span> = mutableListOf()
