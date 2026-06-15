@@ -26,6 +26,8 @@ internal interface BridgeServer {
 
     fun spanSourceText(span: ClientSpan): String? = span.span.sourceText()
 
+    fun tsExpandExpr(stream: ClientTokenStream): Result<ClientTokenStream> = stream.expandExprLocally()
+
     fun dispatch(buffer: RpcBuffer): RpcBuffer =
         when (val payload = buffer.payload) {
             is BridgePayload.Request.InjectedEnvVar ->
@@ -40,6 +42,8 @@ internal interface BridgeServer {
             }
             is BridgePayload.Request.SpanSourceText ->
                 RpcBuffer(payload = BridgePayload.Response.StringValue(spanSourceText(payload.span)))
+            is BridgePayload.Request.ExpandExpr ->
+                RpcBuffer(payload = BridgePayload.Response.TokenStreamResult(tsExpandExpr(payload.stream)))
             else -> buffer.copy()
         }
 }

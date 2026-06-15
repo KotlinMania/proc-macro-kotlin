@@ -131,10 +131,12 @@ internal object BridgeMethods {
     fun tsIsEmpty(stream: ClientTokenStream): Boolean = stream.stream.isEmpty()
 
     fun tsExpandExpr(stream: ClientTokenStream): Result<ClientTokenStream> =
-        when (val expanded = stream.stream.expandExpr()) {
-            is TokenStreamExpandOutcome.Ok -> Result.Ok(ClientTokenStream(expanded.value))
-            is TokenStreamExpandOutcome.Err -> Result.Err(ExpandError().toString())
-        }
+        BridgeClientState
+            .currentOrNull()
+            ?.dispatchRequest(BridgePayload.Request.ExpandExpr(stream))
+            ?.let { it as? BridgePayload.Response.TokenStreamResult }
+            ?.result
+            ?: stream.expandExprLocally()
 
     fun tsFromStr(source: String): Result<ClientTokenStream> =
         when (val parsed = TokenStream.fromString(source)) {
@@ -232,6 +234,12 @@ internal object BridgeMethods {
 private fun BridgeState.dispatchRequest(request: BridgePayload.Request): BridgePayload.Response? =
     dispatch.call(RpcBuffer(payload = request)).payload as? BridgePayload.Response
 
+internal fun ClientTokenStream.expandExprLocally(): Result<ClientTokenStream> =
+    when (val expanded = stream.expandExpr()) {
+        is TokenStreamExpandOutcome.Ok -> Result.Ok(ClientTokenStream(expanded.value))
+        is TokenStreamExpandOutcome.Err -> Result.Err(ExpandError().toString())
+    }
+
 internal fun BridgeDiagnostic<ClientSpan>.toPublicDiagnostic(): Diagnostic {
     val out =
         if (spans.isEmpty()) {
@@ -299,7 +307,12 @@ private fun parseRustLiteral(source: String): Result<BridgeLiteral<ClientSpan>>?
     parseQuotedLiteral(src, prefix = "b", quote = '"', kind = BridgeLitKind.ByteStr)?.let { return Result.Ok(it.toBridgeLiteral()) }
     parseQuotedLiteral(src, prefix = "c", quote = '"', kind = BridgeLitKind.CStr)?.let { return Result.Ok(it.toBridgeLiteral()) }
     parseQuotedLiteral(src, prefix = "", quote = '"', kind = BridgeLitKind.Str)?.let { return Result.Ok(it.toBridgeLiteral()) }
-    parseNumericLiteral(src)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseNumericLiteral(src)?.let { parsed ->
+        return when (parsed) {
+            is Result.Ok -> Result.Ok(parsed.value.toBridgeLiteral())
+            is Result.Err -> Result.Err(parsed.message)
+        }
+    }
     return null
 }
 
@@ -353,18 +366,104 @@ private fun parseRawLiteral(src: String): ParsedBridgeLiteral? {
     return null
 }
 
-private fun parseNumericLiteral(src: String): ParsedBridgeLiteral? {
-    val match = rustNumericLiteral.matchEntire(src) ?: return null
-    val number = match.groupValues[1]
-    val suffix = match.groupValues.getOrNull(2)?.ifEmpty { null }
-    val kind = if (number.any { it == '.' || it == 'e' || it == 'E' }) BridgeLitKind.Float else BridgeLitKind.Integer
-    return ParsedBridgeLiteral(kind, number, suffix)
+private fun parseNumericLiteral(src: String): Result<ParsedBridgeLiteral>? {
+    if (!src.first().isAsciiDigit()) return null
+    if (src.length >= 2 && src[0] == '0') {
+        when (src[1]) {
+            'x',
+            'X',
+            -> return parseRadixLiteral(src, radix = 16)
+            'o',
+            'O',
+            -> return parseRadixLiteral(src, radix = 8)
+            'b',
+            'B',
+            -> return parseRadixLiteral(src, radix = 2)
+        }
+    }
+    return parseDecimalLiteral(src)
 }
 
-private val rustNumericLiteral =
-    Regex(
-        """^((?:0[xX][0-9A-Fa-f_]+|0[oO][0-7_]+|0[bB][01_]+|[0-9][0-9_]*(?:\.[0-9_]+)?(?:[eE][+-]?[0-9_]+)?))([A-Za-z_][A-Za-z0-9_]*)?$""",
-    )
+private fun parseRadixLiteral(
+    src: String,
+    radix: Int,
+): Result<ParsedBridgeLiteral> {
+    var index = 2
+    var sawDigit = false
+    while (index < src.length && (src[index] == '_' || src[index].isDigitForRadix(radix))) {
+        if (src[index].isDigitForRadix(radix)) sawDigit = true
+        index++
+    }
+    if (!sawDigit) return Result.Err("expected at least one digit in integer literal")
+    val suffix = src.substring(index)
+    if (!suffix.isValidLiteralSuffix()) return Result.Err("invalid literal suffix")
+    return Result.Ok(ParsedBridgeLiteral(BridgeLitKind.Integer, src.substring(0, index), suffix.ifEmpty { null }))
+}
+
+private fun parseDecimalLiteral(src: String): Result<ParsedBridgeLiteral> {
+    var index = consumeDecimalDigits(src, start = 0)
+    var kind: BridgeLitKind = BridgeLitKind.Integer
+
+    if (src.getOrNull(index) == '.') {
+        val next = src.getOrNull(index + 1)
+        when {
+            next == null -> {
+                index++
+                kind = BridgeLitKind.Float
+            }
+            next.isAsciiDigit() -> {
+                index = consumeDecimalDigits(src, start = index + 1)
+                kind = BridgeLitKind.Float
+            }
+            else -> return Result.Err("expected one literal token")
+        }
+    }
+
+    if (src.getOrNull(index).isExponentMarker()) {
+        kind = BridgeLitKind.Float
+        index = consumeExponent(src, markerIndex = index) ?: return Result.Err("expected at least one digit in exponent")
+    }
+
+    val suffix = src.substring(index)
+    if (!suffix.isValidLiteralSuffix()) return Result.Err("invalid literal suffix")
+    if (suffix == "f32" || suffix == "f64") kind = BridgeLitKind.Float
+    return Result.Ok(ParsedBridgeLiteral(kind, src.substring(0, index), suffix.ifEmpty { null }))
+}
+
+private fun consumeDecimalDigits(
+    src: String,
+    start: Int,
+): Int {
+    var index = start
+    while (index < src.length && (src[index].isAsciiDigit() || src[index] == '_')) index++
+    return index
+}
+
+private fun consumeExponent(
+    src: String,
+    markerIndex: Int,
+): Int? {
+    var index = markerIndex + 1
+    if (src.getOrNull(index) == '+' || src.getOrNull(index) == '-') index++
+    var sawDigit = false
+    while (index < src.length && (src[index].isAsciiDigit() || src[index] == '_')) {
+        if (src[index].isAsciiDigit()) sawDigit = true
+        index++
+    }
+    return if (sawDigit) index else null
+}
+
+private fun Char?.isExponentMarker(): Boolean = this == 'e' || this == 'E'
+
+private fun Char.isAsciiDigit(): Boolean = this in '0'..'9'
+
+private fun Char.isDigitForRadix(radix: Int): Boolean =
+    when (radix) {
+        2 -> this == '0' || this == '1'
+        8 -> this in '0'..'7'
+        16 -> this.isAsciiDigit() || this in 'a'..'f' || this in 'A'..'F'
+        else -> false
+    }
 
 private fun findClosingQuote(
     src: String,
@@ -405,7 +504,7 @@ private fun BridgeTokenTree<ClientTokenStream, ClientSpan>.toPublicTree(): Token
                 Group(
                     GroupData(
                         delimiter = value.delimiter,
-                        stream = value.stream.stream,
+                        stream = BridgeMethods.tsClone(value.stream).stream,
                         span =
                             io.github.kotlinmania.procmacro.DelimSpanData(
                                 open = value.span.open.span,

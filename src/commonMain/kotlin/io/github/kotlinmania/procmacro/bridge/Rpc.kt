@@ -48,11 +48,19 @@ internal sealed class BridgePayload {
         data class SpanSourceText(
             val span: ClientSpan,
         ) : Request()
+
+        data class ExpandExpr(
+            val stream: ClientTokenStream,
+        ) : Request()
     }
 
     sealed class Response : BridgePayload() {
         data class StringValue(
             val value: String?,
+        ) : Response()
+
+        data class TokenStreamResult(
+            val result: Result<ClientTokenStream>,
         ) : Response()
 
         data object UnitValue : Response()

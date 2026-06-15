@@ -130,6 +130,8 @@ class BridgeShapeTest {
                             -> RpcBuffer(payload = BridgePayload.Response.UnitValue)
                             is BridgePayload.Request.SpanSourceText ->
                                 RpcBuffer(payload = BridgePayload.Response.StringValue("source text"))
+                            is BridgePayload.Request.ExpandExpr ->
+                                RpcBuffer(payload = BridgePayload.Response.TokenStreamResult(Result.Err("unused")))
                         }
                     },
             )
@@ -146,6 +148,40 @@ class BridgeShapeTest {
         assertIs<BridgePayload.Request.TrackEnvVar>(seen[1])
         assertIs<BridgePayload.Request.TrackPath>(seen[2])
         assertIs<BridgePayload.Request.SpanSourceText>(seen[3])
+    }
+
+    @Test
+    fun expressionExpansionRoutesThroughBridgeDispatch() {
+        val expanded =
+            ClientTokenStream(
+                TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("expanded", Span.callSite()))),
+            )
+        val seen = mutableListOf<BridgePayload.Request>()
+        val state =
+            BridgeState(
+                globals = defaultClientGlobals(),
+                dispatch =
+                    BridgeDispatch { buffer ->
+                        val request = assertIs<BridgePayload.Request.ExpandExpr>(buffer.payload)
+                        seen.add(request)
+                        RpcBuffer(payload = BridgePayload.Response.TokenStreamResult(Result.Ok(expanded)))
+                    },
+            )
+
+        var result: Result<ClientTokenStream>? = null
+        BridgeClientState.enter(state) {
+            result =
+                BridgeMethods.tsExpandExpr(
+                    ClientTokenStream(
+                        TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("input", Span.callSite()))),
+                    ),
+                )
+            RpcBuffer()
+        }
+
+        val stream = assertIs<Result.Ok<ClientTokenStream>>(result).value
+        assertEquals("expanded", BridgeMethods.tsToString(stream))
+        assertEquals(1, seen.size)
     }
 
     @Test
@@ -215,6 +251,27 @@ class BridgeShapeTest {
     }
 
     @Test
+    fun bridgeLiteralParserHandlesRustFloatEdgesBeforeSuffixes() {
+        val trailingDot = BridgeMethods.literalFromStr("1.").literal()
+        assertEquals(BridgeLitKind.Float, trailingDot.kind)
+        assertEquals("1.", trailingDot.symbol.asString())
+
+        val floatSuffix = BridgeMethods.literalFromStr("1f64").literal()
+        assertEquals(BridgeLitKind.Float, floatSuffix.kind)
+        assertEquals("1", floatSuffix.symbol.asString())
+        assertEquals("f64", floatSuffix.suffix?.asString())
+
+        val exponent = BridgeMethods.literalFromStr("1e2").literal()
+        assertEquals(BridgeLitKind.Float, exponent.kind)
+        assertEquals("1e2", exponent.symbol.asString())
+
+        assertIs<Result.Err>(BridgeMethods.literalFromStr("1e"))
+        assertIs<Result.Err>(BridgeMethods.literalFromStr("1e+"))
+        assertIs<Result.Err>(BridgeMethods.literalFromStr("1efoo"))
+        assertIs<Result.Err>(BridgeMethods.literalFromStr("1.e2"))
+    }
+
+    @Test
     fun tokenStreamCloneCopiesNestedTokenGraph() {
         val originalIdent = TokenTree.Ident(Ident.new("x", Span.callSite()))
         val originalGroup =
@@ -243,6 +300,32 @@ class BridgeShapeTest {
 
         assertTrue(originalIdent.value.span().eq(Span.callSite()))
         assertTrue(clonedIdent.span().eq(Span.mixedSite()))
+    }
+
+    @Test
+    fun materializingBridgeGroupCopiesNestedTokenStream() {
+        val nested =
+            ClientTokenStream(
+                TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("x", Span.callSite()))),
+            )
+        val bridgeTree =
+            BridgeTokenTree.Group<ClientTokenStream, ClientSpan>(
+                BridgeGroup(
+                    delimiter = Delimiter.PARENTHESIS,
+                    stream = nested,
+                    span =
+                        DelimSpan(
+                            open = ClientSpan(Span.callSite()),
+                            close = ClientSpan(Span.callSite()),
+                            entire = ClientSpan(Span.callSite()),
+                        ),
+                ),
+            )
+
+        val materialized = BridgeMethods.tsFromTokenTree(bridgeTree)
+        BridgeMethods.tsDrop(nested)
+
+        assertEquals("(x)", BridgeMethods.tsToString(materialized))
     }
 
     @Test
