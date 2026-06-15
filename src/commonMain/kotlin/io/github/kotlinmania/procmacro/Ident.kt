@@ -94,6 +94,7 @@ public class Ident internal constructor(
 
         private val RAW_IDENT_DISALLOWED: Set<String> =
             setOf(
+                "_",
                 "self",
                 "super",
                 "Self",

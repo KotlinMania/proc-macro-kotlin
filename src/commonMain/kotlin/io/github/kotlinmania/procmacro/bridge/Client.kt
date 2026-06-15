@@ -30,31 +30,32 @@ internal data class ClientSpan(
 )
 
 internal object BridgeClientState {
-    private var current: BridgeState? = null
+    private val stateLocal = BridgeStateLocal()
 
     fun enter(
         state: BridgeState,
         block: () -> RpcBuffer,
     ): RpcBuffer {
-        val previous = current
-        current = state
+        val stack = stateLocal.stack()
+        stack.add(state)
         return try {
             block()
         } finally {
-            current = previous
+            if (stack.lastOrNull() === state) {
+                stack.removeAt(stack.lastIndex)
+            } else {
+                stack.remove(state)
+            }
         }
     }
 
-    fun isAvailable(): Boolean = current != null
+    fun isAvailable(): Boolean = stateLocal.stack().isNotEmpty()
+
+    fun currentOrNull(): BridgeState? = stateLocal.stack().lastOrNull()
 
     fun withState(): BridgeState =
-        current ?: BridgeState(
-            globals =
-                ExpnGlobals(
-                    defSite = ClientSpan(Span.defSite()),
-                    callSite = ClientSpan(Span.callSite()),
-                    mixedSite = ClientSpan(Span.mixedSite()),
-                ),
+        currentOrNull() ?: BridgeState(
+            globals = defaultClientGlobals(),
             dispatch = BridgeDispatch { it },
         )
 }
@@ -66,44 +67,51 @@ internal data class BridgeState(
 )
 
 internal object BridgeMethods {
-    fun injectedEnvVar(variable: String): String? = null
+    fun injectedEnvVar(variable: String): String? =
+        BridgeClientState
+            .currentOrNull()
+            ?.dispatchRequest(BridgePayload.Request.InjectedEnvVar(variable))
+            ?.let { it as? BridgePayload.Response.StringValue }
+            ?.value
 
     fun trackEnvVar(
         variable: String,
         value: String?,
     ) {
         TrackedInputs.trackEnvVar(variable, value)
+        BridgeClientState
+            .currentOrNull()
+            ?.dispatchRequest(BridgePayload.Request.TrackEnvVar(variable, value))
     }
 
     fun trackPath(path: String) {
         TrackedInputs.trackPath(path)
+        BridgeClientState
+            .currentOrNull()
+            ?.dispatchRequest(BridgePayload.Request.TrackPath(path))
     }
 
     fun literalFromStr(source: String): Result<BridgeLiteral<ClientSpan>> =
-        when (val parsed = TokenStream.fromString(source)) {
-            is TokenStreamParseOutcome.Ok -> {
-                val literal =
-                    parsed
-                        .value
-                        .data
-                        .trees
-                        .singleOrNull() as? TokenTree.Literal
-                if (literal == null) {
-                    Result.Err("expected one literal token")
-                } else {
-                    Result.Ok((literal.toBridgeTree() as BridgeTokenTree.Literal<ClientTokenStream, ClientSpan>).value)
+        parseRustLiteral(source)
+            ?: when (val parsed = TokenStream.fromString(source)) {
+                is TokenStreamParseOutcome.Ok -> {
+                    val literal =
+                        parsed
+                            .value
+                            .data
+                            .trees
+                            .singleOrNull() as? TokenTree.Literal
+                    if (literal == null) {
+                        Result.Err("expected one literal token")
+                    } else {
+                        Result.Ok((literal.toBridgeTree() as BridgeTokenTree.Literal<ClientTokenStream, ClientSpan>).value)
+                    }
                 }
+                is TokenStreamParseOutcome.Err -> Result.Err(parsed.error.toString())
             }
-            is TokenStreamParseOutcome.Err -> Result.Err(parsed.error.toString())
-        }
 
     fun emitDiagnostic(diagnostic: BridgeDiagnostic<ClientSpan>) {
-        Diagnostic
-            .spanned(
-                SpanListMultiSpanForBridge(diagnostic.spans.map { it.span }),
-                diagnostic.level,
-                diagnostic.message,
-            ).emit()
+        diagnostic.toPublicDiagnostic().emit()
     }
 
     fun tsDrop(stream: ClientTokenStream) {
@@ -115,7 +123,7 @@ internal object BridgeMethods {
             TokenStream(
                 TokenStreamData(
                     stream.stream.data.trees
-                        .toList(),
+                        .map { it.deepClone() },
                 ),
             ),
         )
@@ -195,8 +203,9 @@ internal object BridgeMethods {
         end: Int,
     ): ClientSpan? {
         val range = span.span.byteRange()
-        if (start < range.first || end > range.last + 1 || start > end) return null
-        return ClientSpan(Span(SpanData.Synthetic(start until end)))
+        val length = if (range.isEmpty()) 0 else range.last - range.first + 1
+        if (start < 0 || end > length || start > end) return null
+        return ClientSpan(Span(SpanData.Synthetic(range.first + start until range.first + end)))
     }
 
     fun spanResolvedAt(
@@ -204,7 +213,13 @@ internal object BridgeMethods {
         at: ClientSpan,
     ): ClientSpan = ClientSpan(span.span.resolvedAt(at.span))
 
-    fun spanSourceText(span: ClientSpan): String? = span.span.sourceText()
+    fun spanSourceText(span: ClientSpan): String? =
+        BridgeClientState
+            .currentOrNull()
+            ?.dispatchRequest(BridgePayload.Request.SpanSourceText(span))
+            ?.let { it as? BridgePayload.Response.StringValue }
+            ?.value
+            ?: span.span.sourceText()
 
     fun spanSaveSpan(span: ClientSpan): Int = span.span.saveSpan()
 
@@ -213,6 +228,169 @@ internal object BridgeMethods {
     fun symbolNormalizeAndValidateIdent(string: String): Result<Symbol> =
         Symbol.normalizeAndValidateIdent(string)
 }
+
+private fun BridgeState.dispatchRequest(request: BridgePayload.Request): BridgePayload.Response? =
+    dispatch.call(RpcBuffer(payload = request)).payload as? BridgePayload.Response
+
+internal fun BridgeDiagnostic<ClientSpan>.toPublicDiagnostic(): Diagnostic {
+    val out =
+        if (spans.isEmpty()) {
+            Diagnostic.new(level, message)
+        } else {
+            Diagnostic.spanned(SpanListMultiSpanForBridge(spans.map { it.span }), level, message)
+        }
+    for (child in children) {
+        out.addChildDiagnostic(child.toPublicDiagnostic())
+    }
+    return out
+}
+
+private fun TokenTree.deepClone(): TokenTree =
+    when (this) {
+        is TokenTree.Group ->
+            TokenTree.Group(
+                Group(
+                    GroupData(
+                        delimiter = value.data.delimiter,
+                        stream = ClientTokenStream(value.data.stream).let(BridgeMethods::tsClone).stream,
+                        span = value.data.span.copy(),
+                    ),
+                ),
+            )
+        is TokenTree.Punct ->
+            TokenTree.Punct(
+                Punct(
+                    PunctData(
+                        ch = value.data.ch,
+                        joint = value.data.joint,
+                        span = value.data.span,
+                    ),
+                ),
+            )
+        is TokenTree.Ident ->
+            TokenTree.Ident(
+                Ident(
+                    IdentData(
+                        sym = value.data.sym,
+                        isRaw = value.data.isRaw,
+                        span = value.data.span,
+                    ),
+                ),
+            )
+        is TokenTree.Literal ->
+            TokenTree.Literal(
+                Literal(
+                    LiteralData(
+                        kind = value.data.kind,
+                        symbol = value.data.symbol,
+                        suffix = value.data.suffix,
+                        span = value.data.span,
+                    ),
+                ),
+            )
+    }
+
+private fun parseRustLiteral(source: String): Result<BridgeLiteral<ClientSpan>>? {
+    val src = source.trim()
+    if (src.isEmpty()) return Result.Err("empty literal")
+    parseRawLiteral(src)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseQuotedLiteral(src, prefix = "b", quote = '\'', kind = BridgeLitKind.Byte)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseQuotedLiteral(src, prefix = "", quote = '\'', kind = BridgeLitKind.Char)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseQuotedLiteral(src, prefix = "b", quote = '"', kind = BridgeLitKind.ByteStr)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseQuotedLiteral(src, prefix = "c", quote = '"', kind = BridgeLitKind.CStr)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseQuotedLiteral(src, prefix = "", quote = '"', kind = BridgeLitKind.Str)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseNumericLiteral(src)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    return null
+}
+
+private data class ParsedBridgeLiteral(
+    val kind: BridgeLitKind,
+    val symbol: String,
+    val suffix: String?,
+) {
+    fun toBridgeLiteral(): BridgeLiteral<ClientSpan> =
+        BridgeLiteral(
+            kind = kind,
+            symbol = Symbol.intern(symbol),
+            suffix = suffix?.let(Symbol::intern),
+            span = ClientSpan(Span.callSite()),
+        )
+}
+
+private fun parseQuotedLiteral(
+    src: String,
+    prefix: String,
+    quote: Char,
+    kind: BridgeLitKind,
+): ParsedBridgeLiteral? {
+    if (!src.startsWith(prefix) || src.getOrNull(prefix.length) != quote) return null
+    val close = findClosingQuote(src, prefix.length + 1, quote) ?: return null
+    val suffix = src.substring(close + 1)
+    if (!suffix.isValidLiteralSuffix()) return null
+    return ParsedBridgeLiteral(kind, src.substring(prefix.length + 1, close), suffix.ifEmpty { null })
+}
+
+private fun parseRawLiteral(src: String): ParsedBridgeLiteral? {
+    val candidates =
+        listOf(
+            "br" to { hashes: Int -> BridgeLitKind.ByteStrRaw(hashes) },
+            "cr" to { hashes: Int -> BridgeLitKind.CStrRaw(hashes) },
+            "r" to { hashes: Int -> BridgeLitKind.StrRaw(hashes) },
+        )
+    for ((prefix, kindForHashes) in candidates) {
+        if (!src.startsWith(prefix)) continue
+        var index = prefix.length
+        while (src.getOrNull(index) == '#') index++
+        if (src.getOrNull(index) != '"') continue
+        val hashes = index - prefix.length
+        val closeMarker = "\"" + "#".repeat(hashes)
+        val close = src.indexOf(closeMarker, startIndex = index + 1)
+        if (close < 0) return null
+        val suffix = src.substring(close + closeMarker.length)
+        if (!suffix.isValidLiteralSuffix()) return null
+        return ParsedBridgeLiteral(kindForHashes(hashes), src.substring(index + 1, close), suffix.ifEmpty { null })
+    }
+    return null
+}
+
+private fun parseNumericLiteral(src: String): ParsedBridgeLiteral? {
+    val match = rustNumericLiteral.matchEntire(src) ?: return null
+    val number = match.groupValues[1]
+    val suffix = match.groupValues.getOrNull(2)?.ifEmpty { null }
+    val kind = if (number.any { it == '.' || it == 'e' || it == 'E' }) BridgeLitKind.Float else BridgeLitKind.Integer
+    return ParsedBridgeLiteral(kind, number, suffix)
+}
+
+private val rustNumericLiteral =
+    Regex(
+        """^((?:0[xX][0-9A-Fa-f_]+|0[oO][0-7_]+|0[bB][01_]+|[0-9][0-9_]*(?:\.[0-9_]+)?(?:[eE][+-]?[0-9_]+)?))([A-Za-z_][A-Za-z0-9_]*)?$""",
+    )
+
+private fun findClosingQuote(
+    src: String,
+    start: Int,
+    quote: Char,
+): Int? {
+    var index = start
+    while (index < src.length) {
+        if (src[index] == quote && !src.isEscaped(index)) return index
+        index++
+    }
+    return null
+}
+
+private fun String.isEscaped(index: Int): Boolean {
+    var backslashes = 0
+    var cursor = index - 1
+    while (cursor >= 0 && this[cursor] == '\\') {
+        backslashes++
+        cursor--
+    }
+    return backslashes % 2 == 1
+}
+
+private fun String.isValidLiteralSuffix(): Boolean =
+    isEmpty() || (first().isLetter() || first() == '_') && all { it.isLetterOrDigit() || it == '_' }
 
 private class SpanListMultiSpanForBridge(
     private val spans: List<Span>,

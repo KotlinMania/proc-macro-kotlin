@@ -215,6 +215,11 @@ public class Diagnostic private constructor(
     /** Returns an iterator over the children diagnostics of `this`. */
     public fun children(): Children = Children(children.iterator())
 
+    internal fun addChildDiagnostic(child: Diagnostic): Diagnostic {
+        children.add(child)
+        return this
+    }
+
     /**
      * Emit the diagnostic.
      *

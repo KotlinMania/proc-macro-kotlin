@@ -4,6 +4,7 @@ package io.github.kotlinmania.procmacro.bridge
 import io.github.kotlinmania.procmacro.Delimiter
 import io.github.kotlinmania.procmacro.Level
 import io.github.kotlinmania.procmacro.Spacing
+import io.github.kotlinmania.procmacro.Span
 import io.github.kotlinmania.procmacro.TokenTree
 
 /**
@@ -16,6 +17,7 @@ internal data class BridgeConfig(
     val input: RpcBuffer,
     val dispatch: BridgeDispatch,
     val forceShowPanics: Boolean,
+    val globals: ExpnGlobals<ClientSpan> = defaultClientGlobals(),
 )
 
 internal fun interface BridgeDispatch {
@@ -27,6 +29,13 @@ internal data class ExpnGlobals<S>(
     val callSite: S,
     val mixedSite: S,
 )
+
+internal fun defaultClientGlobals(): ExpnGlobals<ClientSpan> =
+    ExpnGlobals(
+        defSite = ClientSpan(Span.defSite()),
+        callSite = ClientSpan(Span.callSite()),
+        mixedSite = ClientSpan(Span.mixedSite()),
+    )
 
 internal data class DelimSpan<S>(
     val open: S,

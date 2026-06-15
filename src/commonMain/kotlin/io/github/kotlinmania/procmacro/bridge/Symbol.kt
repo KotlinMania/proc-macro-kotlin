@@ -10,7 +10,7 @@ internal value class Symbol private constructor(
     fun asString(): String = value
 
     companion object {
-        private val rawIdentDisallowed = setOf("self", "super", "Self", "crate")
+        private val rawIdentDisallowed = setOf("_", "self", "super", "Self", "crate")
 
         fun intern(value: String): Symbol = Symbol(value)
 

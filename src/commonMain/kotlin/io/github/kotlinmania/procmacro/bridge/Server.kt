@@ -1,15 +1,8 @@
 // port-lint: source src/bridge/server.rs
 package io.github.kotlinmania.procmacro.bridge
 
-import io.github.kotlinmania.procmacro.Span
-
 internal interface BridgeServer {
-    fun globals(): ExpnGlobals<ClientSpan> =
-        ExpnGlobals(
-            defSite = ClientSpan(Span.defSite()),
-            callSite = ClientSpan(Span.callSite()),
-            mixedSite = ClientSpan(Span.mixedSite()),
-        )
+    fun globals(): ExpnGlobals<ClientSpan> = defaultClientGlobals()
 
     fun internSymbol(ident: String): Symbol = Symbol.intern(ident)
 
@@ -20,13 +13,43 @@ internal interface BridgeServer {
         block(symbol.asString())
     }
 
-    fun dispatch(buffer: RpcBuffer): RpcBuffer = buffer.copy()
+    fun injectedEnvVar(variable: String): String? = null
+
+    fun trackEnvVar(
+        variable: String,
+        value: String?,
+    ) {
+    }
+
+    fun trackPath(path: String) {
+    }
+
+    fun spanSourceText(span: ClientSpan): String? = span.span.sourceText()
+
+    fun dispatch(buffer: RpcBuffer): RpcBuffer =
+        when (val payload = buffer.payload) {
+            is BridgePayload.Request.InjectedEnvVar ->
+                RpcBuffer(payload = BridgePayload.Response.StringValue(injectedEnvVar(payload.variable)))
+            is BridgePayload.Request.TrackEnvVar -> {
+                trackEnvVar(payload.variable, payload.value)
+                RpcBuffer(payload = BridgePayload.Response.UnitValue)
+            }
+            is BridgePayload.Request.TrackPath -> {
+                trackPath(payload.path)
+                RpcBuffer(payload = BridgePayload.Response.UnitValue)
+            }
+            is BridgePayload.Request.SpanSourceText ->
+                RpcBuffer(payload = BridgePayload.Response.StringValue(spanSourceText(payload.span)))
+            else -> buffer.copy()
+        }
 }
 
 internal class Dispatcher<S : BridgeServer>(
     private val server: S,
 ) {
     fun dispatch(buffer: RpcBuffer): RpcBuffer = server.dispatch(buffer)
+
+    fun globals(): ExpnGlobals<ClientSpan> = server.globals()
 }
 
 internal interface ExecutionStrategy {
@@ -46,14 +69,26 @@ internal data class MaybeCrossThread(
         input: RpcBuffer,
         runClient: (BridgeConfig) -> RpcBuffer,
         forceShowPanics: Boolean,
-    ): RpcBuffer =
-        runClient(
+    ): RpcBuffer {
+        if (crossThread) {
+            throw UnsupportedOperationException("CrossThread bridge execution requires a platform-specific runner")
+        }
+        val config =
             BridgeConfig(
                 input = input,
                 dispatch = BridgeDispatch { dispatcher.dispatch(it) },
                 forceShowPanics = forceShowPanics,
+                globals = dispatcher.globals(),
+            )
+        return BridgeClientState.enter(
+            BridgeState(
+                globals = config.globals,
+                dispatch = config.dispatch,
             ),
-        )
+        ) {
+            runClient(config)
+        }
+    }
 }
 
 internal val SameThread: MaybeCrossThread = MaybeCrossThread(crossThread = false)

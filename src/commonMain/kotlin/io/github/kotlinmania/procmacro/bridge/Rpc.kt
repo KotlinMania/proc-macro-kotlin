@@ -3,6 +3,7 @@ package io.github.kotlinmania.procmacro.bridge
 
 internal class RpcBuffer(
     private val bytes: MutableList<Byte> = mutableListOf(),
+    internal val payload: BridgePayload? = null,
 ) {
     val size: Int get() = bytes.size
 
@@ -22,12 +23,41 @@ internal class RpcBuffer(
 
     fun toByteArray(): ByteArray = bytes.toByteArray()
 
-    fun copy(): RpcBuffer = RpcBuffer(bytes.toMutableList())
+    fun copy(): RpcBuffer = RpcBuffer(bytes.toMutableList(), payload)
 }
 
 internal data class PanicMessage(
     val message: String,
 )
+
+internal sealed class BridgePayload {
+    sealed class Request : BridgePayload() {
+        data class InjectedEnvVar(
+            val variable: String,
+        ) : Request()
+
+        data class TrackEnvVar(
+            val variable: String,
+            val value: String?,
+        ) : Request()
+
+        data class TrackPath(
+            val path: String,
+        ) : Request()
+
+        data class SpanSourceText(
+            val span: ClientSpan,
+        ) : Request()
+    }
+
+    sealed class Response : BridgePayload() {
+        data class StringValue(
+            val value: String?,
+        ) : Response()
+
+        data object UnitValue : Response()
+    }
+}
 
 internal sealed class Result<out T> {
     data class Ok<T>(
