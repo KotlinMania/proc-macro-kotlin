@@ -1,4 +1,3 @@
-// port-lint: ignore (Rust core stdlib emulation; no upstream under tmp/proc-macro)
 package io.github.kotlinmania.procmacro.rustcore
 
 /**

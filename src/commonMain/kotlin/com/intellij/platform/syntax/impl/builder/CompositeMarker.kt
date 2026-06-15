@@ -44,10 +44,7 @@ internal class CompositeMarker(
 
     override fun getNodeType(): SyntaxElementType = type
 
-    override fun precede(): SyntaxTreeBuilder.Marker {
-        @Suppress("UNCHECKED_CAST")
-        return builder.precede(this)
-    }
+    override fun precede(): SyntaxTreeBuilder.Marker = builder.precede(this)
 
     override fun drop() {
         builder.myProduction.dropMarker(this)
@@ -84,7 +81,7 @@ internal class CompositeMarker(
             )
         }
         this@CompositeMarker.type = type
-        builder.processDone(this, null, before as CompositeMarker)
+        builder.processDone(this, null, before.requireCompositeMarker())
     }
 
     override fun doneBefore(
@@ -92,7 +89,7 @@ internal class CompositeMarker(
         before: SyntaxTreeBuilder.Marker,
         errorMessage: String,
     ) {
-        val marker = before as CompositeMarker
+        val marker = before.requireCompositeMarker()
         val errorNode = builder.pool.allocateErrorNode()
         errorNode.setErrorMessage(errorMessage)
         errorNode.startIndex = marker.getStartTokenIndex()
@@ -102,7 +99,6 @@ internal class CompositeMarker(
 
     override fun error(message: String) {
         type = SyntaxTokenTypes.ERROR_ELEMENT
-        @Suppress("UNCHECKED_CAST")
         builder.processDone(this, message, null)
     }
 
@@ -111,8 +107,7 @@ internal class CompositeMarker(
         before: SyntaxTreeBuilder.Marker,
     ) {
         type = SyntaxTokenTypes.ERROR_ELEMENT
-        @Suppress("UNCHECKED_CAST")
-        builder.processDone(this, message, before as CompositeMarker)
+        builder.processDone(this, message, before.requireCompositeMarker())
     }
 
     // TODO add this method to interface when it's required
@@ -128,11 +123,9 @@ internal class CompositeMarker(
         right: WhitespacesAndCommentsBinder?,
     ) {
         if (left != null) {
-            @Suppress("UNCHECKED_CAST")
             builder.myOptionalData.assignBinder(markerId, left, false)
         }
         if (right != null) {
-            @Suppress("UNCHECKED_CAST")
             builder.myOptionalData.assignBinder(markerId, right, true)
         }
     }

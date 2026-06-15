@@ -9,7 +9,7 @@ fun Collection<SyntaxElementType>.asSyntaxElementTypeSet(): SyntaxElementTypeSet
 
     if (this.isEmpty()) return emptySet
 
-    val distinctElementTypes = this as? Set ?: this.toSet()
+    val distinctElementTypes = this.toSet()
     ensureNoTransientTypes(distinctElementTypes)
 
     val indexes = IntArrayList(distinctElementTypes.size)

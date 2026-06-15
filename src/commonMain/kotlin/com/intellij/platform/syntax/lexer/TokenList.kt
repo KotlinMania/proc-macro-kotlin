@@ -80,7 +80,7 @@ internal fun performLexing(
                 lexTypes = existing.lexTypes.copyOf(),
                 tokenCount = existing.tokenCount,
                 tokenizedText = text,
-            ) as TokenList
+            )
         }
     }
     val sequence = Builder(text, lexer, cancellationProvider, logger).performLexing()

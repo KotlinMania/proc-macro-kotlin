@@ -1,6 +1,6 @@
 # Project Plan — proc-macro-kotlin
 
-Stage: **Phase 2d — antlr4-runtime KMP compilation fix. 804 errors remain before publish.**
+Stage: **Rust-shaped bridge plus Kotlin parser infrastructure alignment.**
 
 ---
 
@@ -210,65 +210,30 @@ AST nodes over real Kotlin source.
 
 ### Path B: ANTLR4 with Kotlin runtime (grammar-driven)
 
-**Major discovery:** The ANTLR4 `dev` branch has already converted the
-entire runtime to Kotlin. The `atn/` package (69 files, 10,557 lines)
-is entirely `.kt` — no Java at all. The full runtime is 141 Kotlin files
-totaling 23,577 lines, with only 33 remaining `.java` files (2,927 lines)
-in the `tree/` subpackage (parse tree visitor/walker infrastructure).
+The ANTLR4 runtime is no longer vendored in this repository. The Java to
+Kotlin port lives in the sibling `antlr4-kotlin` project and is consumed
+from Maven Central as `io.github.kotlinmania:antlr4-kotlin:0.1.2`.
+Published runtime classes use the `io.github.kotlinmania.antlr4.*`
+namespace. Historical generated callers that targeted
+`org.antlr.v4.runtime.*` need import/package translation to that
+published namespace.
 
 The `kotlin-spec` grammars in `tmp/kotlin-spec/` provide
 `KotlinLexer.g4` and `KotlinParser.g4` — authoritative ANTLR4 grammar
 specs for the Kotlin language, maintained by JetBrains.
 
-**ANTLR4 runtime status (from `dev` branch):**
+**ANTLR4 runtime status:**
 
-| Package | Kotlin files | Lines | Java deps | KMP adaptation |
+| Runtime surface | Source | Version | Namespace | Consumption |
 |---|---|---|---|---|
-| `atn/` | 69 | 10,557 | `java.util`, `java.security` (1 usage) | Easy — swap `java.util` for Kotlin stdlib |
-| `dfa/` | 3 | ~480 | `java.util` only | Easy |
-| `misc/` | 18 | ~3,177 | `java.util`, `java.io` | Easy — `java.io` isolated to `InterpreterDataReader` |
-| Top-level runtime | 45 | ~9,556 | `java.io`, `java.nio`, `java.util` | Medium — I/O isolated to `CharStreams`, `ANTLRInputStream` |
-| `tree/` | 0 (Java) | 2,927 | `java.util` only | Easy — batch-translate last 33 Java files |
-| `tree/pattern/` | 0 (Java) | 1,342 | `java.util` only | Easy |
-| `tree/xpath/` | 0 (Java) | 653 | `java.util` only | Easy |
+| Common runtime | Maven Central | `0.1.2` | `io.github.kotlinmania.antlr4.*` | Version catalog bundle |
+| CodeQL JVM artifact | Maven Central | `0.1.2` | `io.github.kotlinmania.antlr4.*` | `codeql-build/gradle.properties` |
 
-**KMP adaptation work for `atn/` (the highest-value package):**
+**Generated caller rule.**
 
-The `java.util` imports in `atn/` are nearly all direct Kotlin stdlib
-swaps. The two non-trivial ones are `IdentityHashMap` (2-3 files) and
-`BitSet` (2-3 files), both of which can be implemented in pure Kotlin.
-
-The only `java.security` usage is `AccessController.doPrivileged` in
-`ParserATNSimulator.kt` — a minor optimization guard that can be removed
-without changing behavior.
-
-The only `java.io` usage in `atn/` is `InvalidClassException` in
-`ATNConfig.kt` — swap for a custom exception class.
-
-**`km-io` replaces `java.io` and `java.nio` for KMP I/O.**
-
-The kotlinmania workspace already has `km-io` (v0.1.5, Maven Central), a
-fork of `kotlinx-io`/Okio that provides `Source`, `Sink`, `Buffer`,
-`FileSystem`, `Path`, and `ByteString` across **every** KMP target:
-
-JVM, JS, wasmJs, wasmWasi, Android, iOS (x64/arm64/sim), tvOS
-(x64/arm64/sim), watchOS (arm32/arm64/x64/sim/device), Android Native
-(arm32/arm64/x64/x86), Linux (x64/arm64), macOS (x64/arm64),
-Windows (mingwX64).
-
-For the ANTLR4 runtime's I/O layer (`CharStreams`, `ANTLRInputStream`,
-`ANTLRFileStream`), `km-io`'s `Source`/`RawSource` replaces
-`java.io.InputStream`/`Reader`, and `km-io`'s `Buffer` replaces
-`java.nio.CharBuffer`/`ByteBuffer`. No new I/O abstractions needed.
-
-**`libc-kotlin` and `klang` cover C-level primitives.**
-
-`libc-kotlin` (1,944 lines, POSIX bindings) and `klang` (21,942 lines,
-pure Kotlin C-semantics library) provide `BitSet`-level bit manipulation,
-`GlobalHeap` memory model, and `CString`/`CLib` primitives that cover the
-low-level patterns sometimes found in parser runtimes. If `BitSet` or
-`IdentityHashMap` needs a KMP-native implementation, `klang`'s bitwise
-infrastructure (`BitPrimitives`, `BitTwiddle`) provides the foundation.
+Do not restore the old `antlr4-runtime/` source tree. Generated Kotlin
+grammar code belongs in this repo only as callers of the Maven-published
+runtime, with imports adjusted to `io.github.kotlinmania.antlr4.*`.
 
 ### Path C: lalrpop-kotlin + logos-kotlin (fully Kotlin-native)
 
@@ -295,7 +260,7 @@ Maven Central.
 Need a parser now?
   ├─ Yes → Path A (JetBrains KMP parser, already Kotlin MP code)
   └─ Need grammar-driven correctness guarantees?
-       ├─ Yes → Path B (ANTLR4, KMP-adapt the already-Kotlin runtime)
+       ├─ Yes → Path B (ANTLR4 grammars + published antlr4-kotlin runtime)
        └─ Need fully Kotlin-native toolchain?
             └─ Yes → Path C (lalrpop + logos, most work, most principled)
 ```
@@ -404,8 +369,9 @@ dependencies.
 ## The kotlinmania infrastructure ecosystem
 
 These repos exist under `/Volumes/stuff/Projects/kotlinmania/` and provide
-the KMP building blocks for the proc-macro pipeline and the ANTLR4
-KMP adaptation.
+the KMP building blocks for the proc-macro pipeline and sibling
+JVM-to-KMP ports. This repository consumes the ANTLR4 runtime through
+the published `antlr4-kotlin` Maven artifact.
 
 ### Proc-macro pipeline
 
@@ -436,41 +402,26 @@ KMP adaptation.
 | `indexmap-kotlin` | not yet | `IndexMap`/`IndexSet` — insertion-order-preserving hash map |
 | `btree-kotlin` | not yet | `BTreeMap`/`BTreeSet` — ported from Rust std collections |
 
-`km-io` ships **every** KMP target: JVM, JS, wasmJs, wasmWasi, Android,
-iOS, tvOS, watchOS, Android Native, Linux, macOS, Windows. It is the
-`java.io`/`java.nio` replacement for any KMP adaptation of JVM code.
-
-`klang` provides bit-level primitives (`BitPrimitives`, `BitTwiddle`,
-`PackOps`) that can implement `BitSet` and `IdentityHashMap` in pure
-Kotlin if needed for the ANTLR4 KMP adaptation.
-
-`starlarkmap-kotlin` is the key missing piece for the ANTLR4 KMP
-adaptation. It provides `Equivalent` (the `equivalent` crate trait
-that `hashbrown` depends on), `FxHasher64` (the `fxhash`/`rustc-hash`
-hasher), and `UnorderedMap`/`UnorderedSet` (`hashbrown`-shaped maps).
-ANTLR4's `IdentityHashMap` usage maps directly to an `Equivalent`-based
-lookup — define an `Equivalent` that compares by object identity
-(`===`) and use `UnorderedMap`. The `BitSet` replacement can use `klang`'s
-bit primitives or `starlarkmap`'s `SmallSet`/`OrderedSet` as compact
-bit-backed structures.
+`km-io`, `klang`, and `starlarkmap-kotlin` remain useful for sibling
+runtime ports and other JVM-to-KMP translations. They are not part of
+this repository's ANTLR4 runtime plan now that `antlr4-kotlin` is
+published as a Maven dependency.
 
 ### Vendored reference sources (all in `tmp/`, gitignored)
 
 | Path | Language | Lines | Source | Purpose |
 |---|---|---|---|---|
-| `tmp/antlr4/` | Kotlin + Java (tree/) | 23,577 kt + 2,927 java | [antlr/antlr4](https://github.com/antlr/antlr4) `dev` branch | ANTLR4 runtime — **already Kotlin!** KMP-adapt for Kotlin-native parser |
+| `tmp/antlr4/` | Kotlin + Java history | 23,577 kt + 2,927 java | [antlr/antlr4](https://github.com/antlr/antlr4) `dev` branch | Historical runtime source for comparison only |
 | `tmp/jflex/` | Java | 14,484 | JetBrains/intellij-deps-jflex | JFlex code generator — batch-translate for Kotlin-native JFlex |
 | `tmp/jflex-skeleton/` | Kotlin-ish | 302 | JetBrains/intellij-community | `idea-flex-kotlin.skeleton` template |
 | `tmp/kotlin-spec/` | ANTLR4 grammar | — | [Kotlin/kotlin-spec](https://github.com/Kotlin/kotlin-spec/tree/release/grammar/src/main/antlr) | `KotlinLexer.g4`, `KotlinParser.g4`, `UnicodeClasses.g4` |
 | `tmp/kmp-parser/` | Kotlin | 10,509 | JetBrains KMP parser | Full recursive-descent parser for reference |
 | `tmp/proc-macro/` | Rust | — | [rust-lang/rust](https://github.com/rust-lang/rust/tree/master/library/proc_macro/src) | Upstream Rust proc_macro source |
 
-**The ANTLR4 discovery changes the calculus.** The runtime is already
-Kotlin — we don't need a Java→Kotlin batch translation step. We need a
-KMP adaptation step: swap `java.util.*` for Kotlin stdlib, replace
-`java.io`/`java.nio` with `km-io`, and remove `AccessController`.
-The `atn/` package (10,557 lines) is the highest-value target and the
-cleanest to adapt.
+**Current ANTLR4 runtime source of truth.** Use the published
+`io.github.kotlinmania:antlr4-kotlin:0.1.2` dependency. `tmp/antlr4/`
+and `/Volumes/stuff/Projects/kotlinmania/toport/antlr4/` are comparison
+history, not source trees to restore.
 
 ---
 
@@ -485,35 +436,13 @@ Two people can work in parallel without blocking each other:
 3. Publish `proc-macro2-kotlin v0.2.0`
 4. Verify serde-kotlin can depend on the new versions
 
-### Track 2: KMP adaptation + Java → Kotlin batch translations
+### Track 2: generated grammar callers
 
-**ANTLR4 `atn/` KMP adaptation (highest parser value, 10,557 lines Kotlin):**
-Already Kotlin — just need to swap JVM deps for Kotlin Multiplatform equivalents:
+Generate Kotlin lexer/parser sources from `tmp/kotlin-spec/` grammars and
+rewrite runtime imports to `io.github.kotlinmania.antlr4.*`. The runtime
+itself comes from Maven Central through the version catalog.
 
-| Java class | Kotlin replacement | kotlinmania alternative |
-|---|---|---|
-| `ArrayList` | `mutableListOf()` / `ArrayList()` | Direct stdlib swap |
-| `HashMap` | `mutableMapOf()` / `HashMap()` | Direct stdlib swap |
-| `HashSet` | `mutableSetOf()` / `HashSet()` | Direct stdlib swap |
-| `LinkedHashMap` | `linkedMapOf()` | Direct stdlib swap |
-| `IdentityHashMap` | `Equivalent`-based `UnorderedMap` | `starlarkmap-kotlin` `Equivalent` + `UnorderedMap` |
-| `BitSet` | Custom impl or `klang` `BitPrimitives` | `klang` + `starlarkmap` `SmallSet` |
-| `Arrays` | Kotlin stdlib `sort`, etc. | Direct stdlib swap |
-| `Collections` | Kotlin stdlib equivalents | Direct stdlib swap |
-| `AtomicInteger` | `kotlin.concurrent.atomics.AtomicInt` | Direct stdlib swap |
-| `AccessController` | Remove (security optimization) | No replacement needed |
-| `InvalidClassException` | Custom exception class | Custom |
-| `Locale` | `kotlin.text` lowercase/uppercase | Direct stdlib swap |
-| `Objects.hash` | `kotlin.hashCode()` combiner | Direct stdlib swap |
-
-I/O adaptation for the top-level runtime (`CharStreams`, `ANTLRInputStream`,
-`ANTLRFileStream`, `CodePointCharStream`, `UnbufferedCharStream`):
-`java.io.InputStream` → `km-io` `RawSource`, `java.io.Reader` → `km-io`
-`Source`, `java.nio.CharBuffer` → `km-io` `Buffer`, `java.nio.ByteBuffer`
-→ `km-io` `Buffer`.
-
-The 33 remaining `.java` files in `tree/` (2,927 lines) can also be
-batch-translated in IntelliJ — they use only `java.util.*`.
+### Track 3: JFlex-in-Kotlin
 
 **JFlex Kotlin-specific emitters (highest value, 2,466 lines Java):**
 - `KotlinEmitter.java` (1,455 lines)
@@ -534,7 +463,6 @@ batch-translated in IntelliJ — they use only `java.util.*`.
 - `java.util.*` → Kotlin stdlib
 - `java_cup.runtime.Symbol` → Kotlin equivalent
 - `@JvmStatic` / `companion object` restructuring
-PLAN_EOF
 
 ---
 
@@ -634,18 +562,13 @@ with `--output-mode kotlin` — the same toolchain JetBrains uses.
 3. Publish `proc-macro2-kotlin v0.2.0`
 4. Verify serde-kotlin can depend on the new versions
 
-### Track 2: ANTLR4 KMP adaptation (23,577 lines Kotlin, 2,927 lines Java)
+### Track 2: ANTLR4 grammar callers
 
-The runtime is already Kotlin. KMP adaptation replaces JVM deps:
-
-| Java class | KMP replacement | kotlinmania package |
-|---|---|---|
-| `ArrayList`, `HashMap`, `HashSet` | Kotlin stdlib | Direct |
-| `IdentityHashMap` | `Equivalent`-based `UnorderedMap` | `starlarkmap-kotlin` |
-| `BitSet` | `klang` bit primitives | `klang` |
-| `java.io.*`, `java.nio.*` | `km-io` | `km-io` v0.1.5 |
-
-The 33 `.java` files in `tree/` (2,927 lines) batch-convert in IntelliJ.
+Use `tmp/kotlin-spec/KotlinLexer.g4`,
+`tmp/kotlin-spec/KotlinParser.g4`, and
+`tmp/kotlin-spec/UnicodeClasses.g4` as the grammar inputs. Generated
+Kotlin sources import the published `io.github.kotlinmania.antlr4.*`
+runtime from Maven Central; the runtime source is not vendored here.
 
 ### Track 3: JFlex-in-Kotlin (native Kotlin lexer generator)
 
@@ -661,7 +584,11 @@ and a Gradle build. Complements `lalrpop-kotlin` for LR parsing.
 
 ---
 
-## ANTLR4 KMP adaptation: complete Java dependency audit
+## Historical ANTLR4 sibling Java dependency audit
+
+This audit is retained as provenance for the sibling `antlr4-kotlin`
+port. It is not an instruction to restore `antlr4-runtime/` here.
+`proc-macro-kotlin` uses the published Maven artifact.
 
 Every `java.*` import in the 141 `.kt` files of the ANTL4 runtime
 (`tmp/antlr4/runtime/Java/src/`) has been cataloged. There are 55
@@ -774,7 +701,7 @@ Kotlin spec grammars.
 
 ---
 
-## ANTLR4 `tree/` package: fully converted to Kotlin
+## Historical ANTLR4 `tree/` package conversion
 
 The 33 Java files in `runtime/Java/src/org/antlr/v4/runtime/tree/`
 have been batch-converted to Kotlin. The ANTLR4 runtime is now
@@ -807,13 +734,13 @@ native method calls, no class loading tricks.
 
 | Component | Files | Lines | Status |
 |---|---|---|---|
-| Runtime (all `.kt`) | 174 | 26,326 | Fully Kotlin, needs KMP dep swap |
+| Runtime (all `.kt`) | 174 | 26,326 | Published through `antlr4-kotlin` |
 | Tool (1 `.java` + 231 `.kt`) | 232 | 24,025 + 435 java | 1 build-time Java file, rest Kotlin |
 | Test suite | ~80 `.kt` | — | Kotlin, test infrastructure |
 
 ---
 
-## KMP adaptation progress
+## Historical sibling KMP adaptation progress
 
 ### Completed mechanical swaps (ANTLR4 runtime)
 
@@ -947,94 +874,15 @@ remains.
 - Parameter naming mismatches vs supertype (`key` vs `index`, `other`, `startIndex`, `endIndex`)
 - These are all in the vendored JetBrains syntax/platform code, not in the proc-macro core
 
-### antlr4-runtime submodule: Java→Kotlin port complete, 804 compilation errors remain
+### ANTLR4 caller history
 
-| Metric | Value |
-|---|---|
-| Source files | 178 `.kt` files (0 `.java`) |
-| Java→Kotlin port | **100% complete** — every `.java` file from `tmp/antlr4/runtime/Java/src/` has been converted |
-| `allWarningsAsErrors` | `false` (antlr4-runtime `build.gradle.kts`) — intentional for vendored port |
-| Compilation errors | **804** (across 64 files) |
-| Warnings | **1,209** (across 115 files) |
-| `compileKotlinMacosArm64` | **PASSES** (with `allWarningsAsErrors=false`) |
-| `compileKotlinJvm` | **PASSES** |
-| `compileKotlinJs` | **PASSES** |
-| `:antlr4-runtime:build` | **FAILS** — `ktlintJvmMainSourceSetCheck` blocks the full build |
+Before the vendored runtime was removed, callers outside
+`antlr4-runtime/` were Gradle-level: `settings.gradle.kts` included the
+subproject and `gradle.properties` named the module. Proc-macro source
+did not import `org.antlr.v4.runtime.*`; generated Kotlin grammar
+callers therefore bind to the published `io.github.kotlinmania.antlr4.*`
+API when they are added.
 
-### Error breakdown (antlr4-runtime, 804 errors)
-
-| Category | Count | Description |
-|---|---|---|
-| Unresolved reference | 202 | `IOException`, `assert`, `synchronized`, `toArray`, `put`, `not`, `tokenStream`, `MODE`, `MORE`, `POP_MODE`, `PUSH_MODE`, `CHANNEL`, `CUSTOM`, `size`, `Class`, `SuppressWarnings` |
-| Nullable receiver | 159 | Need `?.` or `!!.` — nullability mismatch from Java port |
-| Argument type mismatch | 92 | Passing nullable where non-null expected |
-| Needs `override` modifier | 44 | Properties/methods hiding supertype members |
-| Not abstract / does not implement | 26 | Missing abstract member implementations |
-| Assignment type mismatch | 25 | `Array<T?>` vs `Array<T>`, etc. |
-| Overrides nothing | 24 | Method signatures don't match supertype |
-| Initializer type mismatch | 24 | Wrong array types in constructors |
-| Cannot create instance of abstract class | 2 | Attempting `LexerAction()` |
-| Other | ~8 | Conflicting declarations, val reassignment, etc. |
-
-### Top 15 error-dense files (antlr4-runtime)
-
-| File | Errors | Notes |
-|---|---|---|
-| `atn/ParserATNSimulator.kt` | 103 | Core ATN prediction — hardest algorithm file |
-| `atn/ProfilingATNSimulator.kt` | 22 | Extends ParserATNSimulator |
-| `jvmMain/CodePointBuffer.kt` | 65 | JVM-specific, uses `ByteBuffer`/`CharBuffer` |
-| `atn/PredictionContext.kt` | 23 | Context merging, equality |
-| `ParserRuleContext.kt` | 37 | Rule context tree |
-| `atn/ATNDeserializer.kt` | 47 | Binary ATN deserialization |
-| `jvmMain/misc/Utils.kt` | 22 | I/O helpers (`IOException`, `File`, etc.) |
-| `jvmMain/CharStreams.kt` | 37 | JVM-specific char stream factories |
-| `ParserInterpreter.kt` | 55 | Interpreter-mode parsing |
-| `Parser.kt` | 24 | Core parser class |
-| `DefaultErrorStrategy.kt` | 33 | Error recovery |
-| `misc/IntegerList.kt` | 8 | Int list utility |
-| `Lexer.kt` | 23 | Lexer base |
-| `jvmMain/CodePointCharStream.kt` | 25 | JVM codepoint stream |
-| `atn/LexerATNSimulator.kt` | 15 | Lexer ATN simulation |
-
-### Systematic fix patterns (highest-impact, most-mechanical)
-
-These would eliminate the bulk of the 804 errors:
-
-1. **`override` additions** (~68 errors): Add `override` to properties (`actionType`, `isPositionDependent`) and methods (`execute`, `eval`, `toString`, `equals`, `hashCode`) across all `LexerAction` subtypes and `PredictionContext` subtypes.
-
-2. **Abstract member implementations** (~26 errors): Add missing abstract method bodies in `ANTLRInputStream`, `CommonToken`, `CodePointCharStream.CodePoint8BitCharStream`, `ArrayPredictionContext`, `EmptyPredictionContext`, `SingletonPredictionContext`.
-
-3. **Java API replacements** (~80+ errors):
-   - `IOException` → `expect/actual` or Kotlin `IOException` (jvmMain only)
-   - `assert` → custom `Assertions.kt` assert function (already exists in project)
-   - `synchronized` → `@Synchronized` annotation or `kotlin.synchronized` intrinsic
-   - `SuppressWarnings` → remove (not a Kotlin annotation)
-   - `Class`, `system`, `.toArray()`, `.size` → Kotlin equivalents
-   - `tokenStream` → `getTokenStream()` or property access
-   - `.put()` on maps → `map[key] = value`
-   - `not` operator → Kotlin `!` or `.not()` function
-
-4. **Nullability fixes** (~251 errors): Add `?.` or `!!.` to nullable receivers; adjust type signatures from `Array<T?>` to `Array<T>` where appropriate.
-
-5. **`LexerAction` companion constants** (~15 errors): `MODE`, `MORE`, `POP_MODE`, `PUSH_MODE`, `CHANNEL`, `CUSTOM` are referenced as `Lexer.MODE` etc. — need to be defined as companion object constants on `Lexer`.
-
-6. **ktlint formatting** (blocks full build): The `ktlintJvmMainSourceSetCheck` task fails — needs a formatting pass on jvmMain source files.
-
-### Previous session work (PRs #38, #39, #40)
-
-- **PR #38**: Resolved all KMP compilation errors across targets (missing overrides, interface implementations, Java→Kotlin API replacements)
-- **PR #39**: Algorithmic drift fixes — restored `Utils.kt` null guards (`numNonnull()`, `toCharArray()`), ported `Parser.setTrace()`/`isTrace()`, fixed `ParseTreePatternMatcher` array copy. Removed ~20 unused imports.
-- **PR #40**: Further drift fixes and lint cleanup. Detekt config overhauled for vendored port code.
-
-### What's left before publish
-
-1. **Fix the 804 antlr4-runtime compilation errors** — systematic `override` additions, nullability, Java API replacements, abstract implementations. This is the highest-priority work.
-2. **ktlint formatting pass** on antlr4-runtime jvmMain — mechanical `ktlint --format`.
-3. **Fix ~20 top-level warnings** in JetBrains vendored code (unchecked casts, naming mismatches) — or suppress them with targeted `@Suppress`.
-4. **Publish antlr4-runtime v0.1.1** and **proc-macro-kotlin v0.1.0** to Maven Central.
-5. **Wire into proc-macro2-kotlin** Compiler variant.
-6. **Unblock serde_derive** port — then 101 downstream crates.
-
-### Safe backup
-
-The Kotlin port backup is at `/Volumes/stuff/Projects/kotlinmania/toport/antlr4/` — **do not modify**. The Java originals for comparison remain at `tmp/antlr4/runtime/Java/src/`.
+The Kotlin port backup remains at
+`/Volumes/stuff/Projects/kotlinmania/toport/antlr4/`. Treat it as source
+history for comparison, not as code to restore into this repository.

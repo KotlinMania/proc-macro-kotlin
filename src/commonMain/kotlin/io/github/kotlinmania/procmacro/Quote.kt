@@ -330,18 +330,15 @@ public fun quoteSpan(
  *
  * Upstream registers this with the compiler in `register_builtin_macros`.
  *
- * Phase-1 caveats vs upstream Rust:
+ * Current Kotlin runtime notes:
  *
  *  * Span fidelity depends on the in-process [SpanRegistry] backing
- *    [Span.saveSpan] and [Span.recoverProcMacroSpan] (the `bridge::client`
- *    cross-process span server is not ported).
+ *    [Span.saveSpan] and [Span.recoverProcMacroSpan].
  *  * The literal-roundtrip path emits the literal's source text via
  *    [Literal.toString] and reconstructs the literal with the
  *    `proc_macro::TokenStream::from_str` call shape upstream uses, so
- *    end-to-end reparse depends on [TokenStream.fromString] which is
- *    itself phase-1 stubbed. Until that is wired, the produced tokens
- *    are structurally correct but a downstream rustc-equivalent
- *    reparse step would be required.
+ *    end-to-end reparse depends on [TokenStream.fromString] and the
+ *    vendored Kotlin grammar stack.
  */
 public fun quote(stream: TokenStream): TokenStream {
     if (stream.isEmpty()) {
@@ -988,9 +985,9 @@ private fun emitLiteral(
     // }), &mut ts);
     //
     // The closing reparse depends on `proc_macro::TokenStream::from_str`,
-    // which lives in TokenStream.fromString and is phase-1 stubbed. The
-    // shape of the emitted code is preserved verbatim so a downstream
-    // runtime that wires the FromStr impl picks it up unchanged.
+    // represented by TokenStream.fromString. The shape of the emitted code
+    // is preserved verbatim so any runtime-compatible FromStr path picks it
+    // up unchanged.
     val literalTextStream =
         streamOf(
             TokenTree.Literal(Literal.string(literal.toString())),

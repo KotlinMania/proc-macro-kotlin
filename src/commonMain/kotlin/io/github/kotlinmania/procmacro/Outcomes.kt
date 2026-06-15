@@ -13,7 +13,11 @@ public sealed class TokenStreamParseOutcome {
     public val isSuccess: Boolean get() = this is Ok
     public val isFailure: Boolean get() = this is Err
 
-    public fun errorOrNull(): LexError? = (this as? Err)?.error
+    public fun errorOrNull(): LexError? =
+        when (this) {
+            is Ok -> null
+            is Err -> error
+        }
 
     public fun getOrThrow(): TokenStream =
         when (this) {
@@ -34,7 +38,11 @@ public sealed class TokenStreamExpandOutcome {
     public val isSuccess: Boolean get() = this is Ok
     public val isFailure: Boolean get() = this is Err
 
-    public fun errorOrNull(): ExpandError? = (this as? Err)?.error
+    public fun errorOrNull(): ExpandError? =
+        when (this) {
+            is Ok -> null
+            is Err -> error
+        }
 
     public fun getOrThrow(): TokenStream =
         when (this) {
@@ -55,7 +63,11 @@ public sealed class ByteCharacterValueOutcome {
     public val isSuccess: Boolean get() = this is Ok
     public val isFailure: Boolean get() = this is Err
 
-    public fun errorOrNull(): ConversionErrorKind? = (this as? Err)?.error
+    public fun errorOrNull(): ConversionErrorKind? =
+        when (this) {
+            is Ok -> null
+            is Err -> error
+        }
 
     public fun exceptionOrNull(): ConversionErrorKind? = errorOrNull()
 
@@ -78,7 +90,11 @@ public sealed class CharacterValueOutcome {
     public val isSuccess: Boolean get() = this is Ok
     public val isFailure: Boolean get() = this is Err
 
-    public fun errorOrNull(): ConversionErrorKind? = (this as? Err)?.error
+    public fun errorOrNull(): ConversionErrorKind? =
+        when (this) {
+            is Ok -> null
+            is Err -> error
+        }
 
     public fun exceptionOrNull(): ConversionErrorKind? = errorOrNull()
 
@@ -101,7 +117,11 @@ public sealed class StringValueOutcome {
     public val isSuccess: Boolean get() = this is Ok
     public val isFailure: Boolean get() = this is Err
 
-    public fun errorOrNull(): ConversionErrorKind? = (this as? Err)?.error
+    public fun errorOrNull(): ConversionErrorKind? =
+        when (this) {
+            is Ok -> null
+            is Err -> error
+        }
 
     public fun exceptionOrNull(): ConversionErrorKind? = errorOrNull()
 
@@ -124,7 +144,11 @@ public sealed class ByteArrayValueOutcome {
     public val isSuccess: Boolean get() = this is Ok
     public val isFailure: Boolean get() = this is Err
 
-    public fun errorOrNull(): ConversionErrorKind? = (this as? Err)?.error
+    public fun errorOrNull(): ConversionErrorKind? =
+        when (this) {
+            is Ok -> null
+            is Err -> error
+        }
 
     public fun exceptionOrNull(): ConversionErrorKind? = errorOrNull()
 

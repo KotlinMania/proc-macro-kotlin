@@ -4,7 +4,7 @@ package com.intellij.platform.syntax.extensions.impl
 import com.intellij.platform.syntax.extensions.ExtensionRegistry
 import com.intellij.platform.syntax.extensions.StaticExtensionSupport
 import com.intellij.platform.syntax.extensions.currentExtensionSupport
-import fleet.util.multiplatform.linkToActual
+import io.github.kotlinmania.threadlocal.ThreadLocal
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -33,7 +33,7 @@ internal val staticRegistryHolder: RegistryHolder by lazy {
  * @See instantiateExtensionRegistryJvm
  * @See instantiateExtensionRegistryWasmJs
  */
-internal fun instantiateExtensionRegistry(): ExtensionRegistry = linkToActual()
+internal fun instantiateExtensionRegistry(): ExtensionRegistry = ExtensionRegistryImpl()
 
 internal val threadLocalRegistry: RegistryHolder = instantiateThreadLocalRegistry()
 
@@ -67,10 +67,25 @@ internal interface RegistryHolder {
  * @see instantiateThreadLocalRegistryJvm
  * @see instantiateThreadLocalRegistryWasmJs
  */
-internal fun instantiateThreadLocalRegistry(): RegistryHolder = linkToActual()
+internal fun instantiateThreadLocalRegistry(): RegistryHolder = ThreadLocalRegistryHolder()
 
 internal fun buildExtensionSupportImpl(block: ExtensionRegistry.() -> Unit): ExtensionRegistry {
     val registry = instantiateExtensionRegistry()
     registry.block()
     return registry
+}
+
+private class RegistrySlot(
+    var registry: ExtensionRegistry?,
+)
+
+private class ThreadLocalRegistryHolder : RegistryHolder {
+    private val slot: ThreadLocal<RegistrySlot> = ThreadLocal()
+
+    override val registry: ExtensionRegistry?
+        get() = slot.get()?.registry
+
+    override fun installRegistry(registry: ExtensionRegistry) {
+        slot.getOr { RegistrySlot(null) }.registry = registry
+    }
 }

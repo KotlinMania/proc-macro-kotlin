@@ -215,17 +215,19 @@ public class Diagnostic private constructor(
     /** Returns an iterator over the children diagnostics of `this`. */
     public fun children(): Children = Children(children.iterator())
 
+    internal fun addChildDiagnostic(child: Diagnostic): Diagnostic {
+        children.add(child)
+        return this
+    }
+
     /**
      * Emit the diagnostic.
      *
      * Upstream routes through `bridge::client::Methods::emit_diagnostic`,
      * which sends the diagnostic across the proc-macro / rustc IPC bridge.
-     * The bridge submodule is documented as non-portable: there is no
-     * Kotlin equivalent of the rustc-side receiver. Phase 1 renders the
-     * diagnostic and its children to standard output so emissions are
-     * observable; consumers can redirect output if they need to capture.
-     * Phase 3 may add a pluggable sink once a Kotlin diagnostics framework
-     * is selected.
+     * Kotlin keeps diagnostics observable by rendering this diagnostic
+     * and its children to standard output; consumers can redirect output
+     * if they need to capture emissions.
      */
     public fun emit() {
         println(renderDiagnostic(this))

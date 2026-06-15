@@ -73,7 +73,7 @@ open class FlexAdapter(
     }
 
     override fun restore(position: LexerPosition) {
-        position as FlexAdapterPosition
+        if (position !is FlexAdapterPosition) error("Expected flex adapter position")
 
         flex.reset(myText, position.tokenEnd, getBufferEnd(), position.flexState)
         myTokenStart = position.offset

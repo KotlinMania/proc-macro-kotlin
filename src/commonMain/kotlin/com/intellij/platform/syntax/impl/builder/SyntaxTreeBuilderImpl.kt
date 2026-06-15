@@ -38,9 +38,10 @@ internal class SyntaxTreeBuilderImpl(
     private val whitespaceOrCommentBindingPolicy: WhitespaceOrCommentBindingPolicy,
     private val opaquePolicy: OpaqueElementPolicy,
 ) : SyntaxTreeBuilder {
-    private val lexStartIndex = (tokens as? TokenListImpl)?.startIndex ?: 0
-    private val myLexStarts: IntArray? = (tokens as? TokenListImpl)?.lexStarts
-    private val myLexTypes: Array<SyntaxElementType>? = (tokens as? TokenListImpl)?.lexTypes
+    private val tokenListImpl: TokenListImpl? = if (tokens is TokenListImpl) tokens else null
+    private val lexStartIndex = tokenListImpl?.startIndex ?: 0
+    private val myLexStarts: IntArray? = tokenListImpl?.lexStarts
+    private val myLexTypes: Array<SyntaxElementType>? = tokenListImpl?.lexTypes
 
     private val lexemeCount: Int = tokens.tokenCount
 
@@ -74,7 +75,7 @@ internal class SyntaxTreeBuilderImpl(
     override val productions: ProductionList
         get() =
             object : ProductionList {
-                override fun get(index: Int): Production = myProduction.getMarkerAt(index) as Production
+                override fun get(index: Int): Production = myProduction.getMarkerAt(index)
 
                 override val size: Int get() = myProduction.size
             }
@@ -276,7 +277,7 @@ internal class SyntaxTreeBuilderImpl(
 
         val marker = createMarker(myCurrentLexeme)
         myProduction.addMarker(marker)
-        return marker as SyntaxTreeBuilder.Marker
+        return marker
     }
 
     private fun createMarker(lexemeIndex: Int): CompositeMarker {
@@ -316,7 +317,7 @@ internal class SyntaxTreeBuilderImpl(
      * @return true if there are error elements created and not dropped after marker was created
      */
     override fun hasErrorsAfter(marker: SyntaxTreeBuilder.Marker): Boolean =
-        myProduction.hasErrorsAfter(marker as CompositeMarker)
+        myProduction.hasErrorsAfter(marker.requireCompositeMarker())
 
     internal fun processDone(
         marker: CompositeMarker,
@@ -420,7 +421,7 @@ internal class SyntaxTreeBuilderImpl(
     inner class ProductionResultImpl : ProductionResult {
         override val productionMarkers: ProductionMarkerList =
             object : ProductionMarkerList {
-                override fun getMarker(index: Int): Production = myProduction.getMarkerAt(index) as Production
+                override fun getMarker(index: Int): Production = myProduction.getMarkerAt(index)
 
                 override fun isDoneMarker(index: Int): Boolean = myProduction[index] < 0
 

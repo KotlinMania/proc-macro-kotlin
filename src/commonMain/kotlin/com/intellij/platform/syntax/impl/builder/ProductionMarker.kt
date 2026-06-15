@@ -26,3 +26,25 @@ internal abstract class ProductionMarker(
         done: Boolean,
     )
 }
+
+internal fun ProductionMarker.requireCompositeMarker(): CompositeMarker {
+    if (this !is CompositeMarker) error("Expected composite marker")
+    return this
+}
+
+internal fun ProductionMarker.requireErrorMarker(): ErrorMarker {
+    if (this !is ErrorMarker) error("Expected error marker")
+    return this
+}
+
+internal fun SyntaxTreeBuilder.Marker.requireCompositeMarker(): CompositeMarker {
+    val marker = this
+    if (marker is CompositeMarker) return marker
+    throw IllegalStateException("Expected composite marker")
+}
+
+internal fun SyntaxTreeBuilder.Production.requireCompositeMarker(): CompositeMarker {
+    val marker = this
+    if (marker is CompositeMarker) return marker
+    throw IllegalStateException("Expected composite marker")
+}

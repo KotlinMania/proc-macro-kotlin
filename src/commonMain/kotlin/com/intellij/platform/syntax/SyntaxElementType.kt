@@ -24,7 +24,7 @@ class SyntaxElementType internal constructor(
     internal val lazyParser: LazyParser?,
     val userData: Any?,
     transient: Boolean,
-    @Suppress("unused") unusedParam: Any?, // this parameter is necessary for disambiguation with the factory function
+    _constructorToken: SyntaxElementTypeConstructorToken,
 ) {
     /**
      * The unique index of this element type
@@ -62,6 +62,8 @@ fun SyntaxElementType(
     userData: Any? = null,
     transient: Boolean = false,
 ): SyntaxElementType =
-    SyntaxElementType(debugName, lazyParser, userData, transient, null as Any?)
+    SyntaxElementType(debugName, lazyParser, userData, transient, SyntaxElementTypeConstructorToken)
 
 private val counter = AtomicInt(0)
+
+internal object SyntaxElementTypeConstructorToken

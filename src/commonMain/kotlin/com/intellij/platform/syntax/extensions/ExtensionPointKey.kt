@@ -6,7 +6,7 @@ package com.intellij.platform.syntax.extensions
  */
 internal class ExtensionPointKey internal constructor(
     val name: String,
-    unused: Any?,
+    _constructorToken: ExtensionPointKeyConstructorToken,
 ) {
     override fun equals(other: Any?): Boolean = this === other || (other is ExtensionPointKey && name == other.name)
 
@@ -15,4 +15,6 @@ internal class ExtensionPointKey internal constructor(
     override fun toString(): String = "ExtensionKey($name)"
 }
 
-internal fun ExtensionPointKey(name: String): ExtensionPointKey = ExtensionPointKey(name, null)
+internal fun ExtensionPointKey(name: String): ExtensionPointKey = ExtensionPointKey(name, ExtensionPointKeyConstructorToken)
+
+internal object ExtensionPointKeyConstructorToken

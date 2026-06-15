@@ -5,7 +5,6 @@ import com.intellij.platform.syntax.Logger
 import com.intellij.util.fastutil.ints.IntArrayList
 import com.intellij.util.fastutil.ints.isEmpty
 import com.intellij.util.fastutil.ints.lastIndexOf
-import fleet.util.multiplatform.linkToActual
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -127,7 +126,7 @@ internal class MarkerProduction(
 
     fun getDoneMarkerAt(index: Int): CompositeMarker? {
         val id = production.get(index)
-        return if (id < 0) myPool.get(-id) as CompositeMarker? else null
+        return if (id < 0) myPool.get(-id).requireCompositeMarker() else null
     }
 
     fun getLexemeIndexAt(productionIndex: Int): Int {
@@ -204,7 +203,7 @@ private const val LINEAR_SEARCH_LIMIT = 20
 internal fun makeStackTraceRelative(
     th: Throwable,
     relativeTo: Throwable,
-): Throwable = linkToActual()
+): Throwable = th
 
 /**
  * Performs binary search on the range [fromIndex, toIndex)
