@@ -1,6 +1,8 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.syntax.tree
 
+import com.intellij.platform.syntax.SyntaxElementType
+
 internal val SyntaxNode.length: Int get() = endOffset - startOffset
 
 internal fun SyntaxNode.children(): Sequence<SyntaxNode> =
@@ -28,12 +30,12 @@ private tailrec fun SyntaxNode.findFirstSiblingBackward(cond: (SyntaxNode) -> Bo
 internal fun SyntaxNode.findFirstChild(cond: (SyntaxNode) -> Boolean): SyntaxNode? =
     firstChild()?.findFirstSiblingForward(cond)
 
-internal fun SyntaxNode.findFirstChild(type: Any): SyntaxNode? = findFirstChild { it.type == type }
+internal fun SyntaxNode.findFirstChild(type: SyntaxElementType): SyntaxNode? = findFirstChild { it.type == type }
 
 internal fun SyntaxNode.findLastChild(cond: (SyntaxNode) -> Boolean): SyntaxNode? =
     lastChild()?.findFirstSiblingBackward(cond)
 
-internal fun SyntaxNode.findLastChild(type: Any): SyntaxNode? = findLastChild { it.type == type }
+internal fun SyntaxNode.findLastChild(type: SyntaxElementType): SyntaxNode? = findLastChild { it.type == type }
 
 internal fun SyntaxNode.pp(indent: String = ""): String =
     indent + type + (if (firstChild() == null) ": (${text.toString().replace("\n", "\\n")})" else "") + "\n" +
@@ -124,14 +126,14 @@ internal fun SyntaxNode.leafByOffset(offset: Int): SyntaxNode? =
 internal fun SyntaxNode.descendantsByOffset(offset: Int): Sequence<SyntaxNode> =
     generateSequence(this) { it.childByOffset(offset) }
 
-internal tailrec fun <T> SyntaxNode.ancestorWithType(t: T): SyntaxNode? =
+internal tailrec fun SyntaxNode.ancestorWithType(type: SyntaxElementType): SyntaxNode? =
     when {
-        this.type == t -> this
-        else -> parent()?.ancestorWithType(t)
+        this.type == type -> this
+        else -> parent()?.ancestorWithType(type)
     }
 
 internal fun SyntaxNode.skipForward(
-    type: Any,
+    type: SyntaxElementType,
     excludeSelf: Boolean = false,
 ): SyntaxNode? =
     sequenceRight(excludeSelf)

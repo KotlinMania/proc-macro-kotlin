@@ -9,8 +9,10 @@ import com.intellij.platform.syntax.lexer.TokenList
 /**
  * Call this function after you're done with the parsing to obtain the result
  */
-fun prepareProduction(builder: SyntaxTreeBuilder): ProductionResult =
-    (builder as SyntaxTreeBuilderImpl).prepareProduction()
+fun prepareProduction(builder: SyntaxTreeBuilder): ProductionResult {
+    if (builder !is SyntaxTreeBuilderImpl) error("Expected syntax tree builder implementation")
+    return builder.prepareProduction()
+}
 
 /**
  * Raw result of parsing

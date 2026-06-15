@@ -2,13 +2,13 @@
 package com.intellij.platform.syntax.parser
 
 object WhitespacesBinders {
-    fun defaultLeftBinder(): WhitespacesAndCommentsBinder = DefaultLeftBinder as WhitespacesAndCommentsBinder
+    fun defaultLeftBinder(): WhitespacesAndCommentsBinder = DefaultLeftBinder
 
-    fun defaultRightBinder(): WhitespacesAndCommentsBinder = DefaultRightBinder as WhitespacesAndCommentsBinder
+    fun defaultRightBinder(): WhitespacesAndCommentsBinder = DefaultRightBinder
 
-    fun greedyLeftBinder(): WhitespacesAndCommentsBinder = DefaultRightBinder as WhitespacesAndCommentsBinder
+    fun greedyLeftBinder(): WhitespacesAndCommentsBinder = DefaultRightBinder
 
-    fun greedyRightBinder(): WhitespacesAndCommentsBinder = DefaultLeftBinder as WhitespacesAndCommentsBinder
+    fun greedyRightBinder(): WhitespacesAndCommentsBinder = DefaultLeftBinder
 
     private object DefaultLeftBinder : WhitespacesAndCommentsBinder {
         override fun getEdgePosition(

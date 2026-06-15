@@ -2,7 +2,7 @@
 
 package com.intellij.platform.syntax.tree
 
-import com.intellij.platform.syntax.impl.builder.CompositeMarker
+import com.intellij.platform.syntax.impl.builder.requireCompositeMarker
 import com.intellij.platform.syntax.parser.ProductionMarkerList
 import com.intellij.platform.syntax.parser.SyntaxTreeBuilder
 import com.intellij.platform.syntax.parser.prepareProduction
@@ -71,7 +71,8 @@ private class AstMarkerBuilder(
         }
 
         val astTreeIndex = astMarkersResult.pushBack()
-        val markerId = (item as CompositeMarker).markerId
+        val marker = item.requireCompositeMarker()
+        val markerId = marker.markerId
         astMarkersResult.setMarker(
             astTreeIndex,
             markerId,
@@ -81,7 +82,7 @@ private class AstMarkerBuilder(
             item.getNodeType(),
         )
         if (item.getNodeType().isLazyParseable() && item.isCollapsed()) {
-            astMarkersResult.setChameleon(item.startIndex, newChameleonRef())
+            astMarkersResult.setChameleon(marker.startIndex, newChameleonRef())
             isInsideChameleon = true
         }
         astTreeIndices.add(astTreeIndex)
@@ -139,7 +140,7 @@ private class AstMarkerBuilder(
         astMarkersResult.apply {
             setMarker(
                 astIndexEnd,
-                (item as CompositeMarker).markerId,
+                item.requireCompositeMarker().markerId,
                 MarkerKind.End,
                 collapsed = item.isCollapsed(),
                 null,

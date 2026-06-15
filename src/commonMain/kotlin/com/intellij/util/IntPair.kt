@@ -9,10 +9,9 @@ class IntPair(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || this::class != other::class) return false
+        if (other !is IntPair) return false
 
-        val that = other as IntPair
-        return first == that.first && second == that.second
+        return first == other.first && second == other.second
     }
 
     override fun toString(): String = "first=$first, second=$second"

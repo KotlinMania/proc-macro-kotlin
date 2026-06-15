@@ -10,6 +10,56 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
+private fun punctToken(
+    trees: List<TokenTree>,
+    index: Int,
+): TokenTree.Punct =
+    when (val tree = trees[index]) {
+        is TokenTree.Punct -> tree
+        else -> error("Expected Punct at index $index, got $tree")
+    }
+
+private fun literalToken(
+    trees: List<TokenTree>,
+    index: Int,
+): TokenTree.Literal =
+    when (val tree = trees[index]) {
+        is TokenTree.Literal -> tree
+        else -> error("Expected Literal at index $index, got $tree")
+    }
+
+private fun groupToken(
+    trees: List<TokenTree>,
+    index: Int,
+): TokenTree.Group =
+    when (val tree = trees[index]) {
+        is TokenTree.Group -> tree
+        else -> error("Expected Group at index $index, got $tree")
+    }
+
+private fun identToken(
+    trees: List<TokenTree>,
+    index: Int,
+): TokenTree.Ident =
+    when (val tree = trees[index]) {
+        is TokenTree.Ident -> tree
+        else -> error("Expected Ident at index $index, got $tree")
+    }
+
+private fun assertSameRepetitionIteratorCheck(
+    expected: RepetitionIteratorCheck,
+    actual: RepetitionIteratorCheck,
+) {
+    assertTrue(expected === actual)
+}
+
+private fun assertDifferentRepetitionIteratorCheck(
+    left: RepetitionIteratorCheck,
+    right: RepetitionIteratorCheck,
+) {
+    assertTrue(left !== right)
+}
+
 class DelimiterTest {
     @Test
     fun variants() {
@@ -799,16 +849,16 @@ class ToTokensTest {
 class RepetitionIteratorCheckTest {
     @Test
     fun markersAreDistinct() {
-        assertNotSame(HasIterator as RepetitionIteratorCheck, ThereIsNoIteratorInRepetition)
+        assertDifferentRepetitionIteratorCheck(HasIterator, ThereIsNoIteratorInRepetition)
     }
 
     @Test
     fun orTruthTable() {
         // Mirrors the upstream four-way BitOr impls.
-        assertSame(ThereIsNoIteratorInRepetition, ThereIsNoIteratorInRepetition or ThereIsNoIteratorInRepetition)
-        assertSame(HasIterator as RepetitionIteratorCheck, HasIterator or ThereIsNoIteratorInRepetition)
-        assertSame(HasIterator as RepetitionIteratorCheck, ThereIsNoIteratorInRepetition or HasIterator)
-        assertSame(HasIterator as RepetitionIteratorCheck, HasIterator or HasIterator)
+        assertSameRepetitionIteratorCheck(ThereIsNoIteratorInRepetition, ThereIsNoIteratorInRepetition or ThereIsNoIteratorInRepetition)
+        assertSameRepetitionIteratorCheck(HasIterator, HasIterator or ThereIsNoIteratorInRepetition)
+        assertSameRepetitionIteratorCheck(HasIterator, ThereIsNoIteratorInRepetition or HasIterator)
+        assertSameRepetitionIteratorCheck(HasIterator, HasIterator or HasIterator)
     }
 }
 
@@ -836,7 +886,7 @@ class RepInterpTest {
         val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
         val c = TokenTree.Ident(Ident.new("c", Span.callSite()))
         val (it, marker) = RepInterpTokenTreeList(listOf(a, b, c)).quoteIntoIter()
-        assertSame(HasIterator, marker)
+        assertSameRepetitionIteratorCheck(HasIterator, marker)
         assertEquals(listOf(a, b, c), it.asSequence().toList())
     }
 }
@@ -846,7 +896,7 @@ class QuoteExtTest {
     fun iteratorQuoteIntoIterReturnsHasIter() {
         val x = TokenTree.Ident(Ident.new("x", Span.callSite()))
         val (out, marker) = listOf(x).iterator().quoteIntoIter()
-        assertSame(HasIterator, marker)
+        assertSameRepetitionIteratorCheck(HasIterator, marker)
         assertTrue(out.hasNext())
         assertSame(x, out.next())
     }
@@ -856,7 +906,7 @@ class QuoteExtTest {
         val a = TokenTree.Ident(Ident.new("a", Span.callSite()))
         val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
         val (out, marker) = listOf(a, b).quoteIntoIter()
-        assertSame(HasIterator, marker)
+        assertSameRepetitionIteratorCheck(HasIterator, marker)
         assertEquals(listOf(a, b), out.asSequence().toList())
     }
 
@@ -865,7 +915,7 @@ class QuoteExtTest {
         val p = TokenTree.Ident(Ident.new("p", Span.callSite()))
         val q = TokenTree.Ident(Ident.new("q", Span.callSite()))
         val (out, marker) = arrayOf<TokenTree>(p, q).quoteIntoIter()
-        assertSame(HasIterator, marker)
+        assertSameRepetitionIteratorCheck(HasIterator, marker)
         assertEquals(listOf(p, q), out.asSequence().toList())
     }
 
@@ -876,7 +926,7 @@ class QuoteExtTest {
         val b = TokenTree.Ident(Ident.new("b", Span.callSite()))
         val src: Set<TokenTree> = linkedSetOf(a, b)
         val (out, marker) = src.quoteIntoIter()
-        assertSame(HasIterator, marker)
+        assertSameRepetitionIteratorCheck(HasIterator, marker)
         assertEquals(listOf(a, b), out.asSequence().toList())
     }
 }
@@ -1078,8 +1128,8 @@ class KtTokenAdapterTest {
         val trees = result.getOrThrow().toList()
         // ARROW (->) decomposes into Punct('-', JOINT) + Punct('>', ALONE)
         assertEquals(2, trees.size)
-        val first = trees[0] as TokenTree.Punct
-        val second = trees[1] as TokenTree.Punct
+        val first = punctToken(trees, 0)
+        val second = punctToken(trees, 1)
         assertEquals('-', first.value.asChar())
         assertEquals(Spacing.JOINT, first.value.spacing())
         assertEquals('>', second.value.asChar())
@@ -1092,8 +1142,8 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(2, trees.size)
-        val first = trees[0] as TokenTree.Punct
-        val second = trees[1] as TokenTree.Punct
+        val first = punctToken(trees, 0)
+        val second = punctToken(trees, 1)
         assertEquals('=', first.value.asChar())
         assertEquals(Spacing.JOINT, first.value.spacing())
         assertEquals('=', second.value.asChar())
@@ -1106,7 +1156,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val punct = trees[0] as TokenTree.Punct
+        val punct = punctToken(trees, 0)
         assertEquals('+', punct.value.asChar())
         assertEquals(Spacing.ALONE, punct.value.spacing())
     }
@@ -1117,7 +1167,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val lit = trees[0] as TokenTree.Literal
+        val lit = literalToken(trees, 0)
         assertTrue(
             lit.value.toString().contains("hello"),
             "Expected string literal containing 'hello', got ${lit.value}",
@@ -1130,7 +1180,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val lit = trees[0] as TokenTree.Literal
+        val lit = literalToken(trees, 0)
         assertTrue(lit.value.toString().contains("42"), "Expected integer literal, got ${lit.value}")
     }
 
@@ -1140,7 +1190,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val lit = trees[0] as TokenTree.Literal
+        val lit = literalToken(trees, 0)
         assertTrue(lit.value.toString().contains("3.14"), "Expected float literal, got ${lit.value}")
     }
 
@@ -1150,7 +1200,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val group = trees[0] as TokenTree.Group
+        val group = groupToken(trees, 0)
         assertEquals(Delimiter.PARENTHESIS, group.value.delimiter())
         val inner = group.value.stream().toList()
         // a , b → Ident Punct COMMA Punct Ident (comma and idents)
@@ -1163,7 +1213,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val group = trees[0] as TokenTree.Group
+        val group = groupToken(trees, 0)
         assertEquals(Delimiter.BRACE, group.value.delimiter())
     }
 
@@ -1204,8 +1254,8 @@ class KtTokenAdapterTest {
         val trees = result.getOrThrow().toList()
         // Lexer produces QUEST + DOT separately
         assertEquals(2, trees.size)
-        val quest = trees[0] as TokenTree.Punct
-        val dot = trees[1] as TokenTree.Punct
+        val quest = punctToken(trees, 0)
+        val dot = punctToken(trees, 1)
         assertEquals('?', quest.value.asChar())
         assertEquals(Spacing.ALONE, quest.value.spacing())
         assertEquals('.', dot.value.asChar())
@@ -1219,12 +1269,15 @@ class KtTokenAdapterTest {
         val trees = result.getOrThrow().toList()
         // RANGE_UNTIL (..<) decomposes into Punct('.', JOINT), Punct('.', JOINT), Punct('<', ALONE)
         assertEquals(3, trees.size)
-        assertEquals('.', (trees[0] as TokenTree.Punct).value.asChar())
-        assertEquals(Spacing.JOINT, (trees[0] as TokenTree.Punct).value.spacing())
-        assertEquals('.', (trees[1] as TokenTree.Punct).value.asChar())
-        assertEquals(Spacing.JOINT, (trees[1] as TokenTree.Punct).value.spacing())
-        assertEquals('<', (trees[2] as TokenTree.Punct).value.asChar())
-        assertEquals(Spacing.ALONE, (trees[2] as TokenTree.Punct).value.spacing())
+        val first = punctToken(trees, 0)
+        val second = punctToken(trees, 1)
+        val third = punctToken(trees, 2)
+        assertEquals('.', first.value.asChar())
+        assertEquals(Spacing.JOINT, first.value.spacing())
+        assertEquals('.', second.value.asChar())
+        assertEquals(Spacing.JOINT, second.value.spacing())
+        assertEquals('<', third.value.asChar())
+        assertEquals(Spacing.ALONE, third.value.spacing())
     }
 
     @Test
@@ -1234,9 +1287,9 @@ class KtTokenAdapterTest {
         val trees = result.getOrThrow().toList()
         // NOT_IN → Punct('!', ALONE) + Ident("in")
         assertEquals(2, trees.size)
-        val punct = trees[0] as TokenTree.Punct
+        val punct = punctToken(trees, 0)
         assertEquals('!', punct.value.asChar())
-        val ident = trees[1] as TokenTree.Ident
+        val ident = identToken(trees, 1)
         assertEquals("in", ident.value.toString())
     }
 
@@ -1262,7 +1315,7 @@ class KtTokenAdapterTest {
         assertTrue(result.isSuccess)
         val trees = result.getOrThrow().toList()
         assertEquals(1, trees.size)
-        val lit = trees[0] as TokenTree.Literal
+        val lit = literalToken(trees, 0)
         assertTrue(lit.value.toString().contains("x"), "Expected char literal, got ${lit.value}")
     }
 }

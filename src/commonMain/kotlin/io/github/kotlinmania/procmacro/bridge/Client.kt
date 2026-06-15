@@ -71,8 +71,7 @@ internal object BridgeMethods {
         BridgeClientState
             .currentOrNull()
             ?.dispatchRequest(BridgePayload.Request.InjectedEnvVar(variable))
-            ?.let { it as? BridgePayload.Response.StringValue }
-            ?.value
+            .stringValueOrNull()
 
     fun trackEnvVar(
         variable: String,
@@ -100,11 +99,14 @@ internal object BridgeMethods {
                             .value
                             .data
                             .trees
-                            .singleOrNull() as? TokenTree.Literal
-                    if (literal == null) {
-                        Result.Err("expected one literal token")
-                    } else {
-                        Result.Ok((literal.toBridgeTree() as BridgeTokenTree.Literal<ClientTokenStream, ClientSpan>).value)
+                            .singleOrNull()
+                    when (literal) {
+                        is TokenTree.Literal ->
+                            when (val bridgeTree = literal.toBridgeTree()) {
+                                is BridgeTokenTree.Literal -> Result.Ok(bridgeTree.value)
+                                else -> Result.Err("expected one literal token")
+                            }
+                        else -> Result.Err("expected one literal token")
                     }
                 }
                 is TokenStreamParseOutcome.Err -> Result.Err(parsed.error.toString())
@@ -131,12 +133,15 @@ internal object BridgeMethods {
     fun tsIsEmpty(stream: ClientTokenStream): Boolean = stream.stream.isEmpty()
 
     fun tsExpandExpr(stream: ClientTokenStream): Result<ClientTokenStream> =
-        BridgeClientState
-            .currentOrNull()
-            ?.dispatchRequest(BridgePayload.Request.ExpandExpr(stream))
-            ?.let { it as? BridgePayload.Response.TokenStreamResult }
-            ?.result
-            ?: stream.expandExprLocally()
+        when (
+            val response =
+                BridgeClientState
+                    .currentOrNull()
+                    ?.dispatchRequest(BridgePayload.Request.ExpandExpr(stream))
+        ) {
+            is BridgePayload.Response.TokenStreamResult -> response.result
+            else -> stream.expandExprLocally()
+        }
 
     fun tsFromStr(source: String): Result<ClientTokenStream> =
         when (val parsed = TokenStream.fromString(source)) {
@@ -219,8 +224,7 @@ internal object BridgeMethods {
         BridgeClientState
             .currentOrNull()
             ?.dispatchRequest(BridgePayload.Request.SpanSourceText(span))
-            ?.let { it as? BridgePayload.Response.StringValue }
-            ?.value
+            .stringValueOrNull()
             ?: span.span.sourceText()
 
     fun spanSaveSpan(span: ClientSpan): Int = span.span.saveSpan()
@@ -232,7 +236,16 @@ internal object BridgeMethods {
 }
 
 private fun BridgeState.dispatchRequest(request: BridgePayload.Request): BridgePayload.Response? =
-    dispatch.call(RpcBuffer(payload = request)).payload as? BridgePayload.Response
+    when (val payload = dispatch.call(RpcBuffer(payload = request)).payload) {
+        is BridgePayload.Response -> payload
+        else -> null
+    }
+
+private fun BridgePayload.Response?.stringValueOrNull(): String? =
+    when (this) {
+        is BridgePayload.Response.StringValue -> value
+        else -> null
+    }
 
 internal fun ClientTokenStream.expandExprLocally(): Result<ClientTokenStream> =
     when (val expanded = stream.expandExpr()) {

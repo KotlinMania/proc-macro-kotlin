@@ -20,7 +20,7 @@ internal open class MarkerPool(
 
     fun allocateCompositeMarker(): CompositeMarker {
         if (!freeStartMarkers.isEmpty()) {
-            return list[freeStartMarkers.pop()] as CompositeMarker
+            return list[freeStartMarkers.pop()].requireCompositeMarker()
         }
 
         val marker = CompositeMarker(list.size, builder)
@@ -30,7 +30,7 @@ internal open class MarkerPool(
 
     fun allocateErrorNode(): ErrorMarker {
         if (!freeErrorItems.isEmpty()) {
-            return list[freeErrorItems.pop()] as ErrorMarker
+            return list[freeErrorItems.pop()].requireErrorMarker()
         }
 
         val item = ErrorMarker(list.size, builder)

@@ -73,12 +73,12 @@ abstract class MergingLexerAdapterBase(
         get() = delegate
 
     override fun restore(position: LexerPosition) {
-        val pos = position as MyLexerPosition
+        if (position !is MyLexerPosition) error("Expected merging lexer position")
 
-        delegate.restore(pos.originalPosition)
-        myTokenType = pos.type
-        myTokenStart = pos.offset
-        myState = pos.oldState
+        delegate.restore(position.originalPosition)
+        myTokenType = position.type
+        myTokenStart = position.offset
+        myState = position.oldState
     }
 
     override fun toString(): String = "${this::class.simpleName}[$delegate]"

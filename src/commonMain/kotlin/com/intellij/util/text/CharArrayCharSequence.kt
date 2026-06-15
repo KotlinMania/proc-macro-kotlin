@@ -51,7 +51,7 @@ open class CharArrayCharSequence(
         if (this === other) {
             return true
         }
-        if (other == null || this::class != other::class || length != (other as CharSequence).length) {
+        if (other !is CharArrayCharSequence || this::class != other::class || length != other.length) {
             return false
         }
         return myChars.regionMatches(myStart, myEnd, other)

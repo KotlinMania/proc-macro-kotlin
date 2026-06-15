@@ -141,6 +141,6 @@ private class BuilderImpl(
                 whitespaceOrCommentBindingPolicy = whitespaceOrCommentBindingPolicy ?: RightBoundWhitespaceOrCommentBindingPolicy,
                 opaquePolicy = opaquePolicy ?: NoOpaqueElementPolicy,
             )
-        return builder as SyntaxTreeBuilder
+        return builder
     }
 }

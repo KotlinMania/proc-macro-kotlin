@@ -4,7 +4,6 @@ package com.intellij.platform.syntax.tree
 
 import com.intellij.platform.syntax.SyntaxElementType
 import com.intellij.platform.syntax.lexer.TokenList
-import fleet.util.multiplatform.linkToActual
 
 internal data class AstMarkersChameleon(
     val customLexemeStore: TokenList?,
@@ -24,10 +23,26 @@ internal data class ChameleonChange(
     val ref: ChameleonRef,
 )
 
-internal fun newChameleonRef(): ChameleonRef = linkToActual()
+internal fun newChameleonRef(): ChameleonRef = ChameleonRefImpl()
 
 @Suppress("unused")
-internal fun newChameleonRef(chameleon: AstMarkersChameleon): ChameleonRef = linkToActual()
+internal fun newChameleonRef(chameleon: AstMarkersChameleon): ChameleonRef = ChameleonRefImpl(chameleon)
+
+private class ChameleonRefImpl(
+    private var ref: AstMarkersChameleon? = null,
+) : ChameleonRef {
+    override val value: AstMarkersChameleon?
+        get() = ref
+
+    override fun set(value: AstMarkersChameleon) {
+        ref = value
+    }
+
+    override fun realize(func: () -> AstMarkersChameleon): AstMarkersChameleon =
+        ref ?: func().also { ref = it }
+
+    override fun toString(): String = ref?.toString() ?: "null"
+}
 
 internal interface ASTMarkers {
     val size: Int

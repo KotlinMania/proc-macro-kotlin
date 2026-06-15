@@ -1,7 +1,6 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.util.text
 
-import fleet.util.multiplatform.linkToActual
 import kotlin.math.min
 
 object CharArrayUtilKmp {
@@ -62,8 +61,11 @@ object CharArrayUtilKmp {
                 return
             }
             if (this is CharSequenceBackedByArray) {
-                (subSequence(srcOffset, srcOffset + len) as CharSequenceBackedByArray).getChars(dst, dstOffset)
-                return
+                val subsequence = subSequence(srcOffset, srcOffset + len)
+                if (subsequence is CharSequenceBackedByArray) {
+                    subsequence.getChars(dst, dstOffset)
+                    return
+                }
             }
             if (this is StringBuilder) {
                 this.toCharArray(dst, dstOffset, srcOffset, srcOffset + len)
@@ -231,12 +233,18 @@ object CharArrayUtilKmp {
  * [com.intellij.util.text.getCharsPlatformSpecificJvm]
  */
 @Suppress("unused")
-internal fun getCharsPlatformSpecific(sequence: CharSequence, srcOffset: Int, dst: CharArray, dstOffset: Int, len: Int): Boolean = linkToActual()
+internal fun getCharsPlatformSpecific(
+    sequence: CharSequence,
+    srcOffset: Int,
+    dst: CharArray,
+    dstOffset: Int,
+    len: Int,
+): Boolean = false
 
 /**
  * [com.intellij.util.text.fromSequenceWithoutCopyingPlatformSpecificJvm]
  */
 @Suppress("unused")
-internal fun fromSequenceWithoutCopyingPlatformSpecific(seq: CharSequence?): CharArray? = linkToActual()
+internal fun fromSequenceWithoutCopyingPlatformSpecific(seq: CharSequence?): CharArray? = null
 
 private const val GET_CHARS_THRESHOLD = 10
