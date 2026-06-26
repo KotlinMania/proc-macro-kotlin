@@ -29,10 +29,10 @@ internal data class ClientSpan(
     val span: Span,
 )
 
-internal object BridgeClientState {
+object BridgeClientState {
     private val stateLocal = BridgeStateLocal()
 
-    fun enter(
+    internal fun enter(
         state: BridgeState,
         block: () -> RpcBuffer,
     ): RpcBuffer {
@@ -51,9 +51,9 @@ internal object BridgeClientState {
 
     fun isAvailable(): Boolean = stateLocal.stack().isNotEmpty()
 
-    fun currentOrNull(): BridgeState? = stateLocal.stack().lastOrNull()
+    internal fun currentOrNull(): BridgeState? = stateLocal.stack().lastOrNull()
 
-    fun withState(): BridgeState =
+    internal fun withState(): BridgeState =
         currentOrNull() ?: BridgeState(
             globals = defaultClientGlobals(),
             dispatch = BridgeDispatch { it },

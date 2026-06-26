@@ -506,36 +506,36 @@ internal data class LiteralData(
 )
 
 /**
- * Internal classification of literal kinds. Mirrors upstream
+ * Classification of literal kinds. Mirrors upstream
  * `bridge::LitKind`. Raw variants carry the count of hash signs that
  * surrounded the original literal.
  */
-internal sealed class LitKind {
-    internal data object BYTE : LitKind()
+sealed class LitKind {
+    data object BYTE : LitKind()
 
-    internal data object CHAR : LitKind()
+    data object CHAR : LitKind()
 
-    internal data object STR : LitKind()
+    data object STR : LitKind()
 
-    internal data class STR_RAW(
+    data class STR_RAW(
         val numHashes: Int,
     ) : LitKind()
 
-    internal data object BYTE_STR : LitKind()
+    data object BYTE_STR : LitKind()
 
-    internal data class BYTE_STR_RAW(
+    data class BYTE_STR_RAW(
         val numHashes: Int,
     ) : LitKind()
 
-    internal data object C_STR : LitKind()
+    data object C_STR : LitKind()
 
-    internal data class C_STR_RAW(
+    data class C_STR_RAW(
         val numHashes: Int,
     ) : LitKind()
 
-    internal data object INTEGER : LitKind()
+    data object INTEGER : LitKind()
 
-    internal data object FLOAT : LitKind()
+    data object FLOAT : LitKind()
 
-    internal data object ERR_WITH_GUAR : LitKind()
+    data object ERR_WITH_GUAR : LitKind()
 }
