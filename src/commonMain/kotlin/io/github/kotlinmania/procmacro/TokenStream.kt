@@ -34,12 +34,12 @@ public class TokenStream internal constructor(
          * parsed stream get [Span.callSite] spans.
          *
          * Uses the vendored
-         * [`KotlinLexer`][org.jetbrains.kotlin.kmp.lexer.KotlinLexer]
+         * [`KotlinLexer`][io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer.KotlinLexer]
          * to tokenize Kotlin source via [KtTokenAdapter].
          */
         public fun fromString(src: String): TokenStreamParseOutcome {
             val lexer =
-                org.jetbrains.kotlin.kmp.lexer
+                io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer
                     .KotlinLexer()
             return KtTokenAdapter.tokenize(lexer, src)
         }

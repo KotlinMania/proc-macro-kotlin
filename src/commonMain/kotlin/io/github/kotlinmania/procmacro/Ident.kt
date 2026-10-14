@@ -64,7 +64,7 @@ public class Ident internal constructor(
          * unicode letter or underscore, subsequent characters are letters
          * digits or underscores, raw form rejects `self` / `super` /
          * `Self` / `crate`). Phase 3 will replace this with the
-         * [`KotlinLexer`][org.jetbrains.kotlin.kmp.lexer.KotlinLexer]'s
+         * [`KotlinLexer`][io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer.KotlinLexer]'s
          * `IDENTIFIER` recognizer so the language's exact rules
          * (XID_Start / XID_Continue) are enforced consistently.
          */
