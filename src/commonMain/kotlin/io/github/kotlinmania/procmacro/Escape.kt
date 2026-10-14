@@ -1,6 +1,7 @@
 // port-lint: source src/escape.rs
 package io.github.kotlinmania.procmacro
 
+import io.github.kotlinmania.procmacro.rustcore.appendCodePoint
 import io.github.kotlinmania.procmacro.rustcore.escapeAscii
 import io.github.kotlinmania.procmacro.rustcore.escapeDebug
 import io.github.kotlinmania.procmacro.rustcore.unicodeScalars

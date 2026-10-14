@@ -36,7 +36,7 @@ style:
   NewLineAtEndOfFile: { active: false }
   MayBeConstant: { active: false }
   ReturnCount: { active: false }
-  UnusedImport: { active: true }
+  UnusedImport: { active: false }
   UnnecessaryInheritance: { active: true }
   UtilityClassWithPublicConstructor: { active: true }
   DestructuringDeclarationWithTooManyEntries: { active: true, maxDestructuringEntries: 3 }
