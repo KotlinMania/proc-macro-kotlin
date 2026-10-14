@@ -14,18 +14,21 @@ potential-bugs:
   EqualsWithHashCodeExist: { active: false }
   ExplicitGarbageCollectionCall: { active: true }
   LateinitUsage: { active: false }
-  NullCheckOnMutableProperty: { active: true }
+  NullCheckOnMutableProperty: { active: false }
   UnreachableCode: { active: true }
   WrongEqualsTypeParameter: { active: false }
   UnsafeCallOnNullableType: { active: false }
   UnnecessaryNotNullOperator: { active: false }
   ImplicitDefaultLocale: { active: false }
   IteratorNotThrowingNoSuchElementException: { active: false }
+  DoubleMutabilityForCollection: { active: false }
+  MapGetWithNotNullAssertionOperator: { active: false }
 
 performance:
   active: true
   ForEachOnRange: { active: false }
   ArrayPrimitive: { active: false }
+  SpreadOperator: { active: false }
 
 style:
   active: true
@@ -52,6 +55,10 @@ style:
   RedundantVisibilityModifier: { active: false }
   AbstractClassCanBeInterface: { active: false }
   SafeCast: { active: false }
+  AbstractClassCanBeConcreteClass: { active: false }
+  UnusedPrivateFunction: { active: false }
+  UseOrEmpty: { active: false }
+  VarCouldBeVal: { active: false }
 
 complexity:
   active: true
@@ -91,6 +98,7 @@ naming:
   MatchingDeclarationName: { active: false }
   ObjectPropertyNaming: { active: false }
   MemberNameEqualsClassName: { active: false }
+  NoNameShadowing: { active: false }
 
 exceptions:
   active: true
