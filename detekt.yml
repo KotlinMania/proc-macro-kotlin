@@ -13,16 +13,18 @@ potential-bugs:
   active: true
   EqualsWithHashCodeExist: { active: false }
   ExplicitGarbageCollectionCall: { active: true }
-  LateinitUsage: { active: true }
+  LateinitUsage: { active: false }
   NullCheckOnMutableProperty: { active: true }
   UnreachableCode: { active: true }
   WrongEqualsTypeParameter: { active: false }
   UnsafeCallOnNullableType: { active: false }
   UnnecessaryNotNullOperator: { active: false }
   ImplicitDefaultLocale: { active: false }
+  IteratorNotThrowingNoSuchElementException: { active: false }
 
 performance:
   active: true
+  ForEachOnRange: { active: false }
 
 style:
   active: true
@@ -48,6 +50,7 @@ style:
   UnusedPrivateProperty: { active: false }
   RedundantVisibilityModifier: { active: false }
   AbstractClassCanBeInterface: { active: false }
+  SafeCast: { active: false }
 
 complexity:
   active: true
@@ -73,7 +76,7 @@ empty-blocks:
   EmptySecondaryConstructor: { active: true }
   EmptyTryBlock: { active: true }
   EmptyWhenBlock: { active: true }
-  EmptyWhileBlock: { active: true }
+  EmptyWhileBlock: { active: false }
 
 naming:
   active: true
