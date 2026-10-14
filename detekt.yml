@@ -25,6 +25,7 @@ potential-bugs:
 performance:
   active: true
   ForEachOnRange: { active: false }
+  ArrayPrimitive: { active: false }
 
 style:
   active: true
