@@ -1,9 +1,9 @@
 // port-lint: source N/A (Kotlin-side adapter: no upstream Rust counterpart)
 package io.github.kotlinmania.procmacro
 
-import com.intellij.platform.syntax.SyntaxElementType
-import com.intellij.platform.syntax.lexer.Lexer
-import org.jetbrains.kotlin.kmp.lexer.KtTokens
+import io.github.kotlinmania.procmacro.vendored.intellij.platform.syntax.SyntaxElementType
+import io.github.kotlinmania.procmacro.vendored.intellij.platform.syntax.lexer.Lexer
+import io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer.KtTokens
 
 /**
  * Adapts a JetBrains [Lexer] (producing [SyntaxElementType] tokens from
