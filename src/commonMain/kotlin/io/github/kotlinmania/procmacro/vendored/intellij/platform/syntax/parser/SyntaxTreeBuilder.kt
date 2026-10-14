@@ -178,7 +178,6 @@ interface SyntaxTreeBuilder {
      */
     val productions: ProductionList
 
-    // todo extract to separate interface???
     /**
      * A view of the token list being used for parsing.
      * The tokens can mutate during parsing.
