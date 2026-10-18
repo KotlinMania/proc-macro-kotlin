@@ -368,7 +368,7 @@ dependencies.
 
 ## The kotlinmania infrastructure ecosystem
 
-These repos exist under `/Volumes/stuff/Projects/kotlinmania/` and provide
+These repos exist under `../` and provide
 the KMP building blocks for the proc-macro pipeline and sibling
 JVM-to-KMP ports. This repository consumes the ANTLR4 runtime through
 the published `antlr4-kotlin` Maven artifact.
@@ -420,7 +420,7 @@ published as a Maven dependency.
 
 **Current ANTLR4 runtime source of truth.** Use the published
 `io.github.kotlinmania:antlr4-kotlin:0.1.2` dependency. `tmp/antlr4/`
-and `/Volumes/stuff/Projects/kotlinmania/toport/antlr4/` are comparison
+and `../toport/antlr4/` are comparison
 history, not source trees to restore.
 
 ---
@@ -884,5 +884,5 @@ callers therefore bind to the published `io.github.kotlinmania.antlr4.*`
 API when they are added.
 
 The Kotlin port backup remains at
-`/Volumes/stuff/Projects/kotlinmania/toport/antlr4/`. Treat it as source
+`../toport/antlr4/`. Treat it as source
 history for comparison, not as code to restore into this repository.
