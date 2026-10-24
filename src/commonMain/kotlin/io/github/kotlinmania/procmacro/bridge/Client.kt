@@ -266,6 +266,9 @@ internal fun BridgeDiagnostic<ClientSpan>.toPublicDiagnostic(): Diagnostic {
     return out
 }
 
+/** Returns an independent token while retaining its data and source spans. */
+public fun cloneTokenTree(tree: TokenTree): TokenTree = tree.deepClone()
+
 private fun TokenTree.deepClone(): TokenTree =
     when (this) {
         is TokenTree.Group ->
