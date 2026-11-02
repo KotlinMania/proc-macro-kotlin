@@ -107,7 +107,7 @@ public class Literal internal constructor(
          */
         public fun f32Unsuffixed(n: Float): Literal {
             require(n.isFinite()) { "Invalid float literal $n" }
-            return float(canonicalFloat(n.toString()), suffix = null)
+            return float(formatFloat(n), suffix = null)
         }
 
         /**
@@ -121,7 +121,7 @@ public class Literal internal constructor(
          */
         public fun f32Suffixed(n: Float): Literal {
             require(n.isFinite()) { "Invalid float literal $n" }
-            return float(n.toString(), suffix = "f32")
+            return float(formatFloat(n), suffix = "f32")
         }
 
         /**
@@ -131,7 +131,7 @@ public class Literal internal constructor(
          */
         public fun f64Unsuffixed(n: Double): Literal {
             require(n.isFinite()) { "Invalid float literal $n" }
-            return float(canonicalFloat(n.toString()), suffix = null)
+            return float(formatDouble(n), suffix = null)
         }
 
         /**
@@ -141,7 +141,7 @@ public class Literal internal constructor(
          */
         public fun f64Suffixed(n: Double): Literal {
             require(n.isFinite()) { "Invalid float literal $n" }
-            return float(n.toString(), suffix = "f64")
+            return float(formatDouble(n), suffix = "f64")
         }
 
         // ----- string / char / byte factories -----
@@ -227,7 +227,22 @@ public class Literal internal constructor(
          * so the emitted source token is unambiguous (`1` versus `1.0`).
          * Mirrors upstream `f{32,64}_unsuffixed`.
          */
-        private fun canonicalFloat(repr: String): String = if ('.' in repr) repr else "$repr.0"
+        private fun formatFloat(n: Float): String =
+            if (n == 0.0f && 1.0 / n.toDouble() == Double.NEGATIVE_INFINITY) {
+                "-0.0"
+            } else {
+                canonicalFloat(n.toString())
+            }
+
+        private fun formatDouble(n: Double): String =
+            if (n == 0.0 && 1.0 / n == Double.NEGATIVE_INFINITY) {
+                "-0.0"
+            } else {
+                canonicalFloat(n.toString())
+            }
+
+        private fun canonicalFloat(repr: String): String =
+            if ('.' in repr || 'e' in repr || 'E' in repr) repr else "$repr.0"
 
         // --- Kotlin-source factory methods (Compiler variant) ---
 
