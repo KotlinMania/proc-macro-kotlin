@@ -105,6 +105,26 @@ public class TokenStream internal constructor(
         data.trees = data.trees + collected
     }
 
+    /** Concatenates the given groups into this stream. */
+    public fun extendGroups(groups: Iterable<Group>) {
+        extendTokenTrees(groups.map(TokenTree::Group))
+    }
+
+    /** Concatenates the given literals into this stream. */
+    public fun extendLiterals(literals: Iterable<Literal>) {
+        extendTokenTrees(literals.map(TokenTree::Literal))
+    }
+
+    /** Concatenates the given punctuation into this stream. */
+    public fun extendPuncts(punctuation: Iterable<Punct>) {
+        extendTokenTrees(punctuation.map(TokenTree::Punct))
+    }
+
+    /** Concatenates the given identifiers into this stream. */
+    public fun extendIdents(identifiers: Iterable<Ident>) {
+        extendTokenTrees(identifiers.map(TokenTree::Ident))
+    }
+
     /**
      * Iterates the contained [TokenTree]s shallowly: the iterator does
      * not recurse into delimited [Group]s and returns whole groups as
