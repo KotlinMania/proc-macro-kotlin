@@ -1,6 +1,8 @@
 // port-lint: source src/to_tokens.rs
 package io.github.kotlinmania.procmacro
 
+import io.github.kotlinmania.procmacro.bridge.cloneTokenTree
+
 /**
  * Types that can be interpolated inside a `quote!` invocation.
  */
@@ -44,16 +46,10 @@ private class TokenTreeToTokens(
     private val tree: TokenTree,
 ) : ToTokens {
     override fun toTokens(tokens: TokenStream) {
-        tokens.extendTokenTrees(listOf(tree))
+        tokens.extendTokenTrees(listOf(cloneTokenTree(tree)))
     }
 
-    override fun intoTokenStream(): TokenStream {
-        // Upstream calls `ConcatTreesHelper::new(1).push(self).build()` to
-        // construct a single-tree stream without an intermediate empty
-        // builder. The produced [TokenStream] is observably equivalent to
-        // the default [toTokenStream] route, so forwarding preserves behavior.
-        return toTokenStream()
-    }
+    override fun intoTokenStream(): TokenStream = TokenStream.fromTokenTree(tree)
 }
 
 /**
@@ -66,7 +62,7 @@ private class TokenStreamToTokens(
     private val stream: TokenStream,
 ) : ToTokens {
     override fun toTokens(tokens: TokenStream) {
-        tokens.extendTokenStreams(listOf(stream))
+        tokens.extendTokenTrees(stream.map(::cloneTokenTree))
     }
 
     override fun intoTokenStream(): TokenStream = stream
@@ -84,7 +80,7 @@ public fun TokenStream.asToTokens(): ToTokens = TokenStreamToTokens(this)
  */
 public fun Literal.asToTokens(): ToTokens =
     FunctionalToTokens { tokens ->
-        tokens.extendTokenTrees(listOf(TokenTree.Literal(this)))
+        tokens.extendTokenTrees(listOf(cloneTokenTree(TokenTree.Literal(this))))
     }
 
 /**
@@ -93,7 +89,7 @@ public fun Literal.asToTokens(): ToTokens =
  */
 public fun Ident.asToTokens(): ToTokens =
     FunctionalToTokens { tokens ->
-        tokens.extendTokenTrees(listOf(TokenTree.Ident(this)))
+        tokens.extendTokenTrees(listOf(cloneTokenTree(TokenTree.Ident(this))))
     }
 
 /**
@@ -102,7 +98,7 @@ public fun Ident.asToTokens(): ToTokens =
  */
 public fun Punct.asToTokens(): ToTokens =
     FunctionalToTokens { tokens ->
-        tokens.extendTokenTrees(listOf(TokenTree.Punct(this)))
+        tokens.extendTokenTrees(listOf(cloneTokenTree(TokenTree.Punct(this))))
     }
 
 /**
@@ -111,7 +107,7 @@ public fun Punct.asToTokens(): ToTokens =
  */
 public fun Group.asToTokens(): ToTokens =
     FunctionalToTokens { tokens ->
-        tokens.extendTokenTrees(listOf(TokenTree.Group(this)))
+        tokens.extendTokenTrees(listOf(cloneTokenTree(TokenTree.Group(this))))
     }
 
 // Upstream defines five reference-forwarding impls:
