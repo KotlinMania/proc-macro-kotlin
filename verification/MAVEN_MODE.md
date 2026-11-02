@@ -1,32 +1,34 @@
 # Maven repository mode
 
-`maven.properties` is the source of truth for repository mode and the local
-repository path. The template starts with:
+`maven.properties` configures the default repository mode and local repository
+path, while command-line overrides (`-Pproject.repositories.mavenLocal` and
+`-Dmaven.repo.local`) take precedence when supplied (for example via `localbuild`).
+
+The template starts with:
 
 ```properties
 maven.local=true
 maven.localRepository=
 ```
 
-With `maven.local=true`, Gradle tries Maven Local first for project dependencies,
-buildscript dependencies, and plugin resolution, then uses the configured remote
-repositories. This applies to ordinary builds and tests, including subprojects.
-With `maven.local=false`, resolution uses remote repositories without consulting
-Maven Local. This switch does not enable Gradle offline mode.
+With `maven.local=true` (or `-Pproject.repositories.mavenLocal=true`), Gradle tries
+Maven Local first for project dependencies, buildscript dependencies, and plugin
+resolution, then falls back to the configured remote repositories. With
+`maven.local=false` (or `-Pproject.repositories.mavenLocal=false`), resolution uses
+remote repositories without consulting Maven Local. This switch does not enable
+Gradle offline mode.
 
-An empty `maven.localRepository` selects `<user.home>/.m2/repository`. Set an
-absolute path to use a separate local repository. The same path is supplied to
-Gradle's Maven resolver and `publishToMavenLocal`; shell variables are not expanded
-inside a properties file. Use forward slashes in Windows paths, for example
-`C:/Users/name/.m2/repository`.
+An empty `maven.localRepository` selects `<user.home>/.m2/repository` unless
+`-Dmaven.repo.local=/absolute/path` is passed on the command line. Use forward
+slashes in Windows paths, for example `C:/Users/name/.m2/repository`.
 
 ```bash
-./gradlew build
+./gradlew publishToMavenLocal -Pproject.repositories.mavenLocal=true -Dmaven.repo.local=$HOME/.m2/repository
 ./gradlew publishToMavenLocal
+./gradlew build
 ```
 
-Neither command needs `-Pproject.repositories.mavenLocal` or `-Dmaven.repo.local`.
-The file takes precedence over those old command-line settings. Publication tasks
-retain their explicit destinations: `publishToMavenLocal` writes locally, and
-`publishToCentralPortal` uses the existing Central Portal flow. The mode changes
-which dependencies those tasks build against. Publication verification stays enabled.
+Publication tasks use standard Gradle `maven-publish` behavior: `publishToMavenLocal`
+stages and installs publications directly to the configured local Maven repository,
+and `publishToCentralPortal` (`publishAndReleaseToMavenCentral`) packages and uploads
+the Central Portal deployment bundle.

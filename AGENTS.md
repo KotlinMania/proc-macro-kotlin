@@ -144,7 +144,7 @@ as the default next action when infra is clean.
 ### Hard constraints to remember while doing the above
 
 - **Do NOT port `mod.rs` or `lib.rs` as `Mod.kt` or `Lib.kt`, and NEVER re-export in Kotlin** (§3):
-  - **`lib.rs` must be split into focused `.kt` files** (functions, interfaces, and types in their proper package paths). Never create `Lib.kt` or `Mod.kt`, and never attach `// port-lint: source lib.rs`.
+  - **`lib.rs` must be split into focused `.kt` files** (functions, interfaces, and types in their proper package paths). Never create `Lib.kt` or `Mod.kt`.
   - **`mod.rs` is NOT allowed to re-export.** We do not follow Rust `mod.rs` / `pub use` re-export patterns in Kotlin (no `Mod.kt`, no `typealias` re-export bridges, no wrapper functions). Never attach `// port-lint: source .../mod.rs` (module-root `port-lint` headers trip `ast_distance` stub zeroing). If an upstream `mod.rs` contains real implementation code, split it into focused `.kt` files in the proper package path.
   - **Update callers via `RUST_CALLERS.md`.** When upstream `mod.rs` or `lib.rs` re-exports symbols, inspect `RUST_CALLERS.md` and update callers directly to import the canonical Kotlin package and symbol name.
 - **`allWarningsAsErrors = true`** is the workspace default. Every warning
@@ -444,7 +444,7 @@ These defaults apply unless a repo's own docs explicitly say otherwise.
 - **Translation happens in the main loop.** No subagent-driven `.kt` edits.
 - **One Rust file → one Kotlin file — except `mod.rs` and `lib.rs`, which must NEVER be ported as `Mod.kt` or `Lib.kt`.** Translate top-to-bottom in upstream order. Read the whole upstream file before editing the Kotlin file.
 - **Do NOT port `mod.rs` or `lib.rs`.**
-  - **`lib.rs` must be split into Kotlin functions and types in their proper package paths.** Never create a `Lib.kt` file or attach `// port-lint: source lib.rs`. Place top-level functions, traits/interfaces, and types from `lib.rs` into focused Kotlin files in the appropriate package hierarchy.
+  - **`lib.rs` must be split into Kotlin functions and types in their proper package paths.** Never create a `Lib.kt` file. Place top-level functions, traits/interfaces, and types from `lib.rs` into focused Kotlin files in the appropriate package hierarchy.
   - **`mod.rs` is NOT allowed to be used to re-export.** We do not follow Rust `mod.rs` / `pub use` re-export patterns in Kotlin for a reason (no `Mod.kt`, no `typealias` bridges, no re-export wrappers). If an upstream `mod.rs` contains real implementation code (not module declarations or re-exports), split that implementation into focused `.kt` files in the proper package path (e.g., `Header.kt`, `Decoder.kt`).
   - **Look at `RUST_CALLERS.md` and update the callers instead.** When upstream `mod.rs` or `lib.rs` re-exports symbols from submodules or other crates, do **not** re-export or alias them in Kotlin. Instead, inspect `RUST_CALLERS.md` to identify every caller across the workspace and update the callers directly to import the canonical Kotlin package and symbol name.
 
@@ -652,7 +652,7 @@ For each `tmp/**/tests/*.rs`, `tmp/**/benches/*.rs`, and `#[cfg(test)] mod
 tests { … }` block:
 
 - **If the test exercises behavior the Kotlin port can faithfully match,
-  port it** to `src/commonTest/.../<File>Test.kt` (or per-target test
+  port it** to `src/common/commonTest` (or per-target test
   source where commonTest can't express it). Use the upstream Rust file's
   organization; preserve test names translated to camelCase.
 - **If the test depends on a Rust-specific semantic the Kotlin
@@ -672,7 +672,7 @@ schemars-kotlin / itertools-kotlin / kasuari-kotlin):
 ```kotlin
 val swiftTest by tasks.registering(Exec::class) {
     dependsOn("embedSwiftExportForXcode")
-    workingDir = file("swift-test-harness")
+    workingDir = file("src/swift/swift-test-harness")
     commandLine("swift", "test", "--package-path", ".")
     // Treat any non-zero exit as a build failure.
     isIgnoreExitValue = false
@@ -683,7 +683,7 @@ tasks.named("test") {
 }
 ```
 
-If `swift-test-harness/` isn't present yet, the per-repo
+If `src/swift/swift-test-harness` isn't present yet, the per-repo
 `SWIFT_EXPORT_ROLLOUT.md` documents how to scaffold it — it's part of the
 five canonical rollout changes.
 

@@ -84,12 +84,12 @@ variables to its owned nested embed invocation. The direct equivalent requires:
 
 ```sh
 XCODE_XCCONFIG_FILE="$PWD/verification/strict-swift.xcconfig" \
-BUILT_PRODUCTS_DIR="$PWD/build/swift-test" TARGET_BUILD_DIR="$PWD/build/swift-test" \
+BUILT_PRODUCTS_DIR="$PWD/build/swift-test/Debug" TARGET_BUILD_DIR="$PWD/build/swift-test/Debug" \
 SDK_NAME=macosx CONFIGURATION=Debug ARCHS=arm64 FRAMEWORKS_FOLDER_PATH=Frameworks \
 MACOSX_DEPLOYMENT_TARGET=15.0 DEPLOYMENT_TARGET_SETTING_NAME=MACOSX_DEPLOYMENT_TARGET \
 ./gradlew embedSwiftExportForXcode --no-daemon --max-workers=2 --no-configuration-cache
 
-swift test --package-path swift-test-harness -v \
+swift test --package-path src/swift/swift-test-harness -v \
   -Xswiftc -swift-version -Xswiftc 6 -Xswiftc -warnings-as-errors
 ```
 
