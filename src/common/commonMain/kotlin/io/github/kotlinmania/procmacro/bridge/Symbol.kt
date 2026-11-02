@@ -28,6 +28,7 @@ internal value class Symbol private constructor(
             string: String,
             raw: Boolean,
         ): Boolean {
+            if (string == "\$crate") return !raw
             if (string.isEmpty()) return false
             val first = string[0]
             if (!first.isLetter() && first != '_') return false

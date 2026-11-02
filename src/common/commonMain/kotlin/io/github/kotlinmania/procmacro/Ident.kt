@@ -58,22 +58,16 @@ public class Ident internal constructor(
             return Ident(IdentData(sym = string, isRaw = true, span = span))
         }
 
-        /**
-         * Identifier validation. Phase-1 implements a permissive check
-         * adequate for the public API contract (non-empty, starts with a
-         * unicode letter or underscore, subsequent characters are letters
-         * digits or underscores, raw form rejects `self` / `super` /
-         * `Self` / `crate`). Phase 3 will replace this with the
-         * [`KotlinLexer`][io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer.KotlinLexer]'s
-         * `IDENTIFIER` recognizer so the language's exact rules
-         * (XID_Start / XID_Continue) are enforced consistently.
-         */
         private fun requireValidIdent(
             string: String,
             raw: Boolean,
         ) {
             require(string.isNotEmpty()) {
                 "`Ident` cannot be empty"
+            }
+            if (string == "\$crate") {
+                require(!raw) { "`$string` is not a valid raw identifier" }
+                return
             }
             val first = string[0]
             require(first.isLetter() || first == '_') {
