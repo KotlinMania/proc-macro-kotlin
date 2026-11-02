@@ -1,6 +1,9 @@
 // port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
 
+import io.github.kotlinmania.procmacro.bridge.BridgeMethods
+import io.github.kotlinmania.procmacro.bridge.ClientTokenStream
+
 /**
  * A delimited token stream.
  *
@@ -41,7 +44,7 @@ public class Group internal constructor(
      * Note that the returned token stream does not include the delimiter
      * returned above.
      */
-    public fun stream(): TokenStream = data.stream
+    public fun stream(): TokenStream = BridgeMethods.tsClone(ClientTokenStream(data.stream)).stream
 
     /**
      * Returns the span for the delimiters of this token stream, spanning
