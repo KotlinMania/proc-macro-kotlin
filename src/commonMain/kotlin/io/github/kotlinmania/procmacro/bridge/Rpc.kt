@@ -26,9 +26,32 @@ internal class RpcBuffer(
     fun copy(): RpcBuffer = RpcBuffer(bytes.toMutableList(), payload)
 }
 
-internal data class PanicMessage(
-    val message: String,
-)
+/** Simplified panic payloads, retaining static and owned string messages. */
+internal sealed class PanicMessage {
+    data class StaticStr(
+        val value: kotlin.String,
+    ) : PanicMessage()
+
+    data class String(
+        val value: kotlin.String,
+    ) : PanicMessage()
+
+    data object Unknown : PanicMessage()
+
+    fun asStr(): kotlin.String? =
+        when (this) {
+            is StaticStr -> value
+            is String -> value
+            Unknown -> null
+        }
+
+    fun intoString(): kotlin.String? =
+        when (this) {
+            is StaticStr -> value
+            is String -> value
+            Unknown -> null
+        }
+}
 
 internal sealed class BridgePayload {
     sealed class Request : BridgePayload() {
