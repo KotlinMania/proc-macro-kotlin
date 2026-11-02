@@ -96,6 +96,15 @@ public class Diagnostic private constructor(
             Diagnostic(level = level, message = message, spans = spans.intoSpans(), children = mutableListOf())
     }
 
+    /** Returns a copy of this diagnostic and its child diagnostics. */
+    public fun clone(): Diagnostic =
+        Diagnostic(
+            level = level,
+            message = message,
+            spans = SpanList(spans.asList().toList()),
+            children = children.map { it.clone() }.toMutableList(),
+        )
+
     // The upstream `diagnostic_child_methods!($spanned, $regular, $level)`
     // macro generates a pair of chainable child-adders per level:
     //   - `$spanned(spans: MultiSpan, message: String)`
