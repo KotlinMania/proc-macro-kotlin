@@ -12,5 +12,7 @@ interface MutableInt2IntMap : Int2IntMap {
     operator fun set(
         key: Int,
         value: Int,
-    ): Int = put(key, value)
+    ) {
+        put(key, value)
+    }
 }

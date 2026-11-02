@@ -24,7 +24,7 @@ interface MutableIntList : IntList {
     operator fun set(
         index: Int,
         element: Int,
-    ): Int
+    )
 
     /** Removes (hopefully quickly) elements of this type-specific list.
      *

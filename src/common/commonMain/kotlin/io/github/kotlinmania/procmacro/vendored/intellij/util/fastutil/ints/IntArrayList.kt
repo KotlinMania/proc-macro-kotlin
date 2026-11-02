@@ -185,15 +185,13 @@ class IntArrayList :
     override fun set(
         index: Int,
         element: Int,
-    ): Int {
+    ) {
         if (index >= size ||
             index < 0
         ) {
             throw IndexOutOfBoundsException("Index ($index) is out of bounds for size ($size)")
         }
-        val old = a[index]
         a[index] = element
-        return old
     }
 
     override fun clear() {
