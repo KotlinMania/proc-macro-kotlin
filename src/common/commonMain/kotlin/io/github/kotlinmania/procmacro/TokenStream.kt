@@ -1,16 +1,18 @@
-// port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
 
+import io.github.kotlinmania.procmacro.bridge.BridgeMethods
+import io.github.kotlinmania.procmacro.bridge.ClientTokenStream
+import io.github.kotlinmania.procmacro.bridge.Result
 import io.github.kotlinmania.procmacro.tokenstream.IntoIter
+import io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer.KotlinLexer
 
 /**
- * The main type provided by this crate, representing an abstract stream
- * of tokens, or, more specifically, a sequence of token trees. The type
- * provides interfaces for iterating over those token trees and,
- * conversely, collecting a number of token trees into one stream.
+ * The main type provided by this library, representing an abstract stream
+ * of tokens, or more specifically a sequence of token trees. The type
+ * provides interfaces for iterating over those token trees and collecting
+ * a number of token trees into one stream.
  *
- * This is both the input and output of `@ProcMacro`, `@ProcMacroAttribute`
- * and `@ProcMacroDerive` definitions.
+ * This is both the input and output of procedural macro definitions.
  */
 public class TokenStream internal constructor(
     internal val data: TokenStreamData,
@@ -21,42 +23,28 @@ public class TokenStream internal constructor(
 
         /**
          * Creates a token stream containing a single token tree.
-         *
-         * Upstream: `impl From<TokenTree> for TokenStream`.
          */
         public fun fromTokenTree(tree: TokenTree): TokenStream = TokenStream(TokenStreamData(listOf(tree)))
 
         /**
          * Attempts to break the string into tokens and parse those tokens
-         * into a token stream. May fail for a number of reasons, for
-         * example, if the string contains unbalanced delimiters or
-         * characters not existing in the language. All tokens in the
-         * parsed stream get [Span.callSite] spans.
-         *
-         * Uses the vendored
-         * [`KotlinLexer`][io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer.KotlinLexer]
-         * to tokenize Kotlin source via [KtTokenAdapter].
+         * into a token stream. May fail if the string contains unbalanced
+         * delimiters or unrecognized characters. All tokens in the parsed
+         * stream receive [Span.callSite] spans.
          */
         public fun fromString(src: String): TokenStreamParseOutcome {
-            val lexer =
-                io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer
-                    .KotlinLexer()
+            val lexer = KotlinLexer()
             return KtTokenAdapter.tokenize(lexer, src)
         }
 
         /**
-         * Collects a number of token trees into a single stream.
-         *
-         * Upstream: `impl FromIterator<TokenTree> for TokenStream`.
+         * Collects a sequence of token trees into a single stream.
          */
         public fun fromTokenTrees(trees: Iterable<TokenTree>): TokenStream =
             TokenStream(TokenStreamData(trees.toList()))
 
         /**
-         * A "flattening" operation on token streams: collects token trees
-         * from multiple token streams into a single stream.
-         *
-         * Upstream: `impl FromIterator<TokenStream> for TokenStream`.
+         * Flattens multiple token streams into a single stream.
          */
         public fun fromTokenStreams(streams: Iterable<TokenStream>): TokenStream {
             val collected = mutableListOf<TokenTree>()
@@ -67,26 +55,27 @@ public class TokenStream internal constructor(
         }
     }
 
+    /** Returns an independent deep copy of this [TokenStream]. */
+    public fun clone(): TokenStream = BridgeMethods.tsClone(ClientTokenStream(this)).stream
+
     /** Checks if this [TokenStream] is empty. */
     public fun isEmpty(): Boolean = data.trees.isEmpty()
 
     /**
      * Parses this [TokenStream] as an expression and attempts to expand
-     * any macros within it. Returns the expanded [TokenStream].
+     * any macros within it, returning the expanded [TokenStream].
      *
-     * Currently only expressions expanding to literals will succeed,
-     * although this may be relaxed in the future. The Kotlin runtime
-     * returns [ExpandError] when no compiler expansion server is active.
+     * Returns [ExpandError] when no compiler expansion server is active or
+     * when expansion fails.
      */
-    public fun expandExpr(): TokenStreamExpandOutcome = TokenStreamExpandOutcome.Err(ExpandError())
+    public fun expandExpr(): TokenStreamExpandOutcome =
+        when (val expanded = BridgeMethods.tsExpandExpr(ClientTokenStream(this))) {
+            is Result.Ok -> TokenStreamExpandOutcome.Ok(expanded.value.stream)
+            is Result.Err -> TokenStreamExpandOutcome.Err(ExpandError())
+        }
 
     /**
-     * Concatenates the given token trees into this stream.
-     *
-     * Upstream: `impl Extend<TokenTree> for TokenStream`. The Kotlin port
-     * makes this an explicit member function rather than relying on an
-     * `Extend`-equivalent trait, since the workspace forbids `MutableList`
-     * monkey-patching on internal data.
+     * Concatenates the given token trees onto this stream.
      */
     public fun extendTokenTrees(trees: Iterable<TokenTree>) {
         data.trees = data.trees + trees.toList()
@@ -94,8 +83,6 @@ public class TokenStream internal constructor(
 
     /**
      * Concatenates the given token streams onto this stream.
-     *
-     * Upstream: `impl Extend<TokenStream> for TokenStream`.
      */
     public fun extendTokenStreams(streams: Iterable<TokenStream>) {
         val collected = mutableListOf<TokenTree>()
@@ -105,38 +92,36 @@ public class TokenStream internal constructor(
         data.trees = data.trees + collected
     }
 
-    /** Concatenates the given groups into this stream. */
+    /** Concatenates the given groups onto this stream. */
     public fun extendGroups(groups: Iterable<Group>) {
         extendTokenTrees(groups.map(TokenTree::Group))
     }
 
-    /** Concatenates the given literals into this stream. */
+    /** Concatenates the given literals onto this stream. */
     public fun extendLiterals(literals: Iterable<Literal>) {
         extendTokenTrees(literals.map(TokenTree::Literal))
     }
 
-    /** Concatenates the given punctuation into this stream. */
+    /** Concatenates the given punctuation tokens onto this stream. */
     public fun extendPuncts(punctuation: Iterable<Punct>) {
         extendTokenTrees(punctuation.map(TokenTree::Punct))
     }
 
-    /** Concatenates the given identifiers into this stream. */
+    /** Concatenates the given identifiers onto this stream. */
     public fun extendIdents(identifiers: Iterable<Ident>) {
         extendTokenTrees(identifiers.map(TokenTree::Ident))
     }
 
     /**
-     * Iterates the contained [TokenTree]s shallowly: the iterator does
-     * not recurse into delimited [Group]s and returns whole groups as
-     * single token trees.
+     * Iterates the contained [TokenTree] elements shallowly without
+     * recursing into delimited [Group] tokens.
      */
-    override fun iterator(): IntoIter = IntoIter(data.trees.iterator())
+    override fun iterator(): IntoIter = IntoIter(data.trees.toList())
 
     /**
-     * Prints the token stream as a string that is supposed to be
-     * losslessly convertible back into the same token stream (modulo
-     * spans), except for possibly [TokenTree.Group]s with [Delimiter.NONE]
-     * delimiters and negative numeric literals.
+     * Prints the token stream as a string convertible back into the same
+     * token stream (modulo spans), except for [TokenTree.Group] tokens with
+     * [Delimiter.NONE] delimiters and negative numeric literals.
      */
     override fun toString(): String =
         buildString {
@@ -158,11 +143,6 @@ public class TokenStream internal constructor(
 
 /**
  * Internal backing store for [TokenStream].
- *
- * Upstream: `Option<bridge::client::TokenStream>` wrapping a sequence of
- * `bridge::TokenTree`. The Kotlin port keeps a plain `List<TokenTree>`,
- * mutable through [TokenStream.extendTokenTrees] /
- * [TokenStream.extendTokenStreams].
  */
 internal class TokenStreamData(
     initial: List<TokenTree>,
@@ -170,13 +150,6 @@ internal class TokenStreamData(
     internal var trees: List<TokenTree> = initial
 }
 
-/**
- * Lossless string rendering helper for [TokenStream.toString]. Open
- * delimiter and the start of the contained stream, then recurse, then
- * close delimiter. [Delimiter.NONE] groups render their stream verbatim
- * without surrounding characters, matching the upstream behavior described
- * on the [Delimiter.NONE] doc.
- */
 private fun StringBuilder.appendGroup(group: Group) {
     val (open, close) =
         when (group.delimiter()) {
@@ -190,13 +163,6 @@ private fun StringBuilder.appendGroup(group: Group) {
     append(close)
 }
 
-/**
- * Returns `true` if a separator (single space) should be inserted after
- * the given [TokenTree] when rendering for
- * [TokenStream.toString]. The heuristic mirrors Rust token rendering:
- * insert a separator unless the token is
- * [TokenTree.Punct] with [Spacing.JOINT] spacing.
- */
 private fun needsSeparatorAfter(left: TokenTree): Boolean {
     if (left is TokenTree.Punct && left.value.spacing() == Spacing.JOINT) return false
     return true

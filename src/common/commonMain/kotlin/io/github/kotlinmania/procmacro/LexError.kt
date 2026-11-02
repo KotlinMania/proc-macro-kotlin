@@ -1,11 +1,10 @@
-// port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
 
 /**
- * Error returned from [TokenStream.fromString].
+ * Error returned from [TokenStream.fromString] and [Literal.fromString].
  *
- * The contained error message is explicitly not guaranteed to be stable in
- * any way, and may change between Kotlin versions or across compilations.
+ * The contained error message is diagnostic text and is not guaranteed to
+ * have a fixed format across versions.
  */
 public class LexError internal constructor(
     internal val messageText: String,

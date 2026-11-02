@@ -1,4 +1,3 @@
-// port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
 
 import io.github.kotlinmania.procmacro.bridge.BridgeMethods
@@ -7,8 +6,7 @@ import io.github.kotlinmania.procmacro.bridge.ClientTokenStream
 /**
  * A delimited token stream.
  *
- * A [Group] internally contains a [TokenStream] which is surrounded by
- * [Delimiter]s.
+ * A [Group] internally contains a [TokenStream] surrounded by [Delimiter]s.
  */
 public class Group internal constructor(
     internal val data: GroupData,
@@ -17,9 +15,8 @@ public class Group internal constructor(
         /**
          * Creates a new [Group] with the given delimiter and token stream.
          *
-         * This constructor will set the span for this group to
-         * [Span.callSite]. To change the span you can use the [setSpan]
-         * method below.
+         * This constructor sets the span for this group to [Span.callSite].
+         * To change the span, use [setSpan].
          */
         public fun new(
             delimiter: Delimiter,
@@ -34,73 +31,57 @@ public class Group internal constructor(
             )
     }
 
+    /** Returns an independent deep copy of this [Group]. */
+    public fun clone(): Group =
+        Group(
+            GroupData(
+                delimiter = data.delimiter,
+                stream = BridgeMethods.tsClone(ClientTokenStream(data.stream)).stream,
+                span = data.span.copy(),
+            ),
+        )
+
     /** Returns the delimiter of this [Group]. */
     public fun delimiter(): Delimiter = data.delimiter
 
     /**
-     * Returns the [TokenStream] of tokens that are delimited in this
-     * [Group].
-     *
-     * Note that the returned token stream does not include the delimiter
-     * returned above.
+     * Returns the [TokenStream] of tokens delimited in this [Group],
+     * excluding the surrounding delimiters.
      */
     public fun stream(): TokenStream = BridgeMethods.tsClone(ClientTokenStream(data.stream)).stream
 
     /**
-     * Returns the span for the delimiters of this token stream, spanning
-     * the entire [Group].
-     *
-     * ```
-     * fun span(): Span = ...
-     * //  ^^^^^^^
-     * ```
+     * Returns the span encompassing the entire [Group] including delimiters.
      */
     public fun span(): Span = data.span.entire
 
     /**
      * Returns the span pointing to the opening delimiter of this group.
-     *
-     * ```
-     * fun spanOpen(): Span = ...
-     * //  ^
-     * ```
      */
     public fun spanOpen(): Span = data.span.open
 
     /**
      * Returns the span pointing to the closing delimiter of this group.
-     *
-     * ```
-     * fun spanClose(): Span = ...
-     * //  ^
-     * ```
      */
     public fun spanClose(): Span = data.span.close
 
     /**
-     * Configures the span for this [Group]'s delimiters, but not its
-     * internal tokens.
-     *
-     * This method will not set the span of all the internal tokens
-     * spanned by this group, but rather it will only set the span of the
-     * delimiter tokens at the level of the [Group].
+     * Configures the span for this [Group]'s delimiters, without altering
+     * the spans of internal tokens.
      */
     public fun setSpan(span: Span) {
         data.span = DelimSpanData.fromSingle(span)
     }
 
     /**
-     * Prints the group as a string that should be losslessly convertible
-     * back into the same group (modulo spans), except for possibly
-     * [TokenTree.Group]s with [Delimiter.NONE] delimiters.
+     * Prints the group as a string convertible back into the same group
+     * (modulo spans), except for [Delimiter.NONE] groups.
      */
     override fun toString(): String = TokenStream.fromTokenTree(TokenTree.Group(this)).toString()
 }
 
 /**
  * Internal backing store for [Group].
- *
- * Upstream: `bridge::Group<bridge::client::TokenStream, bridge::client::Span>`.
  */
 internal data class GroupData(
     val delimiter: Delimiter,

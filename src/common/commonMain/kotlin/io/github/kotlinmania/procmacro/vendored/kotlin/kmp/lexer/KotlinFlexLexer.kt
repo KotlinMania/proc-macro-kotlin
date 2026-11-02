@@ -100,7 +100,7 @@ class KotlinFlexLexer : FlexLexer {
             val l: Int = packed.length
             while (i < l) {
                 var count: Int = packed[i++].code
-                var value: Int = packed[i++].code
+                val value: Int = packed[i++].code
                 do {
                     result[j++] = value
                 } while (--count > 0)
@@ -307,7 +307,7 @@ class KotlinFlexLexer : FlexLexer {
             val l: Int = packed.length
             while (i < l) {
                 var count: Int = packed[i++].code
-                var value: Int = packed[i++].code
+                val value: Int = packed[i++].code
                 do {
                     result[j++] = value
                 } while (--count > 0)
@@ -360,7 +360,7 @@ class KotlinFlexLexer : FlexLexer {
             val l: Int = packed.length
             while (i < l) {
                 var count: Int = packed[i++].code
-                var value: Int = packed[i++].code
+                val value: Int = packed[i++].code
                 do {
                     result[j++] = value
                 } while (--count > 0)
@@ -698,7 +698,7 @@ class KotlinFlexLexer : FlexLexer {
             val l: Int = packed.length
             while (i < l) {
                 var count: Int = packed[i++].code
-                var value: Int = packed[i++].code
+                val value: Int = packed[i++].code
                 do {
                     result[j++] = value
                 } while (--count > 0)
@@ -740,7 +740,7 @@ class KotlinFlexLexer : FlexLexer {
 
     /** Number of newlines encountered up to the start of the matched text. */
     @Suppress("unused")
-    private var yyline: Int = 0
+    private val yyline: Int = 0
 
     /** Number of characters from the last newline up to the start of the matched text. */
     @Suppress("unused")
@@ -748,7 +748,7 @@ class KotlinFlexLexer : FlexLexer {
 
     /** Number of characters up to the start of the matched text. */
     @Suppress("unused")
-    private var yychar: Long = 0
+    private val yychar: Long = 0
 
     /** Whether the scanner is currently at the beginning of a line. */
     @Suppress("unused")
@@ -756,7 +756,7 @@ class KotlinFlexLexer : FlexLexer {
 
     /** Whether the user-EOF-code has already been executed. */
     @Suppress("unused")
-    private var zzEOFDone: Boolean = false
+    private val zzEOFDone: Boolean = false
 
     // user code:
     private class State(

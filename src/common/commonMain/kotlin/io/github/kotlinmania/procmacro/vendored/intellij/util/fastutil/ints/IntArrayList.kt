@@ -44,7 +44,7 @@ class IntArrayList :
     MutableIntList,
     Comparable<IntList> {
     /** The backing array.  */
-    private lateinit var a: IntArray
+    private var a: IntArray = IntArrays.DEFAULT_EMPTY_ARRAY
 
     /** The current actual size of the list (never greater than the backing-array length).  */
     override var size = 0
@@ -134,16 +134,15 @@ class IntArrayList :
      * @param capacity the new minimum capacity for this array list.
      */
     private fun grow(capacity: Int) {
-        @Suppress("NAME_SHADOWING")
-        var capacity = capacity
-        if (capacity <= a.size) return
+        var newCapacity = capacity
+        if (newCapacity <= a.size) return
         if (!a.contentEquals(IntArrays.DEFAULT_EMPTY_ARRAY)) {
-            capacity =
-                max(min((a.size + (a.size shr 1)), Arrays.MAX_ARRAY_SIZE), capacity)
-        } else if (capacity < DEFAULT_INITIAL_CAPACITY) {
-            capacity = DEFAULT_INITIAL_CAPACITY
+            newCapacity =
+                max(min((a.size + (a.size shr 1)), Arrays.MAX_ARRAY_SIZE), newCapacity)
+        } else if (newCapacity < DEFAULT_INITIAL_CAPACITY) {
+            newCapacity = DEFAULT_INITIAL_CAPACITY
         }
-        a = IntArrays.forceCapacity(a, capacity, size)
+        a = IntArrays.forceCapacity(a, newCapacity, size)
         check(size <= a.size)
     }
 
@@ -170,14 +169,14 @@ class IntArrayList :
         elements: IntList,
     ): Boolean {
         ensureIndex(index)
-        var index = index
+        var curIndex = index
         var n: Int = elements.size
         if (n == 0) return false
         grow(size + n)
-        a.copyInto(a, destinationOffset = index + n, startIndex = index, endIndex = index + (size - index))
+        a.copyInto(a, destinationOffset = curIndex + n, startIndex = curIndex, endIndex = curIndex + (size - curIndex))
         var i = elements.indices.first
         size += n
-        while (n-- != 0) a[index++] = elements[i++]
+        while (n-- != 0) a[curIndex++] = elements[i++]
         check(size <= a.size)
         return true
     }

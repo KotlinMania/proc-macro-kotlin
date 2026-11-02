@@ -1,35 +1,13 @@
 package io.github.kotlinmania.procmacro.rustcore
 
-/**
- * Kotlin emulation of pieces of Rust `core` that escape.rs depends on
- * but that Kotlin's stdlib does not directly expose. None of this
- * mirrors a file under `tmp/proc-macro/`; the upstream references are
- * the corresponding items in `rust-lang/rust:library/core/`.
- *
- * Items covered here, with their Rust counterparts:
- *
- * | Kotlin               | Rust                                             |
- * |----------------------|--------------------------------------------------|
- * | `Utf8Chunk`          | `core::str::Utf8Chunk`                           |
- * | `utf8Chunks`         | `<[u8]>::utf8_chunks` via `core::str::Utf8Chunks`|
- * | `unicodeScalars`     | `str::chars` (yielded as scalar values)          |
- * | `appendCodePoint`    | `String::push(char)` for supplementary planes    |
- *
- * These belong in a future `core-kotlin` sibling if one is ever
- * created. They live here for now because proc-macro-kotlin is the
- * first consumer; until then their visibility is `internal` so they
- * are not part of the proc-macro public surface.
- */
-
 internal data class Utf8Chunk(
     val valid: String,
     val invalid: ByteArray,
 )
 
 /**
- * Walks `bytes` and yields runs of valid UTF-8 (decoded into a Kotlin
- * `String`) interleaved with the invalid byte sequence that terminated
- * each run, mirroring Rust's `<[u8]>::utf8_chunks()`.
+ * Walks [bytes] and yields runs of well-formed UTF-8 decoded into a [String]
+ * interleaved with any invalid byte runs that terminated them.
  */
 internal fun utf8Chunks(bytes: ByteArray): Sequence<Utf8Chunk> =
     sequence {
@@ -53,10 +31,9 @@ internal fun utf8Chunks(bytes: ByteArray): Sequence<Utf8Chunk> =
     }
 
 /**
- * Returns the length of the well-formed UTF-8 sequence starting at
- * [offset] inside [bytes], or `0` when the byte at [offset] does not
- * begin one. Follows the Unicode 15.0 well-formed UTF-8 table, which
- * forbids overlong encodings and surrogate code points.
+ * Returns the byte length of the well-formed UTF-8 sequence starting at
+ * [offset] inside [bytes], or `0` when the byte at [offset] does not start
+ * one. Rejects overlong encodings and surrogate code points.
  */
 internal fun utf8SequenceLength(
     bytes: ByteArray,
@@ -132,13 +109,8 @@ internal fun isUtf8Continuation(byte: Byte): Boolean {
 }
 
 /**
- * Iterates Unicode scalar values out of a Kotlin `String`, joining
- * surrogate pairs into supplementary-plane code points. Equivalent to
- * Rust's `str::chars` over `&str`.
- *
- * Declared as a top-level function rather than an extension because
- * `java.lang.CharSequence.codePoints(): IntStream` shadows extensions
- * named `codePoints` on the JVM/Android targets.
+ * Iterates 21-bit Unicode scalar values out of [s], joining UTF-16 surrogate
+ * pairs into supplementary-plane code points.
  */
 internal fun unicodeScalars(s: String): Sequence<Int> =
     sequence {
@@ -158,11 +130,10 @@ internal fun unicodeScalars(s: String): Sequence<Int> =
     }
 
 /**
- * Appends a Unicode scalar value to a `StringBuilder`, emitting a
- * surrogate pair for supplementary-plane code points. Equivalent to
- * Rust's `String::push(char)`.
+ * Appends a 21-bit Unicode scalar value to a [StringBuilder], emitting a
+ * UTF-16 surrogate pair for supplementary-plane code points.
  */
-internal fun StringBuilder.appendCodePoint(codePoint: Int): StringBuilder {
+internal fun StringBuilder.appendUnicodeScalar(codePoint: Int): StringBuilder {
     if (codePoint <= 0xffff) {
         append(codePoint.toChar())
     } else {

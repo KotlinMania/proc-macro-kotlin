@@ -53,7 +53,7 @@ class SyntaxElementTypeSet internal constructor(
 
     operator fun plus(other: SyntaxElementType): SyntaxElementTypeSet {
         if (other in this) return this
-        return setOf(*tokens, other).asSyntaxElementTypeSet()
+        return (tokens.toSet() + other).asSyntaxElementTypeSet()
     }
 
     operator fun minus(other: Iterable<SyntaxElementType>): SyntaxElementTypeSet {
@@ -64,7 +64,7 @@ class SyntaxElementTypeSet internal constructor(
 
     operator fun minus(other: SyntaxElementType): SyntaxElementTypeSet {
         if (other !in this) return this
-        return (setOf(*tokens) - other).asSyntaxElementTypeSet()
+        return (tokens.toSet() - other).asSyntaxElementTypeSet()
     }
 
     fun intersect(other: SyntaxElementTypeSet): SyntaxElementTypeSet {
@@ -75,17 +75,8 @@ class SyntaxElementTypeSet internal constructor(
 }
 
 private fun ensureNoTransientTypes(types: Set<SyntaxElementType>) {
-    var transientTypes: MutableList<SyntaxElementType>? = null
-    for (type in types) {
-        if (type.index < 0) {
-            if (transientTypes == null) {
-                transientTypes = mutableListOf()
-            }
-            transientTypes.add(type)
-        }
-    }
-
-    if (transientTypes != null) {
+    if (types.any { it.index < 0 }) {
+        val transientTypes = types.filter { it.index < 0 }
         throw IllegalArgumentException("Transient $transientTypes are not allowed to be stored in SyntaxElementTypeSet")
     }
 }

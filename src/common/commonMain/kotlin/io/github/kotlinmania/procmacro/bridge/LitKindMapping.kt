@@ -1,4 +1,3 @@
-// port-lint: source src/bridge/mod.rs
 package io.github.kotlinmania.procmacro.bridge
 
 import io.github.kotlinmania.procmacro.LitKind

@@ -45,13 +45,13 @@ object HashCommon {
      * @return a hash value with good avalanching properties.
      */
     fun murmurHash3(x: Int): Int {
-        var x = x
-        x = x xor (x ushr 16)
-        x *= -0x7a143595
-        x = x xor (x ushr 13)
-        x *= -0x3d4d51cb
-        x = x xor (x ushr 16)
-        return x
+        var h = x
+        h = h xor (h ushr 16)
+        h *= -0x7a143595
+        h = h xor (h ushr 13)
+        h *= -0x3d4d51cb
+        h = h xor (h ushr 16)
+        return h
     }
 
     /** Avalanches the bits of a long integer by applying the finalisation step of MurmurHash3.
@@ -64,13 +64,13 @@ object HashCommon {
      * @return a hash value with good avalanching properties.
      */
     fun murmurHash3(x: Long): Long {
-        var x = x
-        x = x xor (x ushr 33)
-        x *= -0xae502812aa7333L
-        x = x xor (x ushr 33)
-        x *= -0x3b314601e57a13adL
-        x = x xor (x ushr 33)
-        return x
+        var h = x
+        h = h xor (h ushr 33)
+        h *= -0xae502812aa7333L
+        h = h xor (h ushr 33)
+        h *= -0x3b314601e57a13adL
+        h = h xor (h ushr 33)
+        return h
     }
 
     /** Quickly mixes the bits of an integer.
@@ -120,10 +120,10 @@ object HashCommon {
      * @return a value that passed through [.mix] would give `x`.
      */
     fun invMix(x: Long): Long {
-        var x = x
-        x = x xor (x ushr 32)
-        x = x xor (x ushr 16)
-        return (x xor (x ushr 32)) * INV_LONG_PHI
+        var h = x
+        h = h xor (h ushr 32)
+        h = h xor (h ushr 16)
+        return (h xor (h ushr 32)) * INV_LONG_PHI
     }
 
     /** Returns the hash code that would be returned by [Float.hashCode].

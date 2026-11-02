@@ -65,11 +65,11 @@ internal class MarkerProduction(
         lexemeIndex: Int,
         prodIndex: Int,
     ): Int {
-        var prodIndex = prodIndex
-        while (prodIndex > 0 && getLexemeIndexAt(prodIndex - 1) == lexemeIndex) {
-            prodIndex--
+        var curIndex = prodIndex
+        while (curIndex > 0 && getLexemeIndexAt(curIndex - 1) == lexemeIndex) {
+            curIndex--
         }
-        return prodIndex
+        return curIndex
     }
 
     fun addMarker(marker: ProductionMarker) {
@@ -81,8 +81,8 @@ internal class MarkerProduction(
         for (i in production.size - 1 downTo idx) {
             val markerId = production[i]
             if (markerId > 0) {
-                val marker = myPool.get(markerId)
-                myPool.freeMarker(marker)
+                val pooledMarker = myPool.get(markerId)
+                myPool.freeMarker(pooledMarker)
             }
         }
         production.removeElements(idx, production.size)

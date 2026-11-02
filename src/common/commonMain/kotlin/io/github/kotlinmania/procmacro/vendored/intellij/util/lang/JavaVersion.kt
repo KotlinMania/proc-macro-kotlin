@@ -64,12 +64,14 @@ class JavaVersion private constructor(
 
     override fun equals(other: Any?): Boolean =
         this === other ||
-            other is JavaVersion &&
-            feature == other.feature &&
-            minor == other.minor &&
-            update == other.update &&
-            build == other.build &&
-            ea == other.ea
+            (
+                other is JavaVersion &&
+                    feature == other.feature &&
+                    minor == other.minor &&
+                    update == other.update &&
+                    build == other.build &&
+                    ea == other.ea
+            )
 
     override fun hashCode(): Int {
         var hash = feature
@@ -164,7 +166,7 @@ class JavaVersion private constructor(
                 )
             for (keyToDetect in trimmingMap.keys) {
                 if (str.contains(keyToDetect)) {
-                    val p = str.indexOf(trimmingMap[keyToDetect]!!)
+                    val p = str.indexOf(trimmingMap.getValue(keyToDetect))
                     if (p > 0) str = str.substring(p)
                 }
             }

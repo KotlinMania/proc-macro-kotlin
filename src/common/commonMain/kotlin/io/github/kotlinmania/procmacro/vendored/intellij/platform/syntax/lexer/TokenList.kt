@@ -151,12 +151,12 @@ fun TokenList.backWithBraceMatching(
     opening: SyntaxElementType,
     closing: SyntaxElementType,
 ): Int {
-    var index = index
-    if (getTokenType(index) === closing) {
+    var curIndex = index
+    if (getTokenType(curIndex) === closing) {
         var nesting = 1
-        while (nesting > 0 && index > 0) {
-            index--
-            val type = getTokenType(index)
+        while (nesting > 0 && curIndex > 0) {
+            curIndex--
+            val type = getTokenType(curIndex)
             if (type === closing) {
                 nesting++
             } else if (type === opening) {
@@ -164,7 +164,7 @@ fun TokenList.backWithBraceMatching(
             }
         }
     }
-    return index - 1
+    return curIndex - 1
 }
 
 /**
@@ -175,11 +175,11 @@ fun TokenList.backWhile(
     index: Int,
     toSkip: SyntaxElementTypeSet,
 ): Int {
-    var index = index
-    while (hasType(index, toSkip)) {
-        index--
+    var curIndex = index
+    while (hasType(curIndex, toSkip)) {
+        curIndex--
     }
-    return index
+    return curIndex
 }
 
 /**
@@ -190,9 +190,9 @@ fun TokenList.forwardWhile(
     index: Int,
     toSkip: SyntaxElementTypeSet,
 ): Int {
-    var index = index
-    while (hasType(index, toSkip)) {
-        index++
+    var curIndex = index
+    while (hasType(curIndex, toSkip)) {
+        curIndex++
     }
-    return index
+    return curIndex
 }

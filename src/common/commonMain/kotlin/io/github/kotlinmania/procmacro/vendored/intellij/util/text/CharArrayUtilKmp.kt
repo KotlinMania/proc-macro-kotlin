@@ -121,7 +121,8 @@ object CharArrayUtilKmp {
         return endOffset
     }
 
-    fun CharArray.shiftBackward(offset: Int, chars: String): Int = CharArrayCharSequence(*this).shiftBackward(offset, chars)
+    fun CharArray.shiftBackward(offset: Int, chars: String): Int =
+        CharArrayCharSequence(this, 0, this.size).shiftBackward(offset, chars)
 
     fun CharSequence.shiftBackward(offset: Int, chars: String): Int = shiftBackward(0, offset, chars)
 
@@ -148,19 +149,19 @@ object CharArrayUtilKmp {
     }
 
     fun CharSequence.shiftForwardUntil(offset: Int, chars: String): Int {
-        var offset = offset
+        var curOffset = offset
         while (true) {
-            if (offset >= length) break
-            val c = this[offset]
+            if (curOffset >= length) break
+            val c = this[curOffset]
             var i = 0
             while (i < chars.length) {
                 if (c == chars[i]) break
                 i++
             }
             if (i < chars.length) break
-            offset++
+            curOffset++
         }
-        return offset
+        return curOffset
     }
 
     /**
@@ -191,20 +192,20 @@ object CharArrayUtilKmp {
      * of the given `'chars to exclude'`
      */
     fun CharSequence.shiftBackwardUntil(offset: Int, chars: String): Int {
-        var offset = offset
-        if (offset >= length) return offset
+        var curOffset = offset
+        if (curOffset >= length) return curOffset
         while (true) {
-            if (offset < 0) break
-            val c = this[offset]
+            if (curOffset < 0) break
+            val c = this[curOffset]
             var i = 0
             while (i < chars.length) {
                 if (c == chars[i]) break
                 i++
             }
             if (i < chars.length) break
-            offset--
+            curOffset--
         }
-        return offset
+        return curOffset
     }
 
     fun CharArray.regionMatches(start: Int, end: Int, s: CharSequence): Boolean {

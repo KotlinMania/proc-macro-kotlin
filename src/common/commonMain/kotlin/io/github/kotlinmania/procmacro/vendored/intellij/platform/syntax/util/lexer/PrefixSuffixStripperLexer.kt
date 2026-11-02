@@ -12,7 +12,7 @@ class PrefixSuffixStripperLexer(
     private val suffixType: SyntaxElementType?,
     private val middleTokenType: SyntaxElementType?,
 ) : LexerBase() {
-    private lateinit var buffer: CharSequence
+    private var buffer: CharSequence = ""
     private var bufferArray: CharArray? = null
     private var tokenStart = 0
     private var tokenEnd = 0

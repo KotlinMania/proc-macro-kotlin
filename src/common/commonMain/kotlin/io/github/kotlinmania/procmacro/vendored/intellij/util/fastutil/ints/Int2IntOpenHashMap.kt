@@ -190,25 +190,25 @@ class Int2IntOpenHashMap : MutableInt2IntMap {
      * @param pos a starting position.
      */
     private fun shiftKeys(pos: Int) { // Shift entries with the same hash.
-        var pos = pos
+        var curPos = pos
         var last: Int
         var slot: Int
         var curr: Int
         val key = this.key
         val value = this.value
         while (true) {
-            pos = (pos.also { last = it } + 1) and mask
+            curPos = (curPos.also { last = it } + 1) and mask
             while (true) {
-                if (key[pos].also { curr = it } == 0) {
+                if (key[curPos].also { curr = it } == 0) {
                     key[last] = 0
                     return
                 }
                 slot = HashCommon.mix(curr) and mask
-                if (if (last <= pos) last >= slot || slot > pos else slot in (pos + 1)..last) break
-                pos = (pos + 1) and mask
+                if (if (last <= curPos) last >= slot || slot > curPos else slot in (curPos + 1)..last) break
+                curPos = (curPos + 1) and mask
             }
             key[last] = curr
-            value[last] = value[pos]
+            value[last] = value[curPos]
         }
     }
 
@@ -429,11 +429,12 @@ class Int2IntOpenHashMap : MutableInt2IntMap {
         var pos: Int
         var j = realSize()
         while (j-- != 0) {
-            while (key[--i] == 0) {
-            }
-            if (newKey[(HashCommon.mix(key[i]) and mask).also { pos = it }] != 0) {
-                while (newKey[((pos + 1) and mask).also { pos = it }] != 0) {
-                }
+            do {
+                i--
+            } while (key[i] == 0)
+            pos = HashCommon.mix(key[i]) and mask
+            while (newKey[pos] != 0) {
+                pos = (pos + 1) and mask
             }
             newKey[pos] = key[i]
             newValue[pos] = value[i]
@@ -514,9 +515,6 @@ class Int2IntOpenHashMap : MutableInt2IntMap {
         /** A boolean telling us whether we should return the entry with the null key.  */
         var mustReturnNullKey: Boolean = this@Int2IntOpenHashMap.containsNullKey
 
-        /** A lazily allocated list containing keys of entries that have wrapped around the table because of removals.  */
-        var wrapped: IntArrayList? = null
-
         fun hasNext(): Boolean = c != 0
 
         fun nextEntry(): Int {
@@ -528,52 +526,11 @@ class Int2IntOpenHashMap : MutableInt2IntMap {
             }
             val key = this@Int2IntOpenHashMap.key
             while (true) {
-                if (--pos < 0) { // We are just enumerating elements from the wrapped list.
+                if (--pos < 0) {
                     last = Int.MIN_VALUE
-                    if (wrapped == null) throw IllegalStateException()
-                    val k: Int = wrapped!![-pos - 1]
-                    var p: Int = HashCommon.mix(k) and mask
-                    while (k != key[p]) p = (p + 1) and mask
-                    return p
+                    throw IllegalStateException()
                 }
                 if (key[pos] != 0) return pos.also { last = it }
-            }
-        }
-
-        /** Shifts left entries with the specified hash code, starting at the specified position,
-         * and empties the resulting free entry.
-         *
-         * @param pos a starting position.
-         */
-        private fun shiftKeys(pos: Int) { // Shift entries with the same hash.
-            var pos = pos
-            var last: Int
-            var slot: Int
-            var curr: Int
-            val key = this@Int2IntOpenHashMap.key
-            val value = this@Int2IntOpenHashMap.value
-            while (true) {
-                pos = (pos.also { last = it } + 1) and mask
-                while (true) {
-                    if ((key[pos].also { curr = it }) == 0) {
-                        key[last] = (0)
-                        value[last] = 0
-                        return
-                    }
-                    slot = HashCommon.mix(curr) and mask
-                    if (if (last <= pos) last >= slot || slot > pos else slot in (pos + 1)..last) break
-                    pos = (pos + 1) and mask
-                }
-                if (pos < last) { // Wrapped entry.
-                    if (wrapped == null) {
-                        wrapped =
-                            IntArrayList(2).apply {
-                                add(key[pos])
-                            }
-                    }
-                }
-                key[last] = curr
-                value[last] = value[pos]
             }
         }
     }
@@ -583,6 +540,7 @@ class Int2IntOpenHashMap : MutableInt2IntMap {
         MapIterator(),
         Iterator<Int2IntEntry> {
         override fun next(): Int2IntEntry {
+            if (!hasNext()) throw NoSuchElementException()
             val nextIndex = nextEntry()
             return Int2IntEntry(key[nextIndex], value[nextIndex])
         }

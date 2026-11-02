@@ -1,6 +1,7 @@
 // port-lint: source src/bridge/client.rs
 package io.github.kotlinmania.procmacro.bridge
 
+import io.github.kotlinmania.procmacro.DelimSpanData
 import io.github.kotlinmania.procmacro.Diagnostic
 import io.github.kotlinmania.procmacro.ExpandError
 import io.github.kotlinmania.procmacro.Group
@@ -9,49 +10,139 @@ import io.github.kotlinmania.procmacro.Ident
 import io.github.kotlinmania.procmacro.IdentData
 import io.github.kotlinmania.procmacro.Literal
 import io.github.kotlinmania.procmacro.LiteralData
+import io.github.kotlinmania.procmacro.MultiSpan
 import io.github.kotlinmania.procmacro.Punct
 import io.github.kotlinmania.procmacro.PunctData
 import io.github.kotlinmania.procmacro.Spacing
 import io.github.kotlinmania.procmacro.Span
 import io.github.kotlinmania.procmacro.SpanData
 import io.github.kotlinmania.procmacro.SpanList
+import io.github.kotlinmania.procmacro.SpanRegistry
 import io.github.kotlinmania.procmacro.TokenStream
 import io.github.kotlinmania.procmacro.TokenStreamData
-import io.github.kotlinmania.procmacro.TokenStreamExpandOutcome
 import io.github.kotlinmania.procmacro.TokenStreamParseOutcome
 import io.github.kotlinmania.procmacro.TokenTree
+import io.github.kotlinmania.rustcliteralescaper.EscapeError
+import io.github.kotlinmania.rustcliteralescaper.checkRawByteStr
+import io.github.kotlinmania.rustcliteralescaper.checkRawCStr
+import io.github.kotlinmania.rustcliteralescaper.checkRawStr
+import io.github.kotlinmania.threadlocal.ThreadLocal
+
+internal fun interface ClientRunCallback {
+    fun invoke(config: BridgeConfig): Buffer
+}
+
+internal class HandleCounters(
+    val tokenStream: HandleCounter = HandleCounter(1),
+    val span: HandleCounter = HandleCounter(1),
+)
+
+internal val COUNTERS: HandleCounters = HandleCounters()
 
 internal data class ClientTokenStream(
     val stream: TokenStream,
-)
+) {
+    fun drop() {
+        BridgeMethods.tsDrop(this)
+    }
+
+    fun clone(): ClientTokenStream = BridgeMethods.tsClone(this)
+}
 
 internal data class ClientSpan(
     val span: Span,
-)
+) {
+    companion object {
+        fun defSite(): ClientSpan = BridgeClientState.withState().globals.defSite
 
-object BridgeClientState {
+        fun callSite(): ClientSpan = BridgeClientState.withState().globals.callSite
+
+        fun mixedSite(): ClientSpan = BridgeClientState.withState().globals.mixedSite
+    }
+}
+
+private class BridgeStateStack {
+    val states: MutableList<BridgeState> = mutableListOf()
+    var inUse: Boolean = false
+    var suspendedDepth: Int = 0
+}
+
+private class BridgeStateLocal {
+    private val stacks: ThreadLocal<BridgeStateStack> = ThreadLocal()
+
+    fun holder(): BridgeStateStack = stacks.getOr { BridgeStateStack() }
+
+    fun stack(): MutableList<BridgeState> = holder().states
+}
+
+private class RestoreOnDrop(
+    private val stack: MutableList<BridgeState>,
+    private val state: BridgeState,
+) {
+    fun drop() {
+        if (stack.lastOrNull() === state) {
+            stack.removeAt(stack.lastIndex)
+        } else {
+            stack.remove(state)
+        }
+    }
+}
+
+public object BridgeClientState {
     private val stateLocal = BridgeStateLocal()
+
+    internal fun <R> set(
+        state: BridgeState,
+        block: () -> R,
+    ): R {
+        val stack = stateLocal.stack()
+        stack.add(state)
+        val restore = RestoreOnDrop(stack, state)
+        return try {
+            block()
+        } finally {
+            restore.drop()
+        }
+    }
 
     internal fun enter(
         state: BridgeState,
         block: () -> RpcBuffer,
-    ): RpcBuffer {
-        val stack = stateLocal.stack()
-        stack.add(state)
+    ): RpcBuffer = set(state, block)
+
+    public fun isAvailable(): Boolean = currentOrNull() != null
+
+    internal fun currentOrNull(): BridgeState? {
+        val holder = stateLocal.holder()
+        if (holder.suspendedDepth > 0) return null
+        return holder.states.lastOrNull()
+    }
+
+    internal fun <R> withoutCurrentState(block: () -> R): R {
+        val holder = stateLocal.holder()
+        holder.suspendedDepth += 1
         return try {
             block()
         } finally {
-            if (stack.lastOrNull() === state) {
-                stack.removeAt(stack.lastIndex)
-            } else {
-                stack.remove(state)
-            }
+            holder.suspendedDepth -= 1
         }
     }
 
-    fun isAvailable(): Boolean = stateLocal.stack().isNotEmpty()
+    internal fun <R> with(block: (BridgeState?) -> R): R = block(currentOrNull())
 
-    internal fun currentOrNull(): BridgeState? = stateLocal.stack().lastOrNull()
+    internal fun <R> withActive(block: (BridgeState) -> R): R {
+        val holder = stateLocal.holder()
+        val active =
+            holder.states.lastOrNull()
+                ?: error("procedural macro API is used outside of a procedural macro")
+        check(!holder.inUse) { "procedural macro API is used while it is already in use" }
+        holder.inUse = true
+        return try {
+            block(active)
+        } finally {
+            holder.inUse = false
+        }
+    }
 
     internal fun withState(): BridgeState =
         currentOrNull() ?: BridgeState(
@@ -64,34 +155,285 @@ internal data class BridgeState(
     val globals: ExpnGlobals<ClientSpan>,
     val dispatch: BridgeDispatch,
     val cachedBuffer: RpcBuffer = RpcBuffer(),
-)
+    val binaryDispatch: Closure? = null,
+    var cachedBinaryBuffer: Buffer = Buffer.new(),
+    val spanHandles: MutableMap<SpanData, Handle> = linkedMapOf(),
+    val handlesToSpan: MutableMap<Handle, Span> = linkedMapOf(),
+) {
+    fun <R> callBinary(
+        tag: ApiTags,
+        encodeArgs: (Buffer) -> Unit,
+        decodeResult: (BufferReader) -> R,
+    ): R {
+        val dispatcher = checkNotNull(binaryDispatch) { "binary bridge dispatch is not configured" }
+        var buf = cachedBinaryBuffer.take()
+        buf.clear()
+        RpcCodec.encodeApiTag(buf, tag)
+        encodeArgs(buf)
+        buf =
+            BridgeClientState.withoutCurrentState {
+                dispatcher.call(buf)
+            }
+        val outcome = RpcCodec.decodePanicOutcome(buf.toReader(), decodeResult)
+        cachedBinaryBuffer = buf
+        return outcome.unwrapOrThrow()
+    }
+
+    fun registerSpanHandle(
+        handle: Handle,
+        span: Span,
+    ) {
+        handlesToSpan[handle] = span
+        spanHandles[span.data] = handle
+    }
+
+    fun encodeSpanHandle(
+        w: Buffer,
+        span: ClientSpan,
+    ) {
+        val existing = spanHandles[span.span.data]
+        val handle =
+            if (existing != null) {
+                existing
+            } else {
+                val savedId = SpanRegistry.save(span.span)
+                val allocated =
+                    callBinary(
+                        ApiTags.SpanRecoverProcMacroSpan,
+                        encodeArgs = { RpcCodec.encodeInt(it, savedId) },
+                        decodeResult = { Handle.decode(it) },
+                    )
+                registerSpanHandle(allocated, span.span)
+                allocated
+            }
+        handle.encode(w)
+    }
+
+    fun decodeSpanHandle(r: BufferReader): ClientSpan {
+        val handle = Handle.decode(r)
+        val existing = handlesToSpan[handle]
+        if (existing != null) {
+            return ClientSpan(existing)
+        }
+        val savedId =
+            callBinary(
+                ApiTags.SpanSaveSpan,
+                encodeArgs = { handle.encode(it) },
+                decodeResult = { RpcCodec.decodeInt(it) },
+            )
+        val recovered = SpanRegistry.recover(savedId)
+        registerSpanHandle(handle, recovered)
+        return ClientSpan(recovered)
+    }
+
+    fun materializeTokenStream(handle: Handle): TokenStream {
+        val wireTrees =
+            callBinary(
+                ApiTags.TsIntoTrees,
+                encodeArgs = { handle.encode(it) },
+                decodeResult = { r ->
+                    RpcCodec.decodeList(r) { reader ->
+                        RpcCodec.decodeTokenTree(
+                            reader,
+                            decodeStream = { Handle.decode(it) },
+                            decodeSpan = { decodeSpanHandle(it) },
+                        )
+                    }
+                },
+            )
+        val publicTrees = wireTrees.map { materializeTree(it) }
+        return TokenStream(TokenStreamData(publicTrees))
+    }
+
+    private fun materializeTree(tree: BridgeTokenTree<Handle, ClientSpan>): TokenTree =
+        when (tree) {
+            is BridgeTokenTree.Group -> {
+                val groupSpan = tree.value.span
+                TokenTree.Group(
+                    Group(
+                        GroupData(
+                            delimiter = tree.value.delimiter,
+                            stream = materializeTokenStream(tree.value.stream),
+                            span =
+                                DelimSpanData(
+                                    open = groupSpan.open.span,
+                                    close = groupSpan.close.span,
+                                    entire = groupSpan.entire.span,
+                                ),
+                        ),
+                    ),
+                )
+            }
+            is BridgeTokenTree.Punct ->
+                TokenTree.Punct(
+                    Punct(
+                        PunctData(
+                            ch = tree.value.ch,
+                            joint = tree.value.spacing == Spacing.JOINT,
+                            span = tree.value.span.span,
+                        ),
+                    ),
+                )
+            is BridgeTokenTree.Ident ->
+                TokenTree.Ident(
+                    Ident(
+                        IdentData(
+                            sym = tree.value.sym.asString(),
+                            isRaw = tree.value.isRaw,
+                            span = tree.value.span.span,
+                        ),
+                    ),
+                )
+            is BridgeTokenTree.Literal ->
+                TokenTree.Literal(
+                    Literal(
+                        LiteralData(
+                            kind = tree.value.kind.toPublicLitKind(),
+                            symbol = tree.value.symbol.asString(),
+                            suffix = tree.value.suffix?.asString(),
+                            span = tree.value.span.span,
+                        ),
+                    ),
+                )
+        }
+
+    fun allocateServerTokenStream(stream: TokenStream): Handle? {
+        if (stream.isEmpty()) return null
+        return allocateServerStreamHandle(stream)
+    }
+
+    fun allocateServerStreamHandle(stream: TokenStream): Handle {
+        val wireTrees = stream.data.trees.map { allocateWireTree(it) }
+        return callBinary(
+            ApiTags.TsConcatTrees,
+            encodeArgs = { w ->
+                RpcCodec.encodeNullable<Handle>(w, null) { buf, h -> h.encode(buf) }
+                RpcCodec.encodeList(w, wireTrees) { buf, wireTree ->
+                    RpcCodec.encodeTokenTree(
+                        buf,
+                        wireTree,
+                        encodeStream = { b, h -> h.encode(b) },
+                        encodeSpan = { b, sp -> encodeSpanHandle(b, sp) },
+                    )
+                }
+            },
+            decodeResult = { Handle.decode(it) },
+        )
+    }
+
+    private fun allocateWireTree(tree: TokenTree): BridgeTokenTree<Handle, ClientSpan> =
+        when (tree) {
+            is TokenTree.Group ->
+                BridgeTokenTree.Group(
+                    BridgeGroup(
+                        delimiter = tree.value.delimiter(),
+                        stream = allocateServerStreamHandle(tree.value.stream()),
+                        span =
+                            DelimSpan(
+                                open = ClientSpan(tree.value.spanOpen()),
+                                close = ClientSpan(tree.value.spanClose()),
+                                entire = ClientSpan(tree.value.span()),
+                            ),
+                    ),
+                )
+            is TokenTree.Punct ->
+                BridgeTokenTree.Punct(
+                    BridgePunct(
+                        ch = tree.value.asChar(),
+                        spacing = tree.value.spacing(),
+                        span = ClientSpan(tree.value.span()),
+                    ),
+                )
+            is TokenTree.Ident ->
+                BridgeTokenTree.Ident(
+                    BridgeIdent(
+                        sym = Symbol.intern(tree.value.data.sym),
+                        isRaw = tree.value.data.isRaw,
+                        span = ClientSpan(tree.value.span()),
+                    ),
+                )
+            is TokenTree.Literal -> {
+                val litData = tree.value.data
+                BridgeTokenTree.Literal(
+                    BridgeLiteral(
+                        kind = litData.kind.toBridgeLitKind(),
+                        symbol = Symbol.intern(litData.symbol),
+                        suffix = litData.suffix?.let(Symbol::intern),
+                        span = ClientSpan(tree.value.span()),
+                    ),
+                )
+            }
+        }
+}
 
 internal object BridgeMethods {
-    fun injectedEnvVar(variable: String): String? =
-        BridgeClientState
-            .currentOrNull()
+    fun injectedEnvVar(variable: String): String? {
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            return state.callBinary(
+                ApiTags.InjectedEnvVar,
+                encodeArgs = { RpcCodec.encodeString(it, variable) },
+                decodeResult = { r -> RpcCodec.decodeNullable(r, RpcCodec::decodeString) },
+            )
+        }
+        return state
             ?.dispatchRequest(BridgePayload.Request.InjectedEnvVar(variable))
             .stringValueOrNull()
+    }
 
     fun trackEnvVar(
         variable: String,
         value: String?,
     ) {
         TrackedInputs.trackEnvVar(variable, value)
-        BridgeClientState
-            .currentOrNull()
-            ?.dispatchRequest(BridgePayload.Request.TrackEnvVar(variable, value))
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            state.callBinary(
+                ApiTags.TrackEnvVar,
+                encodeArgs = { w ->
+                    RpcCodec.encodeString(w, variable)
+                    RpcCodec.encodeNullable(w, value, RpcCodec::encodeString)
+                },
+                decodeResult = { RpcCodec.decodeUnit() },
+            )
+            return
+        }
+        state?.dispatchRequest(BridgePayload.Request.TrackEnvVar(variable, value))
     }
 
     fun trackPath(path: String) {
         TrackedInputs.trackPath(path)
-        BridgeClientState
-            .currentOrNull()
-            ?.dispatchRequest(BridgePayload.Request.TrackPath(path))
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            state.callBinary(
+                ApiTags.TrackPath,
+                encodeArgs = { RpcCodec.encodeString(it, path) },
+                decodeResult = { RpcCodec.decodeUnit() },
+            )
+            return
+        }
+        state?.dispatchRequest(BridgePayload.Request.TrackPath(path))
     }
 
-    fun literalFromStr(source: String): Result<BridgeLiteral<ClientSpan>> =
-        parseRustLiteral(source)
+    fun literalFromStr(source: String): Result<BridgeLiteral<ClientSpan>> {
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            return state.callBinary(
+                ApiTags.LiteralFromStr,
+                encodeArgs = { RpcCodec.encodeString(it, source) },
+                decodeResult = { r ->
+                    RpcCodec.decodeResult(r) { reader ->
+                        BridgeLiteral(
+                            kind = RpcCodec.decodeLitKind(reader),
+                            symbol = Symbol.decode(reader),
+                            suffix = RpcCodec.decodeNullable(reader, Symbol::decode),
+                            span = state.decodeSpanHandle(reader),
+                        )
+                    }
+                },
+            )
+        }
+        return parseRustLiteral(source)
             ?: when (val parsed = TokenStream.fromString(source)) {
                 is TokenStreamParseOutcome.Ok -> {
                     val literal =
@@ -111,9 +453,21 @@ internal object BridgeMethods {
                 }
                 is TokenStreamParseOutcome.Err -> Result.Err(parsed.error.toString())
             }
+    }
 
     fun emitDiagnostic(diagnostic: BridgeDiagnostic<ClientSpan>) {
-        diagnostic.toPublicDiagnostic().emit()
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            state.callBinary(
+                ApiTags.EmitDiagnostic,
+                encodeArgs = { w ->
+                    RpcCodec.encodeDiagnostic(w, diagnostic) { buf, sp -> state.encodeSpanHandle(buf, sp) }
+                },
+                decodeResult = { RpcCodec.decodeUnit() },
+            )
+            return
+        }
+        diagnostic.toPublicDiagnostic().emitLocally()
     }
 
     fun tsDrop(stream: ClientTokenStream) {
@@ -132,16 +486,31 @@ internal object BridgeMethods {
 
     fun tsIsEmpty(stream: ClientTokenStream): Boolean = stream.stream.isEmpty()
 
-    fun tsExpandExpr(stream: ClientTokenStream): Result<ClientTokenStream> =
-        when (
+    fun tsExpandExpr(stream: ClientTokenStream): Result<ClientTokenStream> {
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            val handle = state.allocateServerStreamHandle(stream.stream)
+            val resultHandles =
+                state.callBinary(
+                    ApiTags.TsExpandExpr,
+                    encodeArgs = { handle.encode(it) },
+                    decodeResult = { r -> RpcCodec.decodeResult(r, Handle::decode) },
+                )
+            state.callBinary(
+                ApiTags.TsDrop,
+                encodeArgs = { handle.encode(it) },
+                decodeResult = { RpcCodec.decodeUnit() },
+            )
+            return resultHandles.map { ClientTokenStream(state.materializeTokenStream(it)) }
+        }
+        return when (
             val response =
-                BridgeClientState
-                    .currentOrNull()
-                    ?.dispatchRequest(BridgePayload.Request.ExpandExpr(stream))
+                state?.dispatchRequest(BridgePayload.Request.ExpandExpr(stream))
         ) {
             is BridgePayload.Response.TokenStreamResult -> response.result
             else -> stream.expandExprLocally()
         }
+    }
 
     fun tsFromStr(source: String): Result<ClientTokenStream> =
         when (val parsed = TokenStream.fromString(source)) {
@@ -209,7 +578,8 @@ internal object BridgeMethods {
         start: Int,
         end: Int,
     ): ClientSpan? {
-        val range = span.span.byteRange()
+        val synthetic = span.span.data as? SpanData.Synthetic ?: return null
+        val range = synthetic.range
         val length = if (range.isEmpty()) 0 else range.last - range.first + 1
         if (start < 0 || end > length || start > end) return null
         return ClientSpan(Span(SpanData.Synthetic(range.first + start until range.first + end)))
@@ -220,19 +590,207 @@ internal object BridgeMethods {
         at: ClientSpan,
     ): ClientSpan = ClientSpan(span.span.resolvedAt(at.span))
 
-    fun spanSourceText(span: ClientSpan): String? =
-        BridgeClientState
-            .currentOrNull()
+    fun spanSourceText(span: ClientSpan): String? {
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            return state.callBinary(
+                ApiTags.SpanSourceText,
+                encodeArgs = { state.encodeSpanHandle(it, span) },
+                decodeResult = { r -> RpcCodec.decodeNullable(r, RpcCodec::decodeString) },
+            )
+        }
+        return state
             ?.dispatchRequest(BridgePayload.Request.SpanSourceText(span))
             .stringValueOrNull()
-            ?: span.span.sourceText()
+            ?: span.span.localSourceText()
+    }
 
     fun spanSaveSpan(span: ClientSpan): Int = span.span.saveSpan()
 
-    fun spanRecoverProcMacroSpan(id: Int): ClientSpan = ClientSpan(Span.recoverProcMacroSpan(id))
+    fun spanRecoverProcMacroSpan(id: Int): ClientSpan = ClientSpan(SpanRegistry.recover(id))
 
-    fun symbolNormalizeAndValidateIdent(string: String): Result<Symbol> =
-        Symbol.normalizeAndValidateIdent(string)
+    fun symbolNormalizeAndValidateIdent(string: String): Result<Symbol> {
+        val state = BridgeClientState.currentOrNull()
+        if (state?.binaryDispatch != null) {
+            return state.callBinary(
+                ApiTags.SymbolNormalizeAndValidateIdent,
+                encodeArgs = { RpcCodec.encodeString(it, string) },
+                decodeResult = { r -> RpcCodec.decodeResult(r, Symbol::decode) },
+            )
+        }
+        return Symbol.normalizeAndValidateIdent(string)
+    }
+}
+
+/**
+ * Client-side RPC entry point carrying phantom input and output markers over
+ * a uniform binary buffer callback.
+ */
+internal class Client<I, O>(
+    val handleCounters: HandleCounters,
+    val run: ClientRunCallback,
+) {
+    fun clone(): Client<I, O> = Client(handleCounters = handleCounters, run = run)
+
+    companion object {
+        fun expand1(f: (TokenStream) -> TokenStream): Client<ClientTokenStream, ClientTokenStream> {
+            val reified =
+                reifyToExternCFnHrtBridge<BridgeConfig, Buffer> { config ->
+                    runClient(
+                        config = config,
+                        decodeInput = { reader, state ->
+                            val inputHandle = Handle.decode(reader)
+                            state.materializeTokenStream(inputHandle)
+                        },
+                        encodeOutput = { w, output, state ->
+                            val outHandle = state.allocateServerTokenStream(output)
+                            RpcCodec.encodeNullable(w, outHandle) { buf, h -> h.encode(buf) }
+                        },
+                        f = f,
+                    )
+                }
+            return Client(handleCounters = COUNTERS, run = ClientRunCallback { reified(it) })
+        }
+
+        fun expand2(
+            f: (TokenStream, TokenStream) -> TokenStream,
+        ): Client<Pair<ClientTokenStream, ClientTokenStream>, ClientTokenStream> {
+            val reified =
+                reifyToExternCFnHrtBridge<BridgeConfig, Buffer> { config ->
+                    runClient(
+                        config = config,
+                        decodeInput = { reader, state ->
+                            val firstHandle = Handle.decode(reader)
+                            val secondHandle = Handle.decode(reader)
+                            Pair(
+                                state.materializeTokenStream(firstHandle),
+                                state.materializeTokenStream(secondHandle),
+                            )
+                        },
+                        encodeOutput = { w, output, state ->
+                            val outHandle = state.allocateServerTokenStream(output)
+                            RpcCodec.encodeNullable(w, outHandle) { buf, h -> h.encode(buf) }
+                        },
+                        f = { (attr, item) -> f(attr, item) },
+                    )
+                }
+            return Client(handleCounters = COUNTERS, run = ClientRunCallback { reified(it) })
+        }
+    }
+}
+
+private var panicHookInstalled: Boolean = false
+
+internal fun maybeInstallPanicHook(forceShowPanics: Boolean) {
+    if (!panicHookInstalled && !forceShowPanics) {
+        panicHookInstalled = true
+    }
+}
+
+/**
+ * Client-side execution helper that resets the symbol interner, decodes initial
+ * globals and inputs, enters [BridgeClientState], catches panics, and encodes
+ * the resulting [PanicOutcome].
+ */
+internal fun <A, R> runClient(
+    config: BridgeConfig,
+    decodeInput: (BufferReader, BridgeState) -> A,
+    encodeOutput: (Buffer, R, BridgeState) -> Unit,
+    f: (A) -> R,
+): Buffer {
+    var buf = config.binaryInput
+    val binaryDispatch = checkNotNull(config.binaryDispatch) { "runClient requires binaryDispatch" }
+    try {
+        maybeInstallPanicHook(config.forceShowPanics)
+        Symbol.invalidateAll()
+        val reader = buf.toReader()
+        val defSiteHandle = Handle.decode(reader)
+        val callSiteHandle = Handle.decode(reader)
+        val mixedSiteHandle = Handle.decode(reader)
+
+        val bootstrapState =
+            BridgeState(
+                globals = config.globals,
+                dispatch = config.dispatch,
+                binaryDispatch = binaryDispatch,
+                cachedBinaryBuffer = Buffer.new(),
+            )
+        val defSite = bootstrapState.decodeSpanHandle(Buffer.new().also { defSiteHandle.encode(it) }.toReader())
+        val callSite = bootstrapState.decodeSpanHandle(Buffer.new().also { callSiteHandle.encode(it) }.toReader())
+        val mixedSite = bootstrapState.decodeSpanHandle(Buffer.new().also { mixedSiteHandle.encode(it) }.toReader())
+
+        val state =
+            bootstrapState.copy(
+                globals = ExpnGlobals(defSite = defSite, callSite = callSite, mixedSite = mixedSite),
+            )
+        val input = decodeInput(reader, state)
+        state.cachedBinaryBuffer = buf.take()
+
+        var encodedSuccess: ByteArray? = null
+        BridgeClientState.set(state) {
+            val output = f(input)
+            val outBuf = Buffer.new()
+            RpcCodec.encodePanicOutcome(outBuf, PanicOutcome.Ok(output)) { w, value ->
+                encodeOutput(w, value, state)
+            }
+            encodedSuccess = outBuf.toByteArray()
+        }
+        buf = state.cachedBinaryBuffer
+        buf.clear()
+        buf.extendFromArray(checkNotNull(encodedSuccess))
+    } catch (t: Throwable) {
+        val panic = PanicMessage.from(t)
+        buf.clear()
+        RpcCodec.encodePanicOutcome<Unit>(buf, PanicOutcome.Panicked(panic)) { _, _ -> }
+    }
+    Symbol.invalidateAll()
+    return buf
+}
+
+/**
+ * Descriptor for a procedural macro exported by a proc-macro crate.
+ */
+internal sealed class ProcMacro {
+    data class CustomDerive(
+        val traitName: String,
+        val attributes: List<String>,
+        val client: Client<ClientTokenStream, ClientTokenStream>,
+    ) : ProcMacro()
+
+    data class Attr(
+        val name: String,
+        val client: Client<Pair<ClientTokenStream, ClientTokenStream>, ClientTokenStream>,
+    ) : ProcMacro()
+
+    data class Bang(
+        val name: String,
+        val client: Client<ClientTokenStream, ClientTokenStream>,
+    ) : ProcMacro()
+
+    fun name(): String =
+        when (this) {
+            is CustomDerive -> traitName
+            is Attr -> name
+            is Bang -> name
+        }
+
+    companion object {
+        fun customDerive(
+            traitName: String,
+            attributes: List<String>,
+            expand: (TokenStream) -> TokenStream,
+        ): ProcMacro = CustomDerive(traitName = traitName, attributes = attributes, client = Client.expand1(expand))
+
+        fun attr(
+            name: String,
+            expand: (TokenStream, TokenStream) -> TokenStream,
+        ): ProcMacro = Attr(name = name, client = Client.expand2(expand))
+
+        fun bang(
+            name: String,
+            expand: (TokenStream) -> TokenStream,
+        ): ProcMacro = Bang(name = name, client = Client.expand1(expand))
+    }
 }
 
 private fun BridgeState.dispatchRequest(request: BridgePayload.Request): BridgePayload.Response? =
@@ -248,10 +806,7 @@ private fun BridgePayload.Response?.stringValueOrNull(): String? =
     }
 
 internal fun ClientTokenStream.expandExprLocally(): Result<ClientTokenStream> =
-    when (val expanded = stream.expandExpr()) {
-        is TokenStreamExpandOutcome.Ok -> Result.Ok(ClientTokenStream(expanded.value))
-        is TokenStreamExpandOutcome.Err -> Result.Err(ExpandError().toString())
-    }
+    Result.Err(ExpandError().toString())
 
 internal fun BridgeDiagnostic<ClientSpan>.toPublicDiagnostic(): Diagnostic {
     val out =
@@ -317,12 +872,27 @@ private fun TokenTree.deepClone(): TokenTree =
 private fun parseRustLiteral(source: String): Result<BridgeLiteral<ClientSpan>>? {
     val src = source.trim()
     if (src.isEmpty()) return Result.Err("empty literal")
-    parseRawLiteral(src)?.let { return Result.Ok(it.toBridgeLiteral()) }
-    parseQuotedLiteral(src, prefix = "b", quote = '\'', kind = BridgeLitKind.Byte)?.let { return Result.Ok(it.toBridgeLiteral()) }
-    parseQuotedLiteral(src, prefix = "", quote = '\'', kind = BridgeLitKind.Char)?.let { return Result.Ok(it.toBridgeLiteral()) }
-    parseQuotedLiteral(src, prefix = "b", quote = '"', kind = BridgeLitKind.ByteStr)?.let { return Result.Ok(it.toBridgeLiteral()) }
-    parseQuotedLiteral(src, prefix = "c", quote = '"', kind = BridgeLitKind.CStr)?.let { return Result.Ok(it.toBridgeLiteral()) }
-    parseQuotedLiteral(src, prefix = "", quote = '"', kind = BridgeLitKind.Str)?.let { return Result.Ok(it.toBridgeLiteral()) }
+    parseRawLiteral(src)?.let { rawResult ->
+        return when (rawResult) {
+            is Result.Ok -> Result.Ok(rawResult.value.toBridgeLiteral())
+            is Result.Err -> Result.Err(rawResult.message)
+        }
+    }
+    parseQuotedLiteral(src, prefix = "b", quote = '\'', kind = BridgeLitKind.Byte)?.let {
+        return Result.Ok(it.toBridgeLiteral())
+    }
+    parseQuotedLiteral(src, prefix = "", quote = '\'', kind = BridgeLitKind.Char)?.let {
+        return Result.Ok(it.toBridgeLiteral())
+    }
+    parseQuotedLiteral(src, prefix = "b", quote = '"', kind = BridgeLitKind.ByteStr)?.let {
+        return Result.Ok(it.toBridgeLiteral())
+    }
+    parseQuotedLiteral(src, prefix = "c", quote = '"', kind = BridgeLitKind.CStr)?.let {
+        return Result.Ok(it.toBridgeLiteral())
+    }
+    parseQuotedLiteral(src, prefix = "", quote = '"', kind = BridgeLitKind.Str)?.let {
+        return Result.Ok(it.toBridgeLiteral())
+    }
     parseNumericLiteral(src)?.let { parsed ->
         return when (parsed) {
             is Result.Ok -> Result.Ok(parsed.value.toBridgeLiteral())
@@ -359,7 +929,7 @@ private fun parseQuotedLiteral(
     return ParsedBridgeLiteral(kind, src.substring(prefix.length + 1, close), suffix.ifEmpty { null })
 }
 
-private fun parseRawLiteral(src: String): ParsedBridgeLiteral? {
+private fun parseRawLiteral(src: String): Result<ParsedBridgeLiteral>? {
     val candidates =
         listOf(
             "br" to { hashes: Int -> BridgeLitKind.ByteStrRaw(hashes) },
@@ -374,12 +944,44 @@ private fun parseRawLiteral(src: String): ParsedBridgeLiteral? {
         val hashes = index - prefix.length
         val closeMarker = "\"" + "#".repeat(hashes)
         val close = src.indexOf(closeMarker, startIndex = index + 1)
-        if (close < 0) return null
+        if (close < 0) return Result.Err("unterminated raw literal")
         val suffix = src.substring(close + closeMarker.length)
-        if (!suffix.isValidLiteralSuffix()) return null
-        return ParsedBridgeLiteral(kindForHashes(hashes), src.substring(index + 1, close), suffix.ifEmpty { null })
+        if (!suffix.isValidLiteralSuffix()) return Result.Err("invalid literal suffix")
+        val body = src.substring(index + 1, close)
+        val kind = kindForHashes(hashes)
+        val rawError = validateRawLiteralBody(kind, body)
+        if (rawError != null) {
+            return Result.Err("invalid raw literal: $rawError")
+        }
+        return Result.Ok(ParsedBridgeLiteral(kind, body, suffix.ifEmpty { null }))
     }
     return null
+}
+
+private fun validateRawLiteralBody(
+    kind: BridgeLitKind,
+    body: String,
+): EscapeError? {
+    var fatal: EscapeError? = null
+    when (kind) {
+        is BridgeLitKind.StrRaw ->
+            checkRawStr(body) { _, outcome ->
+                val err = outcome.errorOrNull()
+                if (fatal == null && err != null && err.isFatal()) fatal = err
+            }
+        is BridgeLitKind.ByteStrRaw ->
+            checkRawByteStr(body) { _, outcome ->
+                val err = outcome.errorOrNull()
+                if (fatal == null && err != null && err.isFatal()) fatal = err
+            }
+        is BridgeLitKind.CStrRaw ->
+            checkRawCStr(body) { _, outcome ->
+                val err = outcome.errorOrNull()
+                if (fatal == null && err != null && err.isFatal()) fatal = err
+            }
+        else -> {}
+    }
+    return fatal
 }
 
 private fun parseNumericLiteral(src: String): Result<ParsedBridgeLiteral>? {
@@ -505,11 +1107,11 @@ private fun String.isEscaped(index: Int): Boolean {
 }
 
 private fun String.isValidLiteralSuffix(): Boolean =
-    isEmpty() || (first().isLetter() || first() == '_') && all { it.isLetterOrDigit() || it == '_' }
+    isEmpty() || ((first().isLetter() || first() == '_') && all { it.isLetterOrDigit() || it == '_' })
 
 private class SpanListMultiSpanForBridge(
     private val spans: List<Span>,
-) : io.github.kotlinmania.procmacro.MultiSpan {
+) : MultiSpan {
     override fun intoSpans(): SpanList = SpanList(spans)
 }
 
@@ -522,7 +1124,7 @@ private fun BridgeTokenTree<ClientTokenStream, ClientSpan>.toPublicTree(): Token
                         delimiter = value.delimiter,
                         stream = BridgeMethods.tsClone(value.stream).stream,
                         span =
-                            io.github.kotlinmania.procmacro.DelimSpanData(
+                            DelimSpanData(
                                 open = value.span.open.span,
                                 close = value.span.close.span,
                                 entire = value.span.entire.span,

@@ -34,8 +34,10 @@ private class SimpleMultiplatformConcurrentMap<K : Any, V : Any> : Multiplatform
 
     override fun equals(other: Any?): Boolean =
         this === other ||
-            other is SimpleMultiplatformConcurrentMap<*, *> &&
-            map == other.map
+            (
+                other is SimpleMultiplatformConcurrentMap<*, *> &&
+                    map == other.map
+            )
 
     override fun hashCode(): Int = map.hashCode()
 
@@ -52,7 +54,7 @@ private class MultiplatformConcurrentMultiMapImpl<K : Any, V : Any> : Multiplatf
         map.computeIfAbsent(key) { newConcurrentSet() }.add(value)
     }
 
-    override fun get(key: K): Set<V> = map[key] ?: emptySet()
+    override fun get(key: K): Set<V> = map[key].orEmpty()
 
     override fun remove(
         key: K,

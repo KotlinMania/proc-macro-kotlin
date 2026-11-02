@@ -200,8 +200,8 @@ internal class SyntaxElementTypeSetTest {
 
     @Test
     fun spreadOperatorKeepsAllElements() {
-        val array = arrayOf(1, 2, 3)
-        val set = setOf(*array, 4)
+        val array = arrayOf(SyntaxElementType("1"), SyntaxElementType("2"), SyntaxElementType("3"))
+        val set = syntaxElementTypeSetOf(*array, SyntaxElementType("4"))
         assertEquals(4, set.size)
     }
 

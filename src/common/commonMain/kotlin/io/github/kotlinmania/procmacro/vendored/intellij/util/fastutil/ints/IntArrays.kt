@@ -120,11 +120,11 @@ object IntArrays {
         offset: Int,
         max: Int,
     ): Int {
-        var offset = offset
+        var curOffset = offset
         if (max < 0) throw IllegalArgumentException("The maximum number of elements ($max) is negative")
-        if (offset < 0 || offset + max > array.size) throw IllegalArgumentException()
+        if (curOffset < 0 || curOffset + max > array.size) throw IllegalArgumentException()
         var j = max
-        while (j-- != 0 && i.hasNext()) array[offset++] = i.next()
+        while (j-- != 0 && i.hasNext()) array[curOffset++] = i.next()
         return max - j - 1
     }
 
@@ -159,11 +159,11 @@ object IntArrays {
         i: IntIterator,
         max: Int,
     ): IntArray {
-        var max = max
-        if (max < 0) throw IllegalArgumentException("The maximum number of elements ($max) is negative")
+        var remaining = max
+        if (remaining < 0) throw IllegalArgumentException("The maximum number of elements ($remaining) is negative")
         var array = IntArray(16)
         var j = 0
-        while (max-- != 0 && i.hasNext()) {
+        while (remaining-- != 0 && i.hasNext()) {
             if (j == array.size) array = grow(array, j + 1)
             array[j++] = i.next()
         }

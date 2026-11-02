@@ -7,7 +7,7 @@ import io.github.kotlinmania.procmacro.vendored.intellij.platform.syntax.lexer.L
 open class FlexAdapter(
     val flex: FlexLexer,
 ) : LexerBase() {
-    private lateinit var myText: CharSequence
+    private var myText: CharSequence = ""
     private var myTokenType: SyntaxElementType? = null
 
     private var myTokenStart = 0

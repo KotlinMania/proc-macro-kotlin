@@ -1,7 +1,12 @@
 // port-lint: source src/diagnostic.rs
 package io.github.kotlinmania.procmacro
 
-/** An enum representing a diagnostic level. */
+import io.github.kotlinmania.procmacro.bridge.BridgeClientState
+import io.github.kotlinmania.procmacro.bridge.BridgeDiagnostic
+import io.github.kotlinmania.procmacro.bridge.BridgeMethods
+import io.github.kotlinmania.procmacro.bridge.ClientSpan
+
+/** An enum representing a diagnostic severity level. */
 public enum class Level {
     /** An error. */
     ERROR,
@@ -16,9 +21,9 @@ public enum class Level {
     HELP,
 }
 
-/** Interface implemented by types that can be converted into a set of [Span]s. */
+/** Interface implemented by types convertible into a sequence of [Span] values. */
 public interface MultiSpan {
-    /** Converts `this` into a concrete [SpanList]. */
+    /** Converts this value into a concrete [SpanList]. */
     public fun intoSpans(): SpanList
 }
 
@@ -34,21 +39,11 @@ public class SpanList internal constructor(
     internal fun asList(): List<Span> = spans
 }
 
-/**
- * Wraps a single [Span] as a [MultiSpan]. Mirrors the upstream
- * `impl MultiSpan for Span`.
- */
+/** Wraps a single [Span] as a [MultiSpan]. */
 public fun Span.toMultiSpan(): MultiSpan = SingleSpanMultiSpan(this)
 
 /**
- * Wraps a list of [Span] as a [MultiSpan]. Mirrors the upstream
- * `impl MultiSpan for Vec<Span>` and `impl<'a> MultiSpan for &'a [Span]`
- * collapsed into a single implementation: Kotlin's `List<Span>` is the
- * KMP analog of both `Vec<Span>` (owned) and `&[Span]` (borrowed slice).
- * Snapshots the input at wrap time so the resulting [MultiSpan] is
- * immune to later mutation of the source list, matching the spirit of
- * the upstream `Vec<Span>::into_spans` (consuming) and `&[Span]::into_spans`
- * (copying via `to_vec`) impls.
+ * Wraps a list of [Span] values as an immutable [MultiSpan] snapshot.
  */
 internal fun List<Span>.toMultiSpan(): MultiSpan = SpanListMultiSpan(this.toList())
 
@@ -67,8 +62,7 @@ private class SpanListMultiSpan(
 }
 
 /**
- * A structure representing a diagnostic message and associated children
- * messages.
+ * A diagnostic message together with its primary spans and child diagnostics.
  */
 public class Diagnostic private constructor(
     private var level: Level,
@@ -96,7 +90,7 @@ public class Diagnostic private constructor(
             Diagnostic(level = level, message = message, spans = spans.intoSpans(), children = mutableListOf())
     }
 
-    /** Returns a copy of this diagnostic and its child diagnostics. */
+    /** Returns a deep copy of this diagnostic and its child diagnostics. */
     public fun clone(): Diagnostic =
         Diagnostic(
             level = level,
@@ -105,17 +99,8 @@ public class Diagnostic private constructor(
             children = children.map { it.clone() }.toMutableList(),
         )
 
-    // The upstream `diagnostic_child_methods!($spanned, $regular, $level)`
-    // macro generates a pair of chainable child-adders per level:
-    //   - `$spanned(spans: MultiSpan, message: String)`
-    //   - `$regular(message: String)`
-    // It is invoked once per level (Error, Warning, Note, Help), producing
-    // the eight methods below. Kotlin has no macro system, so the eight
-    // expansions are written out by hand in the same upstream order.
-
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.ERROR]
-     * level, and the given [spans] and [message].
+     * Adds a child diagnostic with [Level.ERROR] at [spans] and [message].
      */
     public fun spanError(
         spans: MultiSpan,
@@ -126,8 +111,7 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.ERROR]
-     * level, and the given [message].
+     * Adds a child diagnostic with [Level.ERROR] and [message].
      */
     public fun error(message: String): Diagnostic {
         children.add(new(Level.ERROR, message))
@@ -135,8 +119,7 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.WARNING]
-     * level, and the given [spans] and [message].
+     * Adds a child diagnostic with [Level.WARNING] at [spans] and [message].
      */
     public fun spanWarning(
         spans: MultiSpan,
@@ -147,8 +130,7 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.WARNING]
-     * level, and the given [message].
+     * Adds a child diagnostic with [Level.WARNING] and [message].
      */
     public fun warning(message: String): Diagnostic {
         children.add(new(Level.WARNING, message))
@@ -156,8 +138,7 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.NOTE]
-     * level, and the given [spans] and [message].
+     * Adds a child diagnostic with [Level.NOTE] at [spans] and [message].
      */
     public fun spanNote(
         spans: MultiSpan,
@@ -168,8 +149,7 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.NOTE]
-     * level, and the given [message].
+     * Adds a child diagnostic with [Level.NOTE] and [message].
      */
     public fun note(message: String): Diagnostic {
         children.add(new(Level.NOTE, message))
@@ -177,8 +157,7 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.HELP]
-     * level, and the given [spans] and [message].
+     * Adds a child diagnostic with [Level.HELP] at [spans] and [message].
      */
     public fun spanHelp(
         spans: MultiSpan,
@@ -189,39 +168,38 @@ public class Diagnostic private constructor(
     }
 
     /**
-     * Adds a new child diagnostic message to `this` with the [Level.HELP]
-     * level, and the given [message].
+     * Adds a child diagnostic with [Level.HELP] and [message].
      */
     public fun help(message: String): Diagnostic {
         children.add(new(Level.HELP, message))
         return this
     }
 
-    /** Returns the diagnostic [Level] for `this`. */
+    /** Returns the diagnostic [Level]. */
     public fun level(): Level = level
 
-    /** Sets the level in `this` to [level]. */
+    /** Updates the diagnostic [Level]. */
     public fun setLevel(level: Level) {
         this.level = level
     }
 
-    /** Returns the message in `this`. */
+    /** Returns the diagnostic message text. */
     public fun message(): String = message
 
-    /** Sets the message in `this` to [message]. */
+    /** Updates the diagnostic message text. */
     public fun setMessage(message: String) {
         this.message = message
     }
 
-    /** Returns the [Span]s in `this`. */
+    /** Returns the [SpanList] attached to this diagnostic. */
     public fun spans(): SpanList = spans
 
-    /** Sets the [Span]s in `this` to [spans]. */
+    /** Replaces the spans attached to this diagnostic via [MultiSpan]. */
     public fun setSpans(spans: MultiSpan) {
         this.spans = spans.intoSpans()
     }
 
-    /** Returns an iterator over the children diagnostics of `this`. */
+    /** Returns an iterator over the child diagnostics. */
     public fun children(): Children = Children(children.iterator())
 
     internal fun addChildDiagnostic(child: Diagnostic): Diagnostic {
@@ -229,27 +207,40 @@ public class Diagnostic private constructor(
         return this
     }
 
-    /**
-     * Emit the diagnostic.
-     *
-     * Upstream routes through `bridge::client::Methods::emit_diagnostic`,
-     * which sends the diagnostic across the proc-macro / rustc IPC bridge.
-     * Kotlin keeps diagnostics observable by rendering this diagnostic
-     * and its children to standard output; consumers can redirect output
-     * if they need to capture emissions.
-     */
-    public fun emit() {
+    internal fun toBridgeDiagnostic(): BridgeDiagnostic<ClientSpan> =
+        BridgeDiagnostic(
+            level = level,
+            message = message,
+            spans = spans.asList().map(::ClientSpan),
+            children = children.map { it.toBridgeDiagnostic() },
+        )
+
+    internal fun emitLocally() {
         println(renderDiagnostic(this))
+    }
+
+    /** Emits this diagnostic through the active bridge or standard output. */
+    public fun emit() {
+        if (BridgeClientState.isAvailable()) {
+            BridgeMethods.emitDiagnostic(toBridgeDiagnostic())
+        } else {
+            emitLocally()
+        }
     }
 }
 
-/** Iterator over the children diagnostics of a [Diagnostic]. */
+/** Iterator over the child diagnostics of a [Diagnostic]. */
 public class Children internal constructor(
     private val inner: Iterator<Diagnostic>,
 ) : Iterator<Diagnostic> {
     override fun hasNext(): Boolean = inner.hasNext()
 
-    override fun next(): Diagnostic = inner.next()
+    override fun next(): Diagnostic {
+        if (!hasNext()) {
+            throw NoSuchElementException()
+        }
+        return inner.next()
+    }
 }
 
 private fun renderDiagnostic(

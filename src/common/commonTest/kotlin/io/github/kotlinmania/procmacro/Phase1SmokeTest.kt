@@ -1,5 +1,6 @@
 package io.github.kotlinmania.procmacro
 
+import io.github.kotlinmania.rustcliteralescaper.EscapeError
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -530,19 +531,19 @@ class ConversionErrorKindTest {
     fun variantsAreDistinct() {
         val a: ConversionErrorKind = ConversionErrorKind.InvalidLiteralKind
         val b: ConversionErrorKind =
-            ConversionErrorKind.FailedToUnescape(EscapeError.Fatal("boom"))
+            ConversionErrorKind.FailedToUnescape(EscapeError.InvalidEscape)
         assertNotEquals(a, b)
     }
 
     @Test
     fun fatalEscapeErrorReportsItself() {
-        val e: EscapeError = EscapeError.Fatal("bad escape")
+        val e: EscapeError = EscapeError.InvalidEscape
         assertTrue(e.isFatal())
     }
 
     @Test
     fun recoverableEscapeErrorReportsItself() {
-        val e: EscapeError = EscapeError.Recoverable("warning")
+        val e: EscapeError = EscapeError.UnskippedWhitespaceWarning
         assertFalse(e.isFatal())
     }
 }

@@ -1,5 +1,6 @@
 import Testing
 import ProcMacro
+import RustcLiteralEscaper
 
 // Smoke and parity tests for the Kotlin -> Swift Export -> SPM -> swift test pipeline.
 //
@@ -126,6 +127,35 @@ import ProcMacro
         #expect(group.stream().toString() == "hello")
         #expect(group.toString() == "{ hello }")
         #expect(group.span().eq(other: Span.Companion.shared.callSite()))
+        #expect(group.clone().toString() == "{ hello }")
+    }
+
+    @Test func testLiteralUnescapingAndTrackedApisAcrossSwiftBoundary() {
+        let parsed = Literal.Companion.shared.fromString(src: #""hello\nworld""#)
+        #expect(parsed.isSuccess)
+        #expect(parsed.getOrThrow().strValue().getOrThrow() == "hello\nworld")
+
+        let crab = Literal.Companion.shared.characterCodePoint(codePoint: 0x1F980)
+        #expect(crab.toString() == "'🦀'")
+        #expect(crab.characterValue().codePointOrThrow() == 0x1F980)
+        #expect(crab.characterValue().textOrThrow() == "🦀")
+
+        let invalidLit = Literal.Companion.shared.fromStrUnchecked(src: #""\z""#)
+        let strErr = invalidLit.strValue().errorOrNull()
+        #expect(strErr != nil)
+        #expect(EscapeError.InvalidEscape.isFatal())
+        #expect(!EscapeError.UnskippedWhitespaceWarning.isFatal())
+
+        let span = Span.Companion.shared.callSite()
+        #expect(span.error(message: "bad").level() == .ERROR)
+        #expect(span.warning(message: "warn").level() == .WARNING)
+        #expect(span.note(message: "info").level() == .NOTE)
+        #expect(span.help(message: "hint").level() == .HELP)
+
+        let envOutcome = tracked.envVar(key: "UNSET_SWIFT_EXPORT_ENV")
+        #expect(envOutcome.isFailure)
+        #expect(envOutcome.errorOrNull() == .NOT_PRESENT)
+        tracked.path(path: "Package.swift")
     }
 
     private func utf16(_ scalar: String) -> UInt16 {

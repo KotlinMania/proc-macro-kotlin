@@ -1,31 +1,9 @@
 package io.github.kotlinmania.procmacro.rustcore
 
 /**
- * Kotlin emulation of the `u8::escape_ascii` and `char::escape_debug`
- * helpers from Rust `core`. escape.rs calls into both of them and they
- * have no direct Kotlin stdlib equivalent. None of this mirrors a file
- * under `tmp/proc-macro/`; the upstream references are:
- *
- * | Kotlin               | Rust                                          |
- * |----------------------|-----------------------------------------------|
- * | `escapeAscii`        | `u8::escape_ascii` (core::ascii)              |
- * | `escapeDebug`        | `char::escape_debug_ext` (core::char)         |
- * | `isPrintableUnicode` | `char::is_printable` (core, private)          |
- * | `isGraphemeExtend`   | `char::is_grapheme_extended` (core, private)  |
- *
- * `is_printable` and `is_grapheme_extended` rely on Rust's bundled
- * Unicode tables. Kotlin stdlib exposes the relevant decision via
- * `CharCategory`, which is a coarser approximation but covers the
- * printable / mark distinction proc_macro needs. Edge cases that hinge
- * on a specific Unicode property (ZWJ, certain Cf code points) may
- * differ from upstream Rust; a future `core-kotlin` sibling backed by
- * the real Unicode tables would close that gap.
- */
-
-/**
- * Mirrors Rust's `u8::escape_ascii`: standard ASCII escapes for the
- * named control bytes, printable ASCII passes through, everything else
- * (`<0x20`, `0x7f`, `>=0x80`) becomes `\xHH` with lowercase hex.
+ * Standard ASCII escape formatting for byte literals: named escapes for
+ * tab, newline, carriage return, backslash, single quote, and double quote;
+ * printable ASCII passes through; all other bytes format as lowercase hex.
  */
 internal fun escapeAscii(
     u: Int,
@@ -47,10 +25,10 @@ internal fun escapeAscii(
 }
 
 /**
- * Mirrors Rust's `char::escape_debug`: standard escapes for the named
- * control characters, printable Unicode passes through, and anything
- * else (including combining marks per `Grapheme_Extend`) becomes
- * `\u{...}` with lowercase hex.
+ * Unicode debug escape formatting for character and string literals: named
+ * escapes for NUL, tab, newline, carriage return, backslash, single quote,
+ * and double quote; printable non-combining Unicode scalars pass through;
+ * all other scalars format as braced lowercase hex escapes.
  */
 internal fun escapeDebug(
     ch: Int,
@@ -87,7 +65,7 @@ internal fun escapeDebug(
         }
     }
     if (isPrintableUnicode(ch) && !isGraphemeExtend(ch)) {
-        repr.appendCodePoint(ch)
+        repr.appendUnicodeScalar(ch)
     } else {
         repr.append("\\u{")
         repr.append(ch.toString(16))
@@ -97,6 +75,9 @@ internal fun escapeDebug(
 
 internal fun isPrintableUnicode(codePoint: Int): Boolean {
     if (codePoint in 0x20..0x7e) return true
+    if (codePoint > 0xffff) {
+        return isPrintableSupplementary(codePoint)
+    }
     val type = unicodeCategory(codePoint) ?: return false
     return when (type) {
         CharCategory.UPPERCASE_LETTER,
@@ -125,19 +106,37 @@ internal fun isPrintableUnicode(codePoint: Int): Boolean {
 }
 
 internal fun isGraphemeExtend(codePoint: Int): Boolean {
+    if (codePoint > 0xffff) {
+        return isSupplementaryGraphemeExtend(codePoint)
+    }
     val type = unicodeCategory(codePoint)
     return type == CharCategory.NON_SPACING_MARK ||
         type == CharCategory.ENCLOSING_MARK
 }
 
 private fun unicodeCategory(codePoint: Int): CharCategory? {
-    if (codePoint < 0 || codePoint > 0x10ffff) return null
-    if (codePoint <= 0xffff) {
-        return codePoint.toChar().category
-    }
-    // Supplementary plane characters: derive from the high surrogate; this
-    // is good enough for the printable/mark distinction proc_macro needs,
-    // and matches what Char.category exposes for surrogate pairs in KMP.
-    val highSurrogate = (((codePoint - 0x10000) shr 10) + 0xd800).toChar()
-    return highSurrogate.category
+    if (codePoint !in 0..0xffff) return null
+    return codePoint.toChar().category
 }
+
+private fun isPrintableSupplementary(codePoint: Int): Boolean {
+    if (codePoint !in 0x10000..0x3ffff) return false
+    if ((codePoint and 0xfffe) == 0xfffe) return false
+    return when (codePoint) {
+        0x110bd,
+        0x110cd,
+        in 0x13430..0x1343f,
+        in 0x1bca0..0x1bca3,
+        in 0x1d173..0x1d17a,
+        -> false
+        else -> true
+    }
+}
+
+private fun isSupplementaryGraphemeExtend(codePoint: Int): Boolean =
+    codePoint in 0x1d165..0x1d169 ||
+        codePoint in 0x1d16d..0x1d172 ||
+        codePoint in 0x1d17b..0x1d182 ||
+        codePoint in 0x1d185..0x1d18b ||
+        codePoint in 0x1d1aa..0x1d1ad ||
+        codePoint in 0xe0100..0xe01ef

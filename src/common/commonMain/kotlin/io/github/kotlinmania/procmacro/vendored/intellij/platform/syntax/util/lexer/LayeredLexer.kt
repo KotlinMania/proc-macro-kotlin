@@ -26,7 +26,9 @@ open class LayeredLexer(
         stopTokens: Array<SyntaxElementType>,
     ) {
         if (DISABLE_LAYERS_FLAG.get() == true) return
-        registerLayer(lexer, *startTokens)
+        for (startToken in startTokens) {
+            startTokenToLayerLexerMap[startToken] = lexer
+        }
         selfStoppingLexersSet.add(lexer)
         stopTokensMap[lexer] = stopTokens
     }
@@ -43,12 +45,13 @@ open class LayeredLexer(
 
     private fun activateLayerIfNecessary() {
         val baseTokenType = super.getTokenType()
-        currentLayerLexer = findLayerLexer(baseTokenType)
-        if (currentLayerLexer != null) {
+        val layerLexer = findLayerLexer(baseTokenType)
+        currentLayerLexer = layerLexer
+        if (layerLexer != null) {
             currentBaseTokenType = baseTokenType
             baseTokenEnd = super.getTokenEnd()
-            currentLayerLexer!!.start(super.getBufferSequence(), super.getTokenStart(), super.getTokenEnd())
-            if (currentLayerLexer in selfStoppingLexersSet) super.advance()
+            layerLexer.start(super.getBufferSequence(), super.getTokenStart(), super.getTokenEnd())
+            if (layerLexer in selfStoppingLexersSet) super.advance()
         }
     }
 

@@ -1,21 +1,15 @@
 // port-lint: source src/escape.rs
 package io.github.kotlinmania.procmacro
 
-import io.github.kotlinmania.procmacro.rustcore.appendCodePoint
+import io.github.kotlinmania.procmacro.rustcore.appendUnicodeScalar
 import io.github.kotlinmania.procmacro.rustcore.escapeAscii
 import io.github.kotlinmania.procmacro.rustcore.escapeDebug
 import io.github.kotlinmania.procmacro.rustcore.unicodeScalars
 import io.github.kotlinmania.procmacro.rustcore.utf8Chunks
 
 internal data class EscapeOptions(
-    /** Produce `\'`. */
     val escapeSingleQuote: Boolean,
-    /** Produce `\"`. */
     val escapeDoubleQuote: Boolean,
-    /**
-     * Produce `\x` escapes for non-ASCII, and use `\x` rather than `\u`
-     * for ASCII control characters.
-     */
     val escapeNonAscii: Boolean,
 )
 
@@ -56,8 +50,6 @@ private fun escapeSingleByte(
     ) {
         repr.append(u.toChar())
     } else {
-        // Escapes \t, \r, \n, \\, \', \", and uses \x## for non-ASCII and
-        // for ASCII control characters.
         escapeAscii(u, repr)
     }
 }
@@ -70,11 +62,8 @@ private fun escapeSingleChar(
     if ((ch == 0x27 && !opt.escapeSingleQuote) ||
         (ch == 0x22 && !opt.escapeDoubleQuote)
     ) {
-        repr.appendCodePoint(ch)
+        repr.appendUnicodeScalar(ch)
     } else {
-        // Escapes \0, \t, \r, \n, \\, \', \", and uses \u{...} for
-        // non-printable characters and for Grapheme_Extend characters, which
-        // includes things like U+0300 "Combining Grave Accent".
         escapeDebug(ch, repr)
     }
 }

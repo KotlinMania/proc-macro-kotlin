@@ -13,7 +13,7 @@ open class StringLiteralLexer(
     private val allowOctal: Boolean = true,
     private val allowHex: Boolean = false,
 ) : LexerBase() {
-    private lateinit var buffer: CharSequence
+    private var buffer: CharSequence = ""
     private var startOffset: Int = 0
     private var endOffset: Int = 0
     private var bufferEnd: Int = 0
@@ -57,10 +57,12 @@ open class StringLiteralLexer(
             canEscapeEolOrFramingSpaces &&
             (
                 nextChar == '\n' ||
-                    nextChar == ' ' &&
                     (
-                        seenEscapedSpacesOnly ||
-                            isTrailingSpace(startOffset + 2)
+                        nextChar == ' ' &&
+                            (
+                                seenEscapedSpacesOnly ||
+                                    isTrailingSpace(startOffset + 2)
+                            )
                     )
             )
         ) {
@@ -146,7 +148,7 @@ open class StringLiteralLexer(
             LOG.assertTrue(state != AFTER_LAST_QUOTE, this::toString)
             i++
             return when {
-                i == bufferEnd || buffer[i] == '\n' && !canEscapeEolOrFramingSpaces -> {
+                i == bufferEnd || (buffer[i] == '\n' && !canEscapeEolOrFramingSpaces) -> {
                     state = AFTER_LAST_QUOTE
                     i
                 }
@@ -183,48 +185,48 @@ open class StringLiteralLexer(
 
     private fun locateOctalEscapeSequence(i: Int): Int {
         val first = buffer[i]
-        var i = i + 1
-        if (i < bufferEnd && buffer[i] in '0'..'7') {
-            i++
-            if (i < bufferEnd && first <= '3' && buffer[i] in '0'..'7') {
-                i++
+        var idx = i + 1
+        if (idx < bufferEnd && buffer[idx] in '0'..'7') {
+            idx++
+            if (idx < bufferEnd && first <= '3' && buffer[idx] in '0'..'7') {
+                idx++
             }
         }
-        return i
+        return idx
     }
 
     protected open fun locateHexEscapeSequence(
         start: Int,
         i: Int,
     ): Int {
-        var i = i + 1
-        while (i < start + 4) {
+        var idx = i + 1
+        while (idx < start + 4) {
             when {
-                i == bufferEnd ||
-                    buffer[i] == '\n' ||
-                    buffer[i] == quoteChar
-                -> return i
-                else -> i++
+                idx == bufferEnd ||
+                    buffer[idx] == '\n' ||
+                    buffer[idx] == quoteChar
+                -> return idx
+                else -> idx++
             }
         }
-        return i
+        return idx
     }
 
     protected open fun locateUnicodeEscapeSequence(
         start: Int,
         i: Int,
     ): Int {
-        var i = i + 1
-        while (i < start + 6) {
+        var idx = i + 1
+        while (idx < start + 6) {
             when {
-                i == bufferEnd ||
-                    buffer[i] == '\n' ||
-                    buffer[i] == quoteChar
-                -> return i
-                else -> i++
+                idx == bufferEnd ||
+                    buffer[idx] == '\n' ||
+                    buffer[idx] == quoteChar
+                -> return idx
+                else -> idx++
             }
         }
-        return i
+        return idx
     }
 
     protected open fun locateAdditionalEscapeSequence(
@@ -257,13 +259,13 @@ private inline fun Logger.assertTrue(
     message: (() -> String),
 ): Boolean {
     if (!condition) {
-        val message =
+        val formattedMessage =
             buildString {
                 append("Assertion failed")
                 append(": ")
                 append(message())
             }
-        error(message)
+        error(formattedMessage)
     }
     return condition
 }

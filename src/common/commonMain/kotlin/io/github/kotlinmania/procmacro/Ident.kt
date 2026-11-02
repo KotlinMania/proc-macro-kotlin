@@ -1,39 +1,18 @@
-// port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
 
 /**
- * An identifier (`ident`).
+ * An identifier token.
  */
 public class Ident internal constructor(
     internal val data: IdentData,
 ) {
     public companion object {
         /**
-         * Creates a new [Ident] with the given `string` as well as the
-         * specified `span`. The `string` argument must be a valid
-         * identifier permitted by the language (including keywords, e.g.
-         * `self` or `fn`). Otherwise, the function will throw.
+         * Creates a new [Ident] with the given [string] and [span].
          *
-         * The constructed identifier will be NFC-normalized. See the
-         * [Reference](https://doc.rust-lang.org/nightly/reference/identifiers.html#r-ident.normalization)
-         * for more info.
-         *
-         * Note that `span` configures the hygiene information for this
-         * identifier. As of this time [Span.callSite] explicitly opts-in
-         * to "call-site" hygiene meaning that identifiers created with
-         * this span will be resolved as if they were written directly at
-         * the location of the macro call, and other code at the macro
-         * call site will be able to refer to them as well.
-         *
-         * Later spans like [Span.defSite] will allow to opt-in to
-         * "definition-site" hygiene meaning that identifiers created with
-         * this span will be resolved at the location of the macro
-         * definition and other code at the macro call site will not be
-         * able to refer to them.
-         *
-         * Due to the current importance of hygiene this constructor,
-         * unlike other tokens, requires a [Span] to be specified at
-         * construction.
+         * The [string] argument must be a valid identifier permitted by the
+         * language (including keywords); otherwise this function throws
+         * [IllegalArgumentException].
          */
         public fun new(
             string: String,
@@ -44,11 +23,9 @@ public class Ident internal constructor(
         }
 
         /**
-         * Same as [new], but creates a raw identifier (`r#ident`).
-         * The `string` argument must be a valid identifier permitted by
-         * the language (including keywords, e.g. `fn`). Keywords which
-         * are usable in path segments (e.g. `self`, `super`) are not
-         * supported, and will cause this constructor to throw.
+         * Creates a raw identifier (`r#ident`) with the given [string] and
+         * [span]. Path-segment keywords and `_` cannot be raw identifiers
+         * and cause this constructor to throw [IllegalArgumentException].
          */
         public fun newRaw(
             string: String,
@@ -96,6 +73,16 @@ public class Ident internal constructor(
             )
     }
 
+    /** Returns an independent copy of this [Ident]. */
+    public fun clone(): Ident =
+        Ident(
+            IdentData(
+                sym = data.sym,
+                isRaw = data.isRaw,
+                span = data.span,
+            ),
+        )
+
     /**
      * Returns the span of this [Ident], encompassing the entire string
      * returned by [toString].
@@ -111,19 +98,14 @@ public class Ident internal constructor(
     }
 
     /**
-     * Prints the identifier as a string that should be losslessly
-     * convertible back into the same identifier.
+     * Prints the identifier as a string convertible back into the same
+     * identifier.
      */
     override fun toString(): String = if (data.isRaw) "r#${data.sym}" else data.sym
 }
 
 /**
  * Internal backing store for [Ident].
- *
- * Upstream: `bridge::Ident<bridge::client::Span, bridge::client::Symbol>`.
- * The Kotlin port stores the identifier symbol as a plain [String]; phase
- * 3 may introduce a vendored `Symbol` interner if measurement shows it
- * earns its keep.
  */
 internal data class IdentData(
     val sym: String,

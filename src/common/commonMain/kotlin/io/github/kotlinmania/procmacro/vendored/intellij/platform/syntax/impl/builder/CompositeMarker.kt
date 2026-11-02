@@ -11,7 +11,12 @@ internal class CompositeMarker(
     builder: SyntaxTreeBuilderImpl,
 ) : ProductionMarker(markerId, builder),
     SyntaxTreeBuilder.Marker {
-    lateinit var type: SyntaxElementType
+    private var nodeType: SyntaxElementType? = null
+    var type: SyntaxElementType
+        get() = checkNotNull(nodeType) { "CompositeMarker.type accessed before initialization" }
+        set(value) {
+            nodeType = value
+        }
     var endIndex: Int = -1
 
     override fun isErrorMarker(): Boolean = false

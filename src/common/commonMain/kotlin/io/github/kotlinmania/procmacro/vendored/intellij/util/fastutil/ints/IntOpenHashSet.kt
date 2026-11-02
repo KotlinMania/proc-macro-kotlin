@@ -193,22 +193,21 @@ class IntOpenHashSet(
      * @param pos a starting position.
      */
     private fun shiftKeys(pos: Int) { // Shift entries with the same hash.
-        @Suppress("NAME_SHADOWING")
-        var pos = pos
+        var curPos = pos
         var last: Int
         var slot: Int
         var curr: Int
         val key = this.key
         while (true) {
-            pos = ((pos.also { last = it }) + 1) and mask
+            curPos = ((curPos.also { last = it }) + 1) and mask
             while (true) {
-                if ((key[pos].also { curr = it }) == 0) {
+                if ((key[curPos].also { curr = it }) == 0) {
                     key[last] = 0
                     return
                 }
                 slot = HashCommon.mix(curr) and mask
-                if (if (last <= pos) last >= slot || slot > pos else slot in (pos + 1)..last) break
-                pos = (pos + 1) and mask
+                if (if (last <= curPos) last >= slot || slot > curPos else slot in (curPos + 1)..last) break
+                curPos = (curPos + 1) and mask
             }
             key[last] = curr
         }
@@ -311,7 +310,7 @@ class IntOpenHashSet(
         var mustReturnNull: Boolean = this@IntOpenHashSet.containsNull
 
         /** A lazily allocated list containing elements that have wrapped around the table because of removals.  */
-        lateinit var wrapped: IntArrayList
+        var wrapped: IntArrayList? = null
 
         override fun hasNext(): Boolean = c != 0
 
@@ -327,7 +326,7 @@ class IntOpenHashSet(
             while (true) {
                 if (--pos < 0) { // We are just enumerating elements from the wrapped list.
                     last = Int.MIN_VALUE
-                    return wrapped.get(-pos - 1)
+                    return checkNotNull(wrapped).get(-pos - 1)
                 }
                 if (key[pos] != 0) {
                     return key[
@@ -347,7 +346,7 @@ class IntOpenHashSet(
             } else if (pos >= 0) {
                 shiftKeys(last)
             } else { // We're removing wrapped entries.
-                this@IntOpenHashSet.remove(wrapped.get(-pos - 1))
+                this@IntOpenHashSet.remove(checkNotNull(wrapped).get(-pos - 1))
                 last = -1 // Note that we must not decrement size
                 return
             }
@@ -361,26 +360,25 @@ class IntOpenHashSet(
          * @param pos a starting position.
          */
         private fun shiftKeys(pos: Int) { // Shift entries with the same hash.
-            @Suppress("NAME_SHADOWING")
-            var pos = pos
+            var curPos = pos
             var last: Int
             var slot: Int
             var curr: Int
             val key = this@IntOpenHashSet.key
             while (true) {
-                pos = (pos.also { last = it } + 1) and mask
+                curPos = (curPos.also { last = it } + 1) and mask
                 while (true) {
-                    if (key[pos].also { curr = it } == 0) {
+                    if (key[curPos].also { curr = it } == 0) {
                         key[last] = 0
                         return
                     }
                     slot = HashCommon.mix(curr) and mask
-                    if (if (last <= pos) last >= slot || slot > pos else slot in (pos + 1)..last) break
-                    pos = (pos + 1) and mask
+                    if (if (last <= curPos) last >= slot || slot > curPos else slot in (curPos + 1)..last) break
+                    curPos = (curPos + 1) and mask
                 }
-                if (pos < last) { // Wrapped entry.
-                    if (!::wrapped.isInitialized) wrapped = IntArrayList(2)
-                    wrapped.add(key[pos])
+                if (curPos < last) { // Wrapped entry.
+                    val wrappedList = wrapped ?: IntArrayList(2).also { wrapped = it }
+                    wrappedList.add(key[curPos])
                 }
                 key[last] = curr
             }
@@ -427,21 +425,12 @@ class IntOpenHashSet(
         var pos: Int
         var j = realSize()
         while (j-- != 0) {
-            while (key[--i] == 0) {
-            }
-            if (newKey[
-                    (HashCommon.mix(key[i]) and mask).also {
-                        pos = it
-                    },
-                ] != 0
-            ) {
-                while (newKey[
-                        ((pos + 1) and mask).also {
-                            pos = it
-                        },
-                    ] != 0
-                ) {
-                }
+            do {
+                i--
+            } while (key[i] == 0)
+            pos = HashCommon.mix(key[i]) and mask
+            while (newKey[pos] != 0) {
+                pos = (pos + 1) and mask
             }
             newKey[pos] = key[i]
         }

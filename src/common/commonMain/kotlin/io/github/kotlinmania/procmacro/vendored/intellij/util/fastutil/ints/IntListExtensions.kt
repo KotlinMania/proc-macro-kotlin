@@ -52,11 +52,10 @@ internal fun IntList.toArray(
     to: Int,
     a: IntArray,
 ): IntArray {
-    @Suppress("NAME_SHADOWING")
-    var a = a
-    if (a.size < size) a = a.copyOf(size)
-    toArray(from, a, 0, to)
-    return a
+    var dest = a
+    if (dest.size < size) dest = dest.copyOf(size)
+    toArray(from, dest, 0, to)
+    return dest
 }
 
 fun IntList.lastIndexOf(element: Int): Int {

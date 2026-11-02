@@ -38,7 +38,7 @@ internal class SyntaxTreeBuilderImpl(
     private val whitespaceOrCommentBindingPolicy: WhitespaceOrCommentBindingPolicy,
     private val opaquePolicy: OpaqueElementPolicy,
 ) : SyntaxTreeBuilder {
-    private val tokenListImpl: TokenListImpl? = if (tokens is TokenListImpl) tokens else null
+    private val tokenListImpl: TokenListImpl? = tokens as? TokenListImpl
     private val lexStartIndex = tokenListImpl?.startIndex ?: 0
     private val myLexStarts: IntArray? = tokenListImpl?.lexStarts
     private val myLexTypes: Array<SyntaxElementType>? = tokenListImpl?.lexTypes
@@ -146,23 +146,23 @@ internal class SyntaxTreeBuilderImpl(
     }
 
     override fun lookAhead(steps: Int): SyntaxElementType? {
-        var steps = steps
+        var remainingSteps = steps
         var cur = shiftOverWhitespaceForward(myCurrentLexeme)
 
-        while (steps > 0) {
+        while (remainingSteps > 0) {
             cur = shiftOverWhitespaceForward(cur + 1)
-            steps--
+            remainingSteps--
         }
 
         return if (cur < lexemeCount) lexType(cur) else null
     }
 
     private fun shiftOverWhitespaceForward(lexIndex: Int): Int {
-        var lexIndex = lexIndex
-        while (lexIndex < lexemeCount && isWhitespaceOrComment(lexType(lexIndex))) {
-            lexIndex++
+        var curLexIndex = lexIndex
+        while (curLexIndex < lexemeCount && isWhitespaceOrComment(lexType(curLexIndex))) {
+            curLexIndex++
         }
-        return lexIndex
+        return curLexIndex
     }
 
     override fun rawLookup(steps: Int): SyntaxElementType? {
@@ -386,7 +386,7 @@ internal class SyntaxTreeBuilderImpl(
         if (myCurrentLexeme < lexemeCount) {
             val missed = (myCurrentLexeme until lexemeCount).map { lexType(it) }
             logger.errorWithAttachments(
-                "Tokens $missed were not inserted into the tree. ${language ?: ""}",
+                "Tokens $missed were not inserted into the tree. ${language.orEmpty()}",
                 listOf(Attachment("missedTokensFragment.txt", text.toString())),
             )
         }

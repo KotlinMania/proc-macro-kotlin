@@ -114,7 +114,7 @@ internal class ASTMarkersImpl private constructor(
         astMarkers: ASTMarkersImpl,
     ) {
         val offset = nextId
-        (start until start + astMarkers.size).forEach { index ->
+        for (index in start until start + astMarkers.size) {
             val oldId = id(index)
             val newId = oldId2newId[oldId] + offset
             if (hasError(index)) {
@@ -129,7 +129,7 @@ internal class ASTMarkersImpl private constructor(
         oldId2newId: Int2IntOpenHashMap,
     ): Int {
         var nextNewId = 0
-        (0 until astMarkers.size).forEach { index ->
+        for (index in 0 until astMarkers.size) {
             oldId2newId.computeIfAbsent(astMarkers.id(index)) { nextNewId++ }
         }
         return nextNewId
@@ -165,7 +165,7 @@ internal class ASTMarkersImpl private constructor(
         start: Int,
         end: Int,
     ) {
-        (start..end).forEach { index ->
+        for (index in start..end) {
             val currentId = id(index)
             if (hasError(index)) {
                 errorMessages.remove(currentId)
@@ -178,9 +178,9 @@ internal class ASTMarkersImpl private constructor(
         insertedEnd: Int,
     ) {
         val renumberMap = Int2IntOpenHashMap()
-        (0 until size).forEach { index ->
+        for (index in 0 until size) {
             // skip new elements
-            if (index in insertedStart until insertedEnd) return@forEach
+            if (index in insertedStart until insertedEnd) continue
             val newId =
                 renumberMap.computeIfAbsent(id(index)) { oldId ->
                     val currentId = nextId++
@@ -398,7 +398,7 @@ internal class ASTMarkersImpl private constructor(
             val end = size - 1
             repeat(ints.size) { ints.add(0) }
             longMode = true
-            (end downTo 0).forEach { i ->
+            for (i in end downTo 0) {
                 val firstInt = ints[i * 2]
                 val secondInt = ints[i * 2 + 1]
                 setInitialInfo(

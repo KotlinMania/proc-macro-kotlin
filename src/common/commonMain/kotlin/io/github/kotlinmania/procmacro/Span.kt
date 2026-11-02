@@ -1,26 +1,32 @@
-// port-lint: source src/lib.rs
 package io.github.kotlinmania.procmacro
+
+import io.github.kotlinmania.procmacro.bridge.BridgeClientState
+import io.github.kotlinmania.procmacro.bridge.BridgeMethods
+import io.github.kotlinmania.procmacro.bridge.ClientSpan
 
 /**
  * A region of source code, along with macro expansion information.
  */
 public class Span internal constructor(
     internal val data: SpanData,
-) {
+) : MultiSpan {
     public companion object {
         /**
-         * Recover a [Span] previously serialized by [saveSpan].
-         *
-         * Upstream this is the inverse of `Span::save_span`: an opaque
-         * `usize` ID round-trips to the original span across the
-         * `bridge::client` IPC boundary. Kotlin keeps the same opaque-ID
-         * shape in an in-process registry so `quote_span` preserves span
-         * identity within one runtime invocation.
+         * Recovers a [Span] previously serialized by [saveSpan].
          */
-        public fun recoverProcMacroSpan(id: Int): Span = SpanRegistry.recover(id)
+        public fun recoverProcMacroSpan(id: Int): Span = BridgeMethods.spanRecoverProcMacroSpan(id).span
 
         /** A span that resolves at the macro definition site. */
-        public fun defSite(): Span = Span(SpanData.DefSite)
+        public fun defSite(): Span =
+            if (BridgeClientState.isAvailable()) {
+                BridgeClientState
+                    .withState()
+                    .globals
+                    .defSite
+                    .span
+            } else {
+                Span(SpanData.DefSite)
+            }
 
         /**
          * The span of the invocation of the current procedural macro.
@@ -29,45 +35,68 @@ public class Span internal constructor(
          * hygiene) and other code at the macro call site will be able to
          * refer to them as well.
          */
-        public fun callSite(): Span = Span(SpanData.CallSite)
+        public fun callSite(): Span =
+            if (BridgeClientState.isAvailable()) {
+                BridgeClientState
+                    .withState()
+                    .globals
+                    .callSite
+                    .span
+            } else {
+                Span(SpanData.CallSite)
+            }
 
         /**
          * A span that represents declarative-macro hygiene, and sometimes
          * resolves at the macro definition site (local variables, labels,
-         * `$crate`) and sometimes at the macro call site (everything
-         * else). The span location is taken from the call site.
+         * crate root markers) and sometimes at the macro call site
+         * (everything else). The span location is taken from the call site.
          */
-        public fun mixedSite(): Span = Span(SpanData.MixedSite)
+        public fun mixedSite(): Span =
+            if (BridgeClientState.isAvailable()) {
+                BridgeClientState
+                    .withState()
+                    .globals
+                    .mixedSite
+                    .span
+            } else {
+                Span(SpanData.MixedSite)
+            }
     }
+
+    /** Returns an independent copy of this [Span]. */
+    public fun clone(): Span = Span(data)
+
+    override fun intoSpans(): SpanList = SpanList(listOf(this))
 
     /**
      * The [Span] for the tokens in the previous macro expansion from which
-     * this was generated from, if any.
+     * this span was generated, if any.
      */
     public fun parent(): Span? = null
 
     /**
-     * The span for the origin source code that this was generated from. If
-     * this [Span] wasn't generated from other macro expansions then the
+     * The span for the origin source code from which this span was generated.
+     * If this [Span] was not generated from other macro expansions then the
      * return value is the same as `this`.
      */
     public fun source(): Span = this
 
     /**
-     * Returns the span's byte position range in the source file.
+     * Returns the byte position range of this span in the source file.
      *
-     * Sentinel spans (call-site, mixed-site, def-site) report an empty
-     * range. Synthetic spans carry explicit byte bounds.
+     * Sentinel spans report an empty range. Synthetic spans carry explicit
+     * byte bounds.
      */
     public fun byteRange(): IntRange = data.byteRange()
 
-    /** Creates an empty span pointing to directly before this span. */
+    /** Creates an empty span pointing directly before this span. */
     public fun start(): Span {
         val range = byteRange()
         return Span(SpanData.Synthetic(range.first..range.first - 1))
     }
 
-    /** Creates an empty span pointing to directly after this span. */
+    /** Creates an empty span pointing directly after this span. */
     public fun end(): Span {
         val range = byteRange()
         return Span(SpanData.Synthetic(range.last + 1..range.last))
@@ -76,43 +105,33 @@ public class Span internal constructor(
     /**
      * The one-indexed line of the source file where the span starts.
      *
-     * Sentinel and synthetic spans report `0` unless backed by source
-     * offsets.
+     * Sentinel and synthetic spans report `0` unless backed by source offsets.
      */
     public fun line(): Int = 0
 
     /**
      * The one-indexed column of the source file where the span starts.
      *
-     * Sentinel and synthetic spans report `0` unless backed by source
-     * offsets.
+     * Sentinel and synthetic spans report `0` unless backed by source offsets.
      */
     public fun column(): Int = 0
 
     /**
      * The path to the source file in which this span occurs, for display
-     * purposes. This might not correspond to a valid file system path. It
-     * might be remapped (e.g. `"/src/lib.kt"`) or an artificial path
-     * (e.g. `"<token stream>"`).
-     *
-     * Sentinel and synthetic spans report a fixed display path.
+     * purposes. This might not correspond to a valid file system path.
      */
     public fun file(): String = "<token stream>"
 
     /**
      * The path to the source file in which this span occurs on the local
-     * file system. This is the actual path on disk. It is unaffected by
-     * path remapping.
-     *
-     * This path should not be embedded in the output of the macro; prefer
-     * [file] instead.
+     * file system. Prefer [file] when embedding paths in macro output.
      */
     public fun localFile(): String? = null
 
     /**
-     * Creates a new span encompassing this and `other`.
+     * Creates a new span encompassing this span and [other].
      *
-     * Returns `null` if this and `other` are from different files.
+     * Returns `null` if this span and [other] are from different files.
      */
     public fun join(other: Span): Span? {
         if (data === other.data) return this
@@ -120,47 +139,57 @@ public class Span internal constructor(
     }
 
     /**
-     * Creates a new span with the same line/column information as this but
-     * that resolves symbols as though it were at `other`.
-     *
-     * The current Kotlin runtime keeps source location and resolution
-     * together, so this returns `this`.
+     * Creates a new span with the same line/column information as this span
+     * that resolves symbols as though it were at [other].
      */
     public fun resolvedAt(other: Span): Span = this
 
     /**
-     * Creates a new span with the same name resolution behavior as this
-     * but with the line/column information of `other`.
+     * Creates a new span with the same name resolution behavior as this span
+     * and the line/column information of [other].
      */
     public fun locatedAt(other: Span): Span = other.resolvedAt(this)
 
     /**
-     * Serialize this [Span] to an opaque identifier recoverable by
-     * [Span.recoverProcMacroSpan]. Upstream this is the
-     * `bridge::client`-side counterpart of `recover_proc_macro_span`.
-     * See [Span.recoverProcMacroSpan] for the in-process registry shape.
+     * Serializes this [Span] to an opaque identifier recoverable by
+     * [Span.recoverProcMacroSpan].
      */
     public fun saveSpan(): Int = SpanRegistry.save(this)
 
-    /** Compares two spans to see if they're equal. */
+    /** Compares two spans for equality. */
     public fun eq(other: Span): Boolean = data == other.data
 
+    override fun equals(other: Any?): Boolean = other is Span && data == other.data
+
+    override fun hashCode(): Int = data.hashCode()
+
     /**
-     * Returns the source text behind a span. This preserves the original
-     * source code, including spaces and comments. It only returns a result
-     * if the span corresponds to real source code.
-     *
-     * Sentinel and synthetic spans do not carry original source text.
+     * Returns the source text behind this span, preserving spaces and
+     * comments when backed by real source text.
      */
-    public fun sourceText(): String? = null
+    public fun sourceText(): String? = BridgeMethods.spanSourceText(ClientSpan(this))
+
+    internal fun localSourceText(): String? = null
+
+    /** Creates a new [Diagnostic] with [Level.ERROR] and [message] at this span. */
+    public fun error(message: String): Diagnostic = Diagnostic.spanned(this, Level.ERROR, message)
+
+    /** Creates a new [Diagnostic] with [Level.WARNING] and [message] at this span. */
+    public fun warning(message: String): Diagnostic = Diagnostic.spanned(this, Level.WARNING, message)
+
+    /** Creates a new [Diagnostic] with [Level.NOTE] and [message] at this span. */
+    public fun note(message: String): Diagnostic = Diagnostic.spanned(this, Level.NOTE, message)
+
+    /** Creates a new [Diagnostic] with [Level.HELP] and [message] at this span. */
+    public fun help(message: String): Diagnostic = Diagnostic.spanned(this, Level.HELP, message)
 
     override fun toString(): String = data.toString()
 }
 
 /**
- * Internal backing store for [Span]. This enumerates the three sentinel
- * variants ([CallSite], [MixedSite], [DefSite]) plus a [Synthetic] variant
- * carrying a byte range.
+ * Internal backing store for [Span]. Enumerates the three sentinel variants
+ * ([CallSite], [MixedSite], [DefSite]) plus a [Synthetic] variant carrying a
+ * byte range.
  */
 internal sealed class SpanData {
     internal abstract fun byteRange(): IntRange
@@ -168,19 +197,19 @@ internal sealed class SpanData {
     internal data object CallSite : SpanData() {
         override fun byteRange(): IntRange = IntRange.EMPTY
 
-        override fun toString(): String = "Span.call_site"
+        override fun toString(): String = "Span.callSite"
     }
 
     internal data object MixedSite : SpanData() {
         override fun byteRange(): IntRange = IntRange.EMPTY
 
-        override fun toString(): String = "Span.mixed_site"
+        override fun toString(): String = "Span.mixedSite"
     }
 
     internal data object DefSite : SpanData() {
         override fun byteRange(): IntRange = IntRange.EMPTY
 
-        override fun toString(): String = "Span.def_site"
+        override fun toString(): String = "Span.defSite"
     }
 
     internal data class Synthetic(
@@ -193,11 +222,7 @@ internal sealed class SpanData {
 }
 
 /**
- * In-process backing store for [Span.saveSpan] / [Span.recoverProcMacroSpan].
- *
- * Upstream Rust uses `bridge::client` to round-trip span identifiers
- * across the proc-macro/rustc IPC boundary. This registry lets `quote_span`
- * preserve span identity within a single Kotlin runtime invocation.
+ * In-process backing store for [Span.saveSpan] and [Span.recoverProcMacroSpan].
  */
 internal object SpanRegistry {
     private val saved: MutableList<Span> = mutableListOf()
@@ -216,8 +241,6 @@ internal object SpanRegistry {
  * The pair of spans pointing at the opening and closing delimiters of a
  * [Group], plus the entire span encompassing both delimiters and the
  * stream between them.
- *
- * Upstream: `bridge::DelimSpan<bridge::client::Span>`.
  */
 internal data class DelimSpanData(
     val open: Span,

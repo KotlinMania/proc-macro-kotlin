@@ -21,9 +21,11 @@ internal class TokenListBuilder internal constructor() {
         val lexStarts =
             run {
                 var currentOffset = 0
-                IntArray(tokens.size + 1) {
-                    currentOffset.also {
-                        tokens.getOrNull(currentOffset + it)?.let { currentOffset += it.first.length }
+                IntArray(tokens.size + 1) { _ ->
+                    currentOffset.also { prevOffset ->
+                        tokens.getOrNull(currentOffset + prevOffset)?.let { token ->
+                            currentOffset += token.first.length
+                        }
                     }
                 }
             }
