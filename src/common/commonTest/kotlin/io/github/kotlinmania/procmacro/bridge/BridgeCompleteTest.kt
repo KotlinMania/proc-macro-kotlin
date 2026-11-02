@@ -17,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -253,5 +254,39 @@ class BridgeCompleteTest {
             )
         val panicMessage = assertIs<PanicOutcome.Panicked>(panicked).panic
         assertEquals("derive boom", panicMessage.asStr())
+    }
+
+    @Test
+    fun publicBridgeClientStateRunnersEnterAndExitActiveSession() {
+        assertFalse(BridgeClientState.isAvailable())
+
+        val bangInput = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("value", Span.callSite())))
+        val bangOutput =
+            BridgeClientState.runBangMacro("mirror", bangInput) { stream ->
+                assertTrue(BridgeClientState.isAvailable())
+                TokenStream.fromTokenTrees(
+                    stream.toList() + listOf(TokenTree.Literal(Literal.i32Unsuffixed(7))),
+                )
+            }
+        assertFalse(BridgeClientState.isAvailable())
+        assertEquals("value 7", bangOutput.toString())
+
+        val attrStream = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("inline", Span.callSite())))
+        val itemStream = TokenStream.fromTokenTree(TokenTree.Ident(Ident.new("target", Span.callSite())))
+        val attrOutput =
+            BridgeClientState.runAttrMacro("tag", attrStream, itemStream) { attr, item ->
+                assertTrue(BridgeClientState.isAvailable())
+                TokenStream.fromTokenTrees(attr.toList() + item.toList())
+            }
+        assertFalse(BridgeClientState.isAvailable())
+        assertEquals("inline target", attrOutput.toString())
+
+        val deriveOutput =
+            BridgeClientState.runCustomDeriveMacro("Cloneable", listOf("cloneAttr"), itemStream) { item ->
+                assertTrue(BridgeClientState.isAvailable())
+                item
+            }
+        assertFalse(BridgeClientState.isAvailable())
+        assertEquals("target", deriveOutput.toString())
     }
 }

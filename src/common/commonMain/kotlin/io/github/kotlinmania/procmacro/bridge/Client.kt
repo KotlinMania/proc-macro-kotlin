@@ -28,6 +28,21 @@ import io.github.kotlinmania.rustcliteralescaper.checkRawCStr
 import io.github.kotlinmania.rustcliteralescaper.checkRawStr
 import io.github.kotlinmania.threadlocal.ThreadLocal
 
+/** Single-argument procedural macro expansion callback. */
+public fun interface BangMacroCallback {
+    public fun expand(input: TokenStream): TokenStream
+}
+
+/** Two-argument attribute procedural macro expansion callback. */
+public fun interface AttrMacroCallback {
+    public fun expand(
+        attr: TokenStream,
+        item: TokenStream,
+    ): TokenStream
+}
+
+private object DefaultBridgeServer : BridgeServer
+
 internal fun interface ClientRunCallback {
     fun invoke(config: BridgeConfig): Buffer
 }
@@ -111,6 +126,66 @@ public object BridgeClientState {
     ): RpcBuffer = set(state, block)
 
     public fun isAvailable(): Boolean = currentOrNull() != null
+
+    public fun runBangMacro(
+        name: String,
+        input: TokenStream,
+        callback: BangMacroCallback,
+    ): TokenStream {
+        val macro = ProcMacro.Bang(name = name, client = Client.expand1 { stream -> callback.expand(stream) })
+        val outcome =
+            macro.client.run(
+                strategy = SameThread,
+                server = DefaultBridgeServer,
+                input = ClientTokenStream(input),
+                forceShowPanics = true,
+            )
+        return outcome.unwrapOrThrow().stream
+    }
+
+    public fun runAttrMacro(
+        name: String,
+        attr: TokenStream,
+        item: TokenStream,
+        callback: AttrMacroCallback,
+    ): TokenStream {
+        val macro =
+            ProcMacro.Attr(
+                name = name,
+                client = Client.expand2 { attrStream, itemStream -> callback.expand(attrStream, itemStream) },
+            )
+        val outcome =
+            macro.client.run(
+                strategy = SameThread,
+                server = DefaultBridgeServer,
+                input = ClientTokenStream(attr),
+                input2 = ClientTokenStream(item),
+                forceShowPanics = true,
+            )
+        return outcome.unwrapOrThrow().stream
+    }
+
+    public fun runCustomDeriveMacro(
+        traitName: String,
+        attributes: List<String>,
+        input: TokenStream,
+        callback: BangMacroCallback,
+    ): TokenStream {
+        val macro =
+            ProcMacro.CustomDerive(
+                traitName = traitName,
+                attributes = attributes,
+                client = Client.expand1 { stream -> callback.expand(stream) },
+            )
+        val outcome =
+            macro.client.run(
+                strategy = SameThread,
+                server = DefaultBridgeServer,
+                input = ClientTokenStream(input),
+                forceShowPanics = true,
+            )
+        return outcome.unwrapOrThrow().stream
+    }
 
     internal fun currentOrNull(): BridgeState? {
         val holder = stateLocal.holder()
