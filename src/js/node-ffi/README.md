@@ -2,7 +2,7 @@
 
 Shared C++ N-API addon providing direct C library bindings for the project's
 Kotlin/JS and Kotlin/WASM targets. Transliterated from the libc-kotlin pattern
-(`native/node-libc/` in [libc-kotlin](https://github.com/KotlinMania/libc-kotlin)) and
+(`src/js/node-libc/dist/` in [libc-kotlin](https://github.com/KotlinMania/libc-kotlin)) and
 generalized: the addon compiles into a reusable `.node` binary that both
 targets load.
 
@@ -72,7 +72,7 @@ resolver finds it when the `@JsModule` annotation is consulted during
 To generalize this directory for a crate (e.g. a `png` port with
 `project.ffi.name=Png`):
 
-1. `` → `native/node-png/`
+1. `` → `src/js/node-png/dist/`
 2. `binding.gyp`: `target_name` → `png_native`
 3. `dist/package.json`: `name` → `@kotlinmania/png-native-bindings`
 4. `dist/index.js`: both filename references → `png_native.node`

@@ -80,7 +80,7 @@ Use fixed-width JNI types for parameters and returns (`jint`, `jlong`,
 `jstring`, `jbyteArray`). There is no pointer-sized primitive in the JNI
 type set, so C pointers cross as `jlong` handles. The libc-kotlin version
 of this file
-(`kotlinmania/libc-kotlin/src/jvmMain/c/libc_jni.c`) is the worked example
+(`kotlinmania/libc-kotlin/src/jvm/jvmMain/c/libc_jni.c`) is the worked example
 for every common edge case: string conversion with `GetStringUTFChars` /
 `ReleaseStringUTFChars`, `ByteArray` ↔ `void*` bridging, Windows-specific
 replacements, and the per-OS `#ifdef _WIN32` pattern.

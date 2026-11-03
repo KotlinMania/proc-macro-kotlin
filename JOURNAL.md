@@ -91,7 +91,7 @@ What remains true:
 ### Implemented in proc-macro-kotlin
 
 The phase-1 Rust-shaped proc-macro surface is present under
-`src/commonMain/kotlin/io/github/kotlinmania/procmacro`:
+`src/common/commonMain/kotlin/io/github/kotlinmania/procmacro`:
 
 - `TokenStream`
 - `TokenTree`
@@ -192,13 +192,13 @@ flowchart LR
 
 Important files observed:
 
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/CharStreams.kt`
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/CodePointBuffer.kt`
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/CodePointCharStream.kt`
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/Lexer.kt`
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/Parser.kt`
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/atn/ParserATNSimulator.kt`
-- `src/commonMain/kotlin/io/github/kotlinmania/antlr4/misc/BitSet.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/CharStreams.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/CodePointBuffer.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/CodePointCharStream.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/Lexer.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/Parser.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/atn/ParserATNSimulator.kt`
+- `src/common/commonMain/kotlin/io/github/kotlinmania/antlr4/misc/BitSet.kt`
 
 Current publication facts:
 

@@ -626,7 +626,7 @@ distinct `java.*` imports. The 33 `.java` files in `tree/` use only
 
 | Java import | Uses | kotlinmania package | Replacement |
 |---|---|---|---|
-| `java.util.BitSet` | 10 | Already in-tree: `com.intellij.platform.syntax.impl.util.BitSet` + `MutableBitSet` | JetBrains' own `LongArray`-backed `BitSet` is already vendored in `src/commonMain/`. Use directly or extract to shared package. |
+| `java.util.BitSet` | 10 | Already in-tree: `com.intellij.platform.syntax.impl.util.BitSet` + `MutableBitSet` | JetBrains' own `LongArray`-backed `BitSet` is already vendored in `src/common/commonMain/`. Use directly or extract to shared package. |
 | `java.util.IdentityHashMap` | 1 | `starlarkmap-kotlin` | `Equivalent`-based `UnorderedMap` with identity comparison: `Equivalent<PredictionContext> { this === it }` |
 
 ### km-io replacements (17 imports, I/O and NIO)
@@ -670,7 +670,7 @@ distinct `java.*` imports. The 33 `.java` files in `tree/` use only
 ### Key architectural discovery: JetBrains BitSet is already in-tree
 
 The `com.intellij.platform.syntax.impl.util` package (already vendored
-in our `src/commonMain/`) contains a `LongArray`-backed `BitSet` and
+in our `src/common/commonMain/`) contains a `LongArray`-backed `BitSet` and
 `MutableBitSet` — the same design pattern ANTLR4 needs. The ANTLR4
 `BitSet` usage is limited to:
 - `ATNConfigSet.kt`: `conflictingAlts: BitSet?` and `alts: BitSet`
@@ -772,7 +772,7 @@ Structural changes:
 |---|---|---|
 | `java.util.Arrays` | 18 | Per-site: `copyOf` → `array.copyOf()`, `equals` → `contentEquals()`, `toString` → `contentToString()`, `asList` → `listOf()`, `fill` → `array.fill()`, `sort` → `array.sort()`, `binarySearch` → `array.binarySearch()` |
 | `java.util.Collections` | 10 | Per-site: `emptyList()` → `emptyList()`, `singletonList()` → `listOf()`, `unmodifiableMap/List` → wrapper or `Collections.unmodifiableMap` via `expect/actual`, `reverse` → `reversed()`, `max/min` → `maxOf/minOf` |
-| `java.util.BitSet` | 10 | Replace with JetBrains `LongArray`-backed `BitSet`/`MutableBitSet` already in `src/commonMain/` |
+| `java.util.BitSet` | 10 | Replace with JetBrains `LongArray`-backed `BitSet`/`MutableBitSet` already in `src/common/commonMain/` |
 | `java.util.IdentityHashMap` | 2 | Replace with `starlarkmap-kotlin` `Equivalent`-based `UnorderedMap` |
 
 **I/O (needs km-io):**
@@ -869,7 +869,7 @@ remains.
 | Build status | `compileKotlinMacosArm64` PASSES, `compileKotlinJvm` PASSES, `compileKotlinJs` PASSES |
 | `allWarningsAsErrors` | `true` (top-level `build.gradle.kts`) — **~20 unchecked-cast / naming warnings from JetBrains vendored code block full build** |
 
-**Warnings blocking the top-level build** (all in JetBrains vendored code under `src/commonMain/kotlin/com/intellij/` and `src/commonMain/kotlin/org/jetbrains/`):
+**Warnings blocking the top-level build** (all in JetBrains vendored code under `src/common/commonMain/kotlin/com/intellij/` and `src/common/commonMain/kotlin/org/jetbrains/`):
 - Unchecked casts: `List<Any>` → `List<T>`, `Set<Any>` → `Set<T>`, `Array<SyntaxElementType?>` → `Array<SyntaxElementType>`
 - Parameter naming mismatches vs supertype (`key` vs `index`, `other`, `startIndex`, `endIndex`)
 - These are all in the vendored JetBrains syntax/platform code, not in the proc-macro core

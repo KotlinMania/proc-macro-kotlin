@@ -2,7 +2,7 @@
 // Shared between Kotlin/JS (nodeMain) and Kotlin/WASM (wasmJsMain via Node.js).
 //
 // Transliterated from the libc-kotlin pattern
-// (kotlinmania/libc-kotlin/native/node-libc/index.js), generalized.
+// (kotlinmania/libc-kotlin/src/js/node-libc/dist/index.js), generalized.
 //
 // The addon wraps direct C library calls — no insecure NPM dependencies.
 // Both JS and WASM targets load the same compiled .node binary.

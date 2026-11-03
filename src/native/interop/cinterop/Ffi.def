@@ -2,7 +2,7 @@
 # cinterop definition for the project's native C wrapper.
 #
 # Transliterated from the libc-kotlin pattern
-# (kotlinmania/libc-kotlin/src/nativeInterop/cinterop/libc.def), generalized:
+# (kotlinmania/libc-kotlin/src/native/interop/cinterop/libc.def), generalized:
 # headers are project-authored and named here; ffi_wrapper.h carries the
 # function declarations the cinterop tool turns into Kotlin bindings.
 #

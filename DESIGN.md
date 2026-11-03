@@ -153,8 +153,8 @@ shape. Phase 3 may revisit if downstream consumers need both at once.
 
 ## Phase 2 preview — vendoring
 
-Phase 2 adds `src/commonMain/kotlin/com/intellij/platform/syntax/...` and
-`src/commonMain/kotlin/org/jetbrains/kotlin/kmp/...` directories carrying
+Phase 2 adds `src/common/commonMain/kotlin/com/intellij/platform/syntax/...` and
+`src/common/commonMain/kotlin/org/jetbrains/kotlin/kmp/...` directories carrying
 vendored upstream Kotlin source. Each vendored file gets a provenance
 header per `AGENTS.md` "Phase 2 — vendoring JetBrains Kotlin lexer +
 parser". Phase 1 files don't reference those packages yet — phase 3

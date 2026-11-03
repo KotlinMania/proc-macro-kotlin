@@ -14,14 +14,14 @@ license.` headers are preserved unchanged.
 
 | Upstream path | Local path | Purpose |
 |---|---|---|
-| `platform/syntax/syntax-api/src/com/intellij/platform/syntax/` | `src/commonMain/kotlin/com/intellij/platform/syntax/` | `SyntaxElementType`, `Lexer`, `SyntaxTreeBuilder`, plus the impl/builder, lexer, parser, tree subdirectories |
-| `platform/syntax/syntax-util/src/com/intellij/platform/syntax/util/` | `src/commonMain/kotlin/com/intellij/platform/syntax/util/` | `FlexAdapter`, `FlexLexer`, `MergingLexerAdapter`, `SyntaxTreeBuilderAdapter`, and related lexer/parser helpers |
-| `platform/syntax/syntax-extensions/src/com/intellij/platform/syntax/extensions/` | `src/commonMain/kotlin/com/intellij/platform/syntax/extensions/` | `ExtensionPointKey`, `ExtensionSupport`, in-process extension registry |
-| `platform/util/multiplatform/src/com/intellij/util/` | `src/commonMain/kotlin/com/intellij/util/` | `BitUtil`, `ThreadLocalKmp`, `JavaVersionShim`, `ThreeState`, plus the `fastutil/` and `containers/` packages |
-| `platform/util/multiplatform/src/com/intellij/openapi/util/` | `src/commonMain/kotlin/com/intellij/openapi/util/` | (filtered) — i18n annotation declarations (`Nls`, `NlsContext`) excluded |
-| `platform/util/base/multiplatform/src/com/intellij/util/text/` | `src/commonMain/kotlin/com/intellij/util/text/` | `CharArrayUtilKmp`, `CharSequenceSubSequence`, `CharArrayCharSequence`, `Matcher`, related char-sequence helpers |
-| `platform/util/base/multiplatform/src/com/intellij/openapi/util/text/` | `src/commonMain/kotlin/com/intellij/openapi/util/text/` | `CharSequenceWithStringHash`, `LineTokenizer`, `StringUtilKmp`, `StringsKmp` |
-| `fleet/util/multiplatform/srcCommonMain/fleet/util/multiplatform/` | `src/commonMain/kotlin/fleet/util/multiplatform/` | `linkToActual()` + `@Actual` annotation (compile-time multiplatform shim) |
+| `platform/syntax/syntax-api/src/com/intellij/platform/syntax/` | `src/common/commonMain/kotlin/com/intellij/platform/syntax/` | `SyntaxElementType`, `Lexer`, `SyntaxTreeBuilder`, plus the impl/builder, lexer, parser, tree subdirectories |
+| `platform/syntax/syntax-util/src/com/intellij/platform/syntax/util/` | `src/common/commonMain/kotlin/com/intellij/platform/syntax/util/` | `FlexAdapter`, `FlexLexer`, `MergingLexerAdapter`, `SyntaxTreeBuilderAdapter`, and related lexer/parser helpers |
+| `platform/syntax/syntax-extensions/src/com/intellij/platform/syntax/extensions/` | `src/common/commonMain/kotlin/com/intellij/platform/syntax/extensions/` | `ExtensionPointKey`, `ExtensionSupport`, in-process extension registry |
+| `platform/util/multiplatform/src/com/intellij/util/` | `src/common/commonMain/kotlin/com/intellij/util/` | `BitUtil`, `ThreadLocalKmp`, `JavaVersionShim`, `ThreeState`, plus the `fastutil/` and `containers/` packages |
+| `platform/util/multiplatform/src/com/intellij/openapi/util/` | `src/common/commonMain/kotlin/com/intellij/openapi/util/` | (filtered) — i18n annotation declarations (`Nls`, `NlsContext`) excluded |
+| `platform/util/base/multiplatform/src/com/intellij/util/text/` | `src/common/commonMain/kotlin/com/intellij/util/text/` | `CharArrayUtilKmp`, `CharSequenceSubSequence`, `CharArrayCharSequence`, `Matcher`, related char-sequence helpers |
+| `platform/util/base/multiplatform/src/com/intellij/openapi/util/text/` | `src/common/commonMain/kotlin/com/intellij/openapi/util/text/` | `CharSequenceWithStringHash`, `LineTokenizer`, `StringUtilKmp`, `StringsKmp` |
+| `fleet/util/multiplatform/srcCommonMain/fleet/util/multiplatform/` | `src/common/commonMain/kotlin/fleet/util/multiplatform/` | `linkToActual()` + `@Actual` annotation (compile-time multiplatform shim) |
 
 ## Modifications applied during vendoring
 

@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 14/16 (87.5%)
-- **Function parity:** 114/195 matched (target 415) — 58.5%
-- **Class/type parity:** 35/49 matched (target 96) — 71.4%
-- **Combined symbol parity:** 149/244 matched (target 511) — 61.1%
+- **Function parity:** 114/195 matched (target 418) — 58.5%
+- **Class/type parity:** 35/49 matched (target 99) — 71.4%
+- **Combined symbol parity:** 149/244 matched (target 517) — 61.1%
 - **Average inline-code cosine:** 0.12 (function body across 14 matched files)
 - **Average documentation cosine:** 0.34 (doc text across 14 matched files)
 - **Cheat-zeroed Files:** 0
@@ -42,7 +42,7 @@ Every matched file is listed below with function and type symbol parity.
 
 ### 2. to_tokens
 
-- **Target:** `ToTokens`
+- **Target:** `procmacro.ToTokens`
 - **Similarity:** 0.05
 - **Dependents:** 2
 - **Priority Score:** 2283709.5
@@ -75,7 +75,7 @@ Every matched file is listed below with function and type symbol parity.
 
 ### 5. quote
 
-- **Target:** `Quote`
+- **Target:** `procmacro.Quote`
 - **Similarity:** 0.02
 - **Dependents:** 0
 - **Priority Score:** 153009.8
@@ -90,9 +90,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.09
 - **Dependents:** 0
 - **Priority Score:** 103209.1
-- **Functions:** 18/25 matched (target 92)
+- **Functions:** 18/25 matched (target 95)
 - **Missing functions:** `encode`, `encode`, `decode`, `encode`, `decode`, `fmt`, `with`
-- **Types:** 4/7 matched (target 18)
+- **Types:** 4/7 matched (target 21)
 - **Missing types:** `TokenStream`, `Span`, `Bridge`
 
 ### 7. bridge.server
@@ -109,7 +109,7 @@ Every matched file is listed below with function and type symbol parity.
 
 ### 8. diagnostic
 
-- **Target:** `Diagnostic`
+- **Target:** `procmacro.Diagnostic`
 - **Similarity:** 0.18
 - **Dependents:** 0
 - **Priority Score:** 32008.2
@@ -175,7 +175,7 @@ Every matched file is listed below with function and type symbol parity.
 
 ### 14. escape
 
-- **Target:** `Escape`
+- **Target:** `procmacro.Escape`
 - **Similarity:** 0.52
 - **Dependents:** 0
 - **Priority Score:** 404.8
