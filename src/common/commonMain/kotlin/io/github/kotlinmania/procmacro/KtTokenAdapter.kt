@@ -34,6 +34,7 @@ internal object KtTokenAdapter {
             }
 
         val collapsed = collapseStringTemplates(noWhite)
+            ?: return TokenStreamParseOutcome.Err(LexError("Unterminated Kotlin string literal"))
 
         val grouped =
             groupDelimiters(collapsed)
@@ -65,24 +66,28 @@ internal object KtTokenAdapter {
         val children: List<FlatToken>? = null,
     )
 
-    private fun collapseStringTemplates(tokens: List<RawToken>): List<FlatToken> {
+    private fun collapseStringTemplates(tokens: List<RawToken>): List<FlatToken>? {
         val result = mutableListOf<FlatToken>()
         var i = 0
         while (i < tokens.size) {
             val t = tokens[i]
             if (isStringStart(t.type)) {
                 val first = t
-                i++
-                while (i < tokens.size && tokens[i].type != KtTokens.CLOSING_QUOTE) {
+                var quoteDepth = 0
+                var closeEnd: Int? = null
+                while (i < tokens.size) {
+                    val inner = tokens[i]
                     i++
-                }
-                val closeEnd =
-                    if (i < tokens.size) {
-                        i++
-                        tokens[i - 1].end
-                    } else {
-                        first.end
+                    if (inner.type == KtTokens.OPEN_QUOTE) quoteDepth++
+                    if (inner.type == KtTokens.CLOSING_QUOTE) {
+                        quoteDepth--
+                        if (quoteDepth == 0) {
+                            closeEnd = inner.end
+                            break
+                        }
                     }
+                }
+                if (closeEnd == null) return null
                 result.add(
                     FlatToken(
                         type = stringLiteralElement,
@@ -112,15 +117,17 @@ internal object KtTokenAdapter {
             if (openDelim != null) {
                 val childList = mutableListOf<FlatToken>()
                 i++
-                var depth = 1
-                while (i < tokens.size && depth > 0) {
+                val openStack = mutableListOf(openDelim)
+                while (i < tokens.size && openStack.isNotEmpty()) {
                     val inner = tokens[i]
-                    if (openDelimiterOf(inner.type) != null) depth++
-                    if (closeDelimiterOf(inner.type) != null) depth--
-                    if (depth > 0) childList.add(inner)
+                    val innerOpen = openDelimiterOf(inner.type)
+                    if (innerOpen != null) openStack.add(innerOpen)
+                    val closingOpen = openingDelimiterForClose(inner.type)
+                    if (closingOpen != null && openStack.removeAt(openStack.lastIndex) != closingOpen) return null
+                    if (openStack.isNotEmpty()) childList.add(inner)
                     i++
                 }
-                if (depth != 0) return null
+                if (openStack.isNotEmpty()) return null
                 val closeEnd = tokens[i - 1].end
                 val innerGrouped = groupDelimiters(childList) ?: return null
                 result.add(
@@ -131,7 +138,7 @@ internal object KtTokenAdapter {
                         children = innerGrouped,
                     ),
                 )
-            } else if (closeDelimiterOf(t.type) != null) {
+            } else if (openingDelimiterForClose(t.type) != null) {
                 return null
             } else {
                 result.add(t)
@@ -149,11 +156,11 @@ internal object KtTokenAdapter {
             else -> null
         }
 
-    private fun closeDelimiterOf(type: SyntaxElementType): SyntaxElementType? =
+    private fun openingDelimiterForClose(type: SyntaxElementType): SyntaxElementType? =
         when (type) {
-            KtTokens.RPAR -> KtTokens.RPAR
-            KtTokens.RBRACE -> KtTokens.RBRACE
-            KtTokens.RBRACKET -> KtTokens.RBRACKET
+            KtTokens.RPAR -> KtTokens.LPAR
+            KtTokens.RBRACE -> KtTokens.LBRACE
+            KtTokens.RBRACKET -> KtTokens.LBRACKET
             else -> null
         }
 
@@ -203,7 +210,9 @@ internal object KtTokenAdapter {
         if (compound != null) return compound
 
         if (isIdentLike(ft.type)) {
-            return listOf(TokenTree.Ident(Ident.new(text, Span.callSite())))
+            // The compiler lexer has validated Kotlin identifier syntax, including
+            // backticks and field identifiers; Rust's constructor rules differ.
+            return listOf(TokenTree.Ident(Ident(IdentData(text, isRaw = false, span = Span.callSite()))))
         }
 
         val single = singleCharPunct(ft.type)
