@@ -33,8 +33,9 @@ internal object KtTokenAdapter {
                 !KtTokens.WHITE_SPACE_OR_COMMENT_BIT_SET.contains(t.type)
             }
 
-        val collapsed = collapseStringTemplates(noWhite)
-            ?: return TokenStreamParseOutcome.Err(LexError("Unterminated Kotlin string literal"))
+        val collapsed =
+            collapseStringTemplates(noWhite)
+                ?: return TokenStreamParseOutcome.Err(LexError("Unterminated Kotlin string literal"))
 
         val grouped =
             groupDelimiters(collapsed)

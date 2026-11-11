@@ -1,4 +1,5 @@
 import Testing
+import ExportedKotlinPackages
 import ProcMacro
 import RustcLiteralEscaper
 
@@ -156,6 +157,54 @@ import RustcLiteralEscaper
         #expect(envOutcome.isFailure)
         #expect(envOutcome.errorOrNull() == .NOT_PRESENT)
         tracked.path(path: "Package.swift")
+    }
+
+    @Test func testKmpKotlinParserAndLightSyntaxTreeAcrossSwiftBoundary() {
+        typealias KmpLexer = ExportedKotlinPackages.io.github.kotlinmania.procmacro.vendored.kotlin.kmp.lexer
+        typealias KmpParser = ExportedKotlinPackages.io.github.kotlinmania.procmacro.vendored.kotlin.kmp.parser
+        typealias KmpTree = ExportedKotlinPackages.io.github.kotlinmania.procmacro.vendored.kotlin.kmp.tree
+        typealias SyntaxLexer = ExportedKotlinPackages.io.github.kotlinmania.procmacro.vendored.intellij.platform.syntax.lexer
+
+        let source = """
+        package demo.swift
+
+        class Counter(val seed: Int) {
+            fun next(): Int = seed + 1
+        }
+        """
+
+        let lexer = KmpLexer.KotlinLexer()
+        let tokenList = SyntaxLexer.performLexing(text: source, lexer: lexer)
+        #expect(tokenList.tokenCount > 10)
+
+        let tree = KmpTree.parseKotlinLightSyntaxTree(
+            source: source,
+            isScript: false,
+            isLazy: false
+        )
+        let root = tree.getRoot()
+        let ktNodeTypes = KmpParser.KtNodeTypes.shared
+        #expect(tree.isComposite(node: root))
+        #expect(tree.hasChildOfType(node: root, type: ktNodeTypes.PACKAGE_DIRECTIVE))
+        #expect(tree.hasChildOfType(node: root, type: ktNodeTypes.CLASS))
+
+        let pkgNode = tree.findChildByType(node: root, type: ktNodeTypes.PACKAGE_DIRECTIVE)
+        #expect(pkgNode != nil)
+        if let pkgNode {
+            #expect(tree.textEquals(node: pkgNode, expected: "package demo.swift"))
+            #expect(tree.getTextString(node: pkgNode) == "package demo.swift")
+        }
+
+        let kdocTree = KmpTree.parseKDocLightSyntaxTree(
+            source: "/** Increment [Counter.next] */"
+        )
+        let kdocNodes = KmpParser.KDocParseNodes.shared
+        #expect(kdocTree.hasChildOfType(node: kdocTree.getRoot(), type: kdocNodes.KDOC_SECTION))
+
+        let linkTree = KmpTree.parseKDocLinkLightSyntaxTree(source: "[Counter.next]")
+        #expect(linkTree.hasChildOfType(node: linkTree.getRoot(), type: kdocNodes.KDOC_NAME))
+
+        #expect(KmpParser.BinaryOperationPrecedence.MULTIPLICATIVE.higherPriority == KmpParser.BinaryOperationPrecedence.AS)
     }
 
     private func utf16(_ scalar: String) -> UInt16 {

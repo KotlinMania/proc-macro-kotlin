@@ -65,6 +65,26 @@ interface TokenList {
  *
  * @return a TokenList representing the result of lexing
  */
+fun performLexing(
+    text: CharSequence,
+    lexer: Lexer,
+): TokenList = performLexing(text, lexer, cancellationProvider = null, logger = null)
+
+/**
+ * Performs lexing of the given string with the given lexer.
+ *
+ * @return a TokenList representing the result of lexing
+ */
+fun performLexing(
+    text: String,
+    lexer: Lexer,
+): TokenList = performLexing(text as CharSequence, lexer, cancellationProvider = null, logger = null)
+
+/**
+ * Performs lexing of the given text with the given lexer.
+ *
+ * @return a TokenList representing the result of lexing
+ */
 internal fun performLexing(
     text: CharSequence,
     lexer: Lexer,

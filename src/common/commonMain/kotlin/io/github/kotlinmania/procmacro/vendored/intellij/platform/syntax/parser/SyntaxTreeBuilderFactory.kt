@@ -11,6 +11,45 @@ import io.github.kotlinmania.procmacro.vendored.intellij.platform.syntax.logger.
 import io.github.kotlinmania.procmacro.vendored.intellij.platform.syntax.parser.SyntaxTreeBuilderFactory.Builder
 
 /**
+ * Constructs a [SyntaxTreeBuilder] over [text] and [tokenList] with the given [whitespaces], [comments],
+ * [startOffset], and optional [whitespaceOrCommentBindingPolicy].
+ */
+fun createSyntaxTreeBuilder(
+    text: CharSequence,
+    tokenList: TokenList,
+    whitespaces: Set<SyntaxElementType>,
+    comments: Set<SyntaxElementType>,
+    startOffset: Int = 0,
+    whitespaceOrCommentBindingPolicy: WhitespaceOrCommentBindingPolicy? = null,
+): SyntaxTreeBuilder =
+    SyntaxTreeBuilderFactory
+        .builder(text, tokenList, whitespaces, comments)
+        .withStartOffset(startOffset)
+        .withWhitespaceOrCommentBindingPolicy(whitespaceOrCommentBindingPolicy)
+        .build()
+
+/**
+ * Constructs a [SyntaxTreeBuilder] over [text] and [tokenList] with the given [whitespaces], [comments],
+ * [startOffset], and optional [whitespaceOrCommentBindingPolicy].
+ */
+fun createSyntaxTreeBuilder(
+    text: String,
+    tokenList: TokenList,
+    whitespaces: Set<SyntaxElementType>,
+    comments: Set<SyntaxElementType>,
+    startOffset: Int = 0,
+    whitespaceOrCommentBindingPolicy: WhitespaceOrCommentBindingPolicy? = null,
+): SyntaxTreeBuilder =
+    createSyntaxTreeBuilder(
+        text = text as CharSequence,
+        tokenList = tokenList,
+        whitespaces = whitespaces,
+        comments = comments,
+        startOffset = startOffset,
+        whitespaceOrCommentBindingPolicy = whitespaceOrCommentBindingPolicy,
+    )
+
+/**
  * Factory for constructing a [SyntaxTreeBuilder]
  */
 internal object SyntaxTreeBuilderFactory {
