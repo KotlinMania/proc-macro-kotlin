@@ -1,0 +1,22 @@
+{
+  "type": "port",
+  "name": "proc-macro-kotlin",
+  "source": {
+    "path": "tmp/proc-macro/src",
+    "lang": "rust"
+  },
+  "target": {
+    "path": "src/common/commonMain/kotlin/io/github/kotlinmania/procmacro",
+    "lang": "kotlin"
+  },
+  "checks": {
+    "deep": true,
+    "missing": true,
+    "todos": true,
+    "lint": true
+  },
+  "reexport_modules": [
+    "mod.rs",
+    "lib.rs"
+  ]
+}
