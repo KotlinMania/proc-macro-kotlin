@@ -67,7 +67,7 @@ public final class AndroidSdkSupport {
 
     public static void configure(Project project) {
         Project rootProject = project.getRootProject();
-        String revision = prop(project, "android.commandLineTools.revision", "14742923");
+        String revision = prop(project, "android.commandLineTools.revision", "16111833");
         String compileSdk = prop(project, "android.compileSdk", "34");
         String buildTools = prop(project, "android.buildTools", "36.0.0");
         String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);

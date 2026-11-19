@@ -1099,7 +1099,7 @@ val hasAppleTargets =
     kotlin.targets
         .withType<KotlinNativeTarget>()
         .any { it.konanTarget.family.isAppleFamily }
-CentralPortalSupport.configure(project, publishProjectName, hasAppleTargets)
+CentralPortalSupport.configure(project, publishProjectName, jvmFfiEnabled, hasAppleTargets)
 
 // ============================================================================
 // Verification, Build Aggregates & Runtime Validation
